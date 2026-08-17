@@ -28,7 +28,7 @@ Permitir acceso exclusivamente a usuarios institucionales previamente autorizado
 - Otros proveedores.
 - Gestión visual de usuarios.
 - Dashboard funcional, KPIs, actividad o próximos eventos.
-- Sidebar o topbar administrativos completos.
+- Funcionalidad propia del sidebar o topbar distinta de navegación, identidad y logout.
 
 ## Contrato `bootstrapAuthorization`
 
@@ -108,9 +108,9 @@ Contenido exclusivo:
 - Nombre del usuario.
 - Correo institucional.
 - Rol asignado.
-- Botón “Cerrar sesión”.
+- Contexto breve de sesión autorizada.
 
-No debe incluir KPIs, tablas, actividad, próximos eventos, sidebar, topbar o enlaces a módulos fuera de alcance. Cuando `modulo-dashboard` sea autorizado, esta vista será reemplazada por su implementación funcional.
+La vista se presenta dentro del shell definido por `modulo-layout`. El cierre de sesión pertenece al shell para que sea compartido por todas las rutas privadas. No debe incluir KPIs, tablas, actividad, próximos eventos ni funcionalidad de módulos fuera de alcance. Cuando `modulo-dashboard` sea autorizado, esta vista será reemplazada por su implementación funcional.
 
 ## Seguridad
 
@@ -126,6 +126,6 @@ No debe incluir KPIs, tablas, actividad, próximos eventos, sidebar, topbar o en
 - Usuario autorizado y activo accede con claims correctos.
 - Usuario inexistente, inactivo, externo, con rol inválido o UID conflictivo no accede.
 - La sesión se recupera sin mostrar contenido privado antes de autorizar.
-- La vista temporal muestra únicamente los datos y acción especificados.
+- La vista temporal muestra únicamente los datos y contexto especificados dentro del shell administrativo.
 - Logout impide volver mediante historial.
 - No se exponen secretos ni errores técnicos.

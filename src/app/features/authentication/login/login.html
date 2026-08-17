@@ -1,0 +1,53 @@
+<main class="login-page">
+  <section class="identity" aria-labelledby="system-name">
+    <div class="identity__content">
+      <img
+        class="identity__logo"
+        src="assets/logo-tup.png"
+        alt="Tecnológico Universitario Playacar"
+      />
+      <p class="identity__eyebrow">Tecnológico Universitario Playacar</p>
+      <h1 id="system-name">Sistema de Eventos TUP</h1>
+      <p class="identity__description">
+        Gestión institucional de eventos, recursos y protocolos en un entorno seguro.
+      </p>
+    </div>
+    <div class="identity__accent" aria-hidden="true"></div>
+  </section>
+
+  <section class="access" aria-labelledby="access-title">
+    <div class="access__card">
+      <p class="access__eyebrow">Acceso seguro</p>
+      <h2 id="access-title">Iniciar sesión</h2>
+      <p class="access__guidance">
+        Utilice su cuenta institucional previamente autorizada para continuar.
+      </p>
+
+      @if (auth.error(); as error) {
+        <div class="access__alert" role="alert" aria-live="assertive">
+          <span aria-hidden="true">!</span>
+          <p>{{ error }}</p>
+        </div>
+      }
+
+      <button
+        mat-flat-button
+        class="google-button"
+        type="button"
+        [disabled]="auth.loading()"
+        [attr.aria-busy]="auth.loading()"
+        (click)="login()"
+      >
+        @if (auth.loading()) {
+          <span class="loading-indicator" aria-hidden="true"></span>
+          <span>Validando acceso…</span>
+        } @else {
+          <img src="assets/google.png" alt="" aria-hidden="true" />
+          <span>Iniciar sesión con Google</span>
+        }
+      </button>
+
+      <p class="access__restriction">Acceso exclusivo para usuarios autorizados.</p>
+    </div>
+  </section>
+</main>

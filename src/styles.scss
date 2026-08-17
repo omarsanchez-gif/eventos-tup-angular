@@ -1,0 +1,148 @@
+@use '@angular/material' as mat;
+
+$tup-primary-palette: (
+  50: #eeeef9,
+  100: #d4d5ef,
+  200: #b8b9e4,
+  300: #9295d5,
+  400: #6368bd,
+  500: #252a86,
+  600: #232776,
+  700: #271e5d,
+  800: #211a50,
+  900: #171238,
+  contrast: (
+    50: #101828,
+    100: #101828,
+    200: #101828,
+    300: #101828,
+    400: #fff,
+    500: #fff,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+  ),
+);
+
+$tup-accent-palette: (
+  50: #f6f6f6,
+  100: #e8e8e8,
+  200: #d4d4d4,
+  300: #b8b8b8,
+  400: #9f9f9e,
+  500: #888887,
+  600: #747473,
+  700: #5e5e5d,
+  800: #4a4a49,
+  900: #343433,
+  contrast: (
+    50: #101828,
+    100: #101828,
+    200: #101828,
+    300: #101828,
+    400: #101828,
+    500: #101828,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+  ),
+);
+
+$tup-primary: mat.m2-define-palette($tup-primary-palette, 500, 300, 700);
+$tup-accent: mat.m2-define-palette($tup-accent-palette, 500, 300, 700);
+$tup-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $tup-primary,
+      accent: $tup-accent,
+      warn: mat.m2-define-palette(mat.$m2-red-palette),
+    ),
+    typography: mat.m2-define-typography-config(
+        $font-family: (
+          Arial,
+          'Helvetica Neue',
+          sans-serif,
+        ),
+      ),
+    density: 0,
+  )
+);
+
+@include mat.core();
+@include mat.all-component-themes($tup-theme);
+
+:root {
+  color-scheme: light;
+  --color-primary-700: #252a86;
+  --color-primary-800: #271e5d;
+  --color-neutral-500: #888887;
+  --color-background: #f8f9fb;
+  --color-surface: #fff;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-border: #dfe3ea;
+  --color-error: #b3261e;
+  --color-success: #18794e;
+  --color-warning: #9a6700;
+  --color-info: #175cd3;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 20px;
+  --elevation-1: 0 12px 32px rgb(16 24 40 / 8%);
+  font-family: Arial, 'Helvetica Neue', sans-serif;
+  font-synthesis: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-background);
+  font-size: 16px;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-background);
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

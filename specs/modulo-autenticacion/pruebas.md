@@ -122,4 +122,4 @@ No deben guardarse tokens, perfil sensible o secretos manualmente en Local Stora
 
 ### AUTH-029 — Contenido de vista temporal
 
-`/dashboard` debe mostrar únicamente bienvenida, nombre, correo, rol y logout. No debe mostrar KPIs, tablas, sidebar, topbar ni enlaces a módulos futuros.
+`/dashboard` debe mostrar únicamente bienvenida, nombre, correo, rol y contexto de sesión como contenido de la ruta. Puede estar rodeado por el shell administrativo y su logout compartido. No debe mostrar KPIs, tablas ni funcionalidad de módulos futuros.

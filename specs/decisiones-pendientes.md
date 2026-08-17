@@ -2,18 +2,18 @@
 
 ## Decisiones resueltas
 
-| Tema | Decisión | Referencia |
-| --- | --- | --- |
+| Tema                 | Decisión                                                       | Referencia                                    |
+| -------------------- | -------------------------------------------------------------- | --------------------------------------------- |
 | Autorización backend | Firestore canónico + Custom Claims sincronizados por Functions | `decisiones/ADR-001-autorizacion-firebase.md` |
-| Integración Firebase | Firebase Web SDK modular, sin AngularFire inicialmente | `decisiones/ADR-002-sdk-firebase.md` |
-| Estado Angular | Signals + RxJS, sin NgRx inicialmente | `decisiones/ADR-003-estado-angular.md` |
-| UI | Angular Material/CDK + tema institucional propio | `decisiones/ADR-004-libreria-visual.md` |
+| Integración Firebase | Firebase Web SDK modular, sin AngularFire inicialmente         | `decisiones/ADR-002-sdk-firebase.md`          |
+| Estado Angular       | Signals + RxJS, sin NgRx inicialmente                          | `decisiones/ADR-003-estado-angular.md`        |
+| UI                   | Angular Material/CDK + tema institucional propio               | `decisiones/ADR-004-libreria-visual.md`       |
+| Ambiente staging     | Proyecto aislado, Firestore vacío y aliases explícitos         | `decisiones/ADR-005-ambiente-staging.md`      |
 
 ## Pendientes antes de integración real
 
-- Confirmar o crear el proyecto Firebase de staging.
-- Definir dominio institucional de pruebas sin publicar su valor aquí.
-- Definir cuentas de prueba para `admin`, `usuario`, inactivo y no autorizado.
+- Definir un importe para el presupuesto y las alertas de facturación de staging.
+- Crear las cuentas de prueba restantes para `usuario`, inactivo y no autorizado; la cuenta `admin` inicial ya está autorizada.
 - Confirmar calendario y buzón SMTP exclusivos de staging.
 - Inventariar índices Firestore existentes.
 - Confirmar límites y cuotas aplicables del proyecto Firebase.
@@ -36,8 +36,16 @@
 
 - Seleccionar archivos finales de logotipo e iconografía.
 - Confirmar familia tipográfica institucional licenciada.
-- Aprobar visualmente el Login y la vista temporal antes de desplegar a staging.
+- Aprobar visualmente el Login, shell administrativo y vista temporal antes de publicar en Hosting de staging.
+
+## Pendientes de verificación del primer incremento
+
+- Instalar Java 21 o posterior en el entorno local y ejecutar `npm run test:rules`.
+- Ejecutar el flujo integral con cuentas sintéticas en Authentication, Firestore y Functions Emulator.
+- Revisar el shell con una sesión autorizada en 320 px, tableta y escritorio; el navegador automatizado confirma Login, pero no dispone de la sesión Google del usuario.
+- Revisar antes de publicar las alertas moderadas transitivas reportadas por `npm audit` en el SDK Admin de Firebase; no aplicar el downgrade automático sugerido porque afectaría versiones soportadas.
+- Crear cuentas sintéticas y validar el flujo con Google Sign-In y `bootstrapAuthorization`; ambos servicios ya están configurados en staging.
 
 ## Estado para iniciar
 
-No existen decisiones documentales bloqueantes para crear la base Angular e implementar Autenticación con emuladores. Los valores y cuentas de staging serán obligatorios antes de validar integración real.
+La base Angular y el shell administrativo están disponibles en local conectados a staging; Google Sign-In, `bootstrapAuthorization`, Cloud Storage y una cuenta `admin` activa están disponibles en el proyecto de staging. La validación integral permanece pendiente hasta probar el primer acceso, completar los casos negativos con cuentas sintéticas, ejecutar las pruebas de Rules con Java 21 y realizar la aceptación visual autenticada.

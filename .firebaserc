@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "demo-eventos-tup",
+    "staging": "eventos-tup-angular-stg",
+    "production": "eventos-tup-bb903"
+  }
+}

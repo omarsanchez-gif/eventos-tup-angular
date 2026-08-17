@@ -141,20 +141,56 @@ Cada control interactivo debe definir:
 - La decoración no puede competir con el contenido.
 - El formulario mantiene ancho legible, aproximadamente 420–460 px en escritorio.
 
-## Wireframe del shell futuro
+## Wireframe del shell administrativo — escritorio
 
 ```text
-┌──────────────┬──────────────────────────────────────────────┐
-│ Sidebar      │ Topbar                                       │
-│              ├──────────────────────────────────────────────┤
-│ Dashboard    │                                              │
-│ Eventos      │ Contenido de la ruta                         │
-│ Usuarios*    │                                              │
-│              │                                              │
-│ Cerrar sesión│                                              │
-└──────────────┴──────────────────────────────────────────────┘
-* Solo admin
+┌──────────────────┬──────────────────────────────────────────────────┐
+│ [TUP] SISTEMA    │ [Menú]                              [Iniciales] │
+│       DE EVENTOS │──────────────────────────────────────────────────│
+│                  │                                                  │
+│ [■] Dashboard    │  CONTENIDO DE LA RUTA                            │
+│ [ ] Eventos      │  Superficie institucional                        │
+│     Próximamente │                                                  │
+│ [ ] Usuarios*    │                                                  │
+│     Próximamente │                                                  │
+│                  │                                                  │
+│ Cerrar sesión    │                                                  │
+│ [Avatar] Perfil  │                                                  │
+└──────────────────┴──────────────────────────────────────────────────┘
+* Solo admin. Eventos y Usuarios permanecen deshabilitados en el incremento actual.
 ```
+
+## Wireframe del shell administrativo — móvil
+
+```text
+┌─────────────────────────────────┐
+│ [Menú]  Sistema de Eventos [OS] │
+├─────────────────────────────────┤
+│                                 │
+│  CONTENIDO DE LA RUTA           │
+│                                 │
+└─────────────────────────────────┘
+
+Menú abierto:
+┌──────────────────────┬──────────┐
+│ [TUP] SISTEMA        │ overlay  │
+│ [×]                  │          │
+│ Dashboard            │          │
+│ Eventos Próximamente │          │
+│ Usuarios* Próximamente│         │
+│ Cerrar sesión        │          │
+│ Perfil               │          │
+└──────────────────────┴──────────┘
+```
+
+## Comportamiento del shell
+
+- El morado institucional concentra navegación y marca; el contenido usa fondo neutro y superficies blancas.
+- La topbar no agrega buscador, notificaciones ni menú de avatar mientras no exista spec.
+- El sidebar se oculta por completo en escritorio y funciona como drawer superpuesto debajo de 960 px.
+- El área principal mantiene máximo 1280 px, padding fluido y un encabezado de página legible.
+- Iconografía de navegación: SVG lineal coherente, tamaño 20–22 px y texto siempre visible.
+- El estado activo combina superficie clara, peso tipográfico e indicador lateral; no depende solo del color.
 
 ## Restricciones
 

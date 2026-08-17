@@ -33,8 +33,6 @@ src/app/
 
   layout/
     shell/
-    sidebar/
-    topbar/
 
   features/
     authentication/
@@ -87,7 +85,17 @@ Angular Material/CDK aporta comportamiento y accesibilidad. El tema instituciona
 /usuarios
 ```
 
-El alcance actual solo autoriza Login y la navegación mínima necesaria para validar una sesión.
+El alcance actual autoriza Login y `/dashboard` dentro del shell administrativo. `/eventos` y `/usuarios` son rutas objetivo, pero no se crean hasta autorizar sus módulos. Mientras tanto, el shell puede mostrar sus opciones con estado deshabilitado y sin navegación.
+
+## Composición de rutas privadas
+
+```text
+/dashboard [authorizedGuard]
+  └── AdminShell
+      └── TemporaryDashboard
+```
+
+`AdminShell` es un componente standalone de presentación y navegación. Consume el estado público de `AuthFacade`, ejecuta logout mediante la facade y aloja el `router-outlet`; no consulta Firebase ni contiene reglas de negocio de módulos.
 
 ## Configuración
 
@@ -95,6 +103,22 @@ El alcance actual solo autoriza Login y la navegación mínima necesaria para va
 - Secretos exclusivamente en backend.
 - Conexión a emuladores solo en local.
 - Producción nunca es valor predeterminado de desarrollo.
+
+### Mapa de proyectos Firebase
+
+| Ambiente         | Alias CLI    | Project ID                | Uso                           |
+| ---------------- | ------------ | ------------------------- | ----------------------------- |
+| Local/emuladores | `default`    | `demo-eventos-tup`        | Desarrollo y pruebas aisladas |
+| Staging          | `staging`    | `eventos-tup-angular-stg` | Integración real y aceptación |
+| Producción       | `production` | `eventos-tup-bb903`       | Operación institucional       |
+
+El proyecto `eventos-tup` no forma parte de la arquitectura aprobada. Todo comando contra un servicio real debe incluir `--project staging` o `--project production`; el alias de producción solo se utilizará mediante un despliegue expresamente autorizado.
+
+Staging usa Firestore `(default)` vacío en `nam5`. El frontend toma su configuración pública de `environment.staging.ts`; Calendar, SMTP y el dominio institucional permitido permanecen en configuración backend.
+
+El plan Blaze está activo solo en staging. Google Sign-In usa una marca OAuth propia, con `localhost` y `127.0.0.1` autorizados para desarrollo. `bootstrapAuthorization` se ejecuta en `us-central1`; sus imágenes de Artifact Registry se eliminan después de un día para limitar costos.
+
+Cloud Storage de staging utiliza el bucket predeterminado `eventos-tup-angular-stg.firebasestorage.app`, regional en `US-CENTRAL1` y clase `STANDARD`. La ubicación es inmutable. Security Rules solo se despliegan después de pasar sus pruebas automatizadas.
 
 ## Calidad
 
