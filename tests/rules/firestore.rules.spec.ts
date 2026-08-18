@@ -40,6 +40,8 @@ describe('Firestore authorization rules', () => {
   });
 
   it('allows only an authorized admin to read users', async () => {
+    const anonymousFirestore = environment.unauthenticatedContext().firestore();
+    const claimlessFirestore = environment.authenticatedContext('claimless-user').firestore();
     const userFirestore = environment
       .authenticatedContext('regular-user', {
         authorized: true,
@@ -50,8 +52,29 @@ describe('Firestore authorization rules', () => {
       .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
       .firestore();
 
+    await assertFails(anonymousFirestore.collection('usuarios').get());
+    await assertFails(claimlessFirestore.collection('usuarios').get());
     await assertFails(userFirestore.collection('usuarios').get());
     await assertSucceeds(adminFirestore.collection('usuarios').get());
+  });
+
+  it('blocks direct user writes even for an authorized admin', async () => {
+    const adminDocument = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore()
+      .doc('usuarios/new-user');
+
+    await assertFails(
+      adminDocument.set({
+        uid: null,
+        nombre: 'Persona Nueva',
+        correo: 'persona@tecplayacar.edu.mx',
+        rol: 'usuario',
+        activo: true,
+      }),
+    );
+    await assertFails(adminDocument.update({ activo: false }));
+    await assertFails(adminDocument.delete());
   });
 
   it('allows event updates only to the creator and blocks direct deletion', async () => {
@@ -63,7 +86,10 @@ describe('Firestore authorization rules', () => {
     });
 
     const ownerDocument = environment
-      .authenticatedContext('creator-uid', { authorized: true, role: 'usuario' })
+      .authenticatedContext('creator-uid', {
+        authorized: true,
+        role: 'usuario',
+      })
       .firestore()
       .doc('eventos/event-1');
     const otherDocument = environment

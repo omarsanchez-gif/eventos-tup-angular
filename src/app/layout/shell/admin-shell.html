@@ -28,10 +28,13 @@
 
     <nav class="sidebar__nav" aria-label="Secciones principales">
       <a
-        class="nav-item nav-item--active"
+        #dashboardLink="routerLinkActive"
+        class="nav-item"
         routerLink="/dashboard"
-        aria-current="page"
-        (click)="selectDashboard()"
+        routerLinkActive="nav-item--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        [attr.aria-current]="dashboardLink.isActive ? 'page' : null"
+        (click)="selectNavigation()"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
@@ -48,15 +51,22 @@
       </button>
 
       @if (isAdmin()) {
-        <button class="nav-item" type="button" disabled aria-disabled="true">
+        <a
+          #usersLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/usuarios"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="usersLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path
               d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 3-4"
             />
           </svg>
           <span>Usuarios</span>
-          <span class="nav-item__soon">Próximamente</span>
-        </button>
+        </a>
       }
     </nav>
 

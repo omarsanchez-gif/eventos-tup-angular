@@ -22,6 +22,12 @@
 - RN-012: El correo se normaliza a minúsculas y debe ser único.
 - RN-013: Se permite crear, editar, activar, desactivar y eliminar usuarios.
 - RN-014: Un usuario no puede eliminar su propio registro cuando su UID coincide con el autenticado.
+- RN-035: El correo solo puede editarse mientras `uid` sea `null`; después de asociarlo queda inmutable desde Usuarios.
+- RN-036: Un administrador no puede desactivarse ni cambiar su propio rol a `usuario`.
+- RN-037: Ninguna operación puede dejar al sistema sin al menos un usuario activo con rol `admin`.
+- RN-038: La migración inicial admite búsqueda local y paginación visual sobre un máximo de 500 usuarios; si se supera, no se devuelven resultados parciales y se requiere rediseñar la búsqueda mediante una spec aprobada.
+- RN-039: Desactivar, eliminar o cambiar un rol de `admin` a `usuario` revoca refresh tokens cuando existe UID.
+- RN-040: Una operación administrativa parcial no se comunica como éxito; conserva el estado más restrictivo y permite reintento idempotente.
 
 ## Eventos
 

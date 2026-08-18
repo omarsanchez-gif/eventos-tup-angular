@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { adminGuard } from './core/guards/admin.guard';
 import { authorizedGuard } from './core/guards/authorized.guard';
 import { guestGuard } from './core/guards/guest.guard';
 
@@ -12,21 +13,28 @@ export const routes: Routes = [
     title: 'Acceso | Sistema de Eventos TUP',
   },
   {
-    path: 'dashboard',
+    path: '',
     canActivate: [authorizedGuard],
     loadComponent: () =>
       import('./layout/shell/admin-shell').then((component) => component.AdminShell),
     children: [
       {
-        path: '',
+        path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/temporary-dashboard/temporary-dashboard').then(
             (component) => component.TemporaryDashboard,
           ),
         title: 'Bienvenida | Sistema de Eventos TUP',
       },
+      {
+        path: 'usuarios',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/users/users-page/users-page').then((component) => component.UsersPage),
+        title: 'Usuarios | Sistema de Eventos TUP',
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: '**', redirectTo: 'dashboard' },
 ];

@@ -53,13 +53,14 @@ Implementar únicamente cuando el usuario lo solicite explícitamente:
 - `modulo-layout` como shell administrativo compartido.
 - Sidebar, topbar, identidad del usuario y navegación responsive.
 - Vista temporal autenticada en `/dashboard`, limitada a nombre, correo, rol y cierre de sesión.
+- `modulo-usuarios`, autorizado expresamente el 18 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-usuarios`.
+- Ruta privada `/usuarios`, guard de rol `admin`, cinco callables administrativas, sincronización de claims y revocación previstas en la spec de Usuarios.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
 - Eventos.
-- Usuarios.
-- Nuevas integraciones distintas del bootstrap de autorización especificado.
+- Nuevas integraciones distintas del bootstrap de autorización y las cinco callables de Usuarios especificadas.
 - Migraciones de datos.
 
 ## Seguridad autorizada

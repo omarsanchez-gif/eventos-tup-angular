@@ -1,0 +1,591 @@
+<section class="users-page" aria-labelledby="users-title">
+  <header class="page-header panel">
+    <div>
+      <p class="eyebrow">Control de acceso</p>
+      <h1 id="users-title">Usuarios</h1>
+      <p>Administre quién puede acceder al Sistema de Eventos TUP y con qué rol.</p>
+    </div>
+    <button class="button button--primary" type="button" (click)="openCreate($event)">
+      <span aria-hidden="true">＋</span>
+      Nuevo usuario
+    </button>
+  </header>
+
+  @if (users.reconciliation(); as message) {
+    <div class="alert alert--warning" role="alert">
+      <div>
+        <strong>Reconciliación requerida</strong>
+        <span>{{ message }}</span>
+      </div>
+      <button
+        type="button"
+        aria-label="Cerrar aviso de reconciliación"
+        (click)="users.clearReconciliation()"
+      >
+        ×
+      </button>
+    </div>
+  }
+  @if (users.error(); as message) {
+    <div class="alert alert--error" role="alert">
+      <div>
+        <strong>No fue posible completar la solicitud</strong><span>{{ message }}</span>
+      </div>
+      <button class="button button--secondary" type="button" (click)="users.load()">
+        Reintentar
+      </button>
+    </div>
+  }
+  @if (users.notice(); as message) {
+    <div class="alert alert--success" role="status">
+      <span>{{ message }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="users.clearNotice()">×</button>
+    </div>
+  }
+
+  <form
+    class="search-panel panel"
+    role="search"
+    [formGroup]="searchForm"
+    (ngSubmit)="applySearch()"
+  >
+    <label class="sr-only" for="users-search">Buscar por nombre o correo</label>
+    <div class="search-field">
+      <span aria-hidden="true">⌕</span>
+      <input
+        id="users-search"
+        type="search"
+        placeholder="Buscar por nombre o correo"
+        autocomplete="off"
+        formControlName="term"
+        (input)="applyLiveSearch($event)"
+      />
+    </div>
+    <button class="button button--primary" type="submit">Buscar</button>
+    @if (users.searchTerm()) {
+      <button class="button button--secondary" type="button" (click)="clearSearch()">
+        Limpiar
+      </button>
+    }
+  </form>
+
+  <section
+    class="users-list panel"
+    aria-labelledby="users-list-title"
+    [attr.aria-busy]="users.loading()"
+  >
+    <header class="list-header">
+      <div>
+        <h2 id="users-list-title">Listado de usuarios</h2>
+        <p>Gestione documentos de autorización; las cuentas Google no se crean ni eliminan aquí.</p>
+      </div>
+      @if (!users.loading()) {
+        <span class="result-count"
+          >{{ users.resultCount() }}
+          {{ users.resultCount() === 1 ? 'registro' : 'registros' }}</span
+        >
+      }
+    </header>
+
+    @if (users.loading()) {
+      <div class="state-block" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <strong>Cargando usuarios…</strong>
+        <span>Estamos consultando las autorizaciones institucionales.</span>
+      </div>
+    } @else if (!users.hasUsers() && !users.error()) {
+      <div class="state-block">
+        <span class="state-icon" aria-hidden="true">👥</span>
+        <strong>No hay usuarios autorizados</strong>
+        <span>Cree la primera autorización para comenzar.</span>
+      </div>
+    } @else if (!users.hasMatches()) {
+      <div class="state-block">
+        <span class="state-icon" aria-hidden="true">⌕</span>
+        <strong>No se encontraron usuarios</strong>
+        <span>Pruebe otro nombre o correo, o limpie la búsqueda.</span>
+        <button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar búsqueda
+        </button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Usuarios autorizados del Sistema de Eventos TUP
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Último acceso</th>
+              <th scope="col" class="actions-heading">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users.visibleUsers(); track user.documentId; let rowIndex = $index) {
+              <tr>
+                <td>
+                  <div class="identity-cell">
+                    <span class="user-avatar" aria-hidden="true">{{
+                      user.nombre.charAt(0).toUpperCase()
+                    }}</span>
+                    <strong>{{ user.nombre }}</strong>
+                  </div>
+                </td>
+                <td>{{ user.correo }}</td>
+                <td>
+                  <span class="badge badge--role">{{
+                    user.rol === 'admin' ? 'Administrador' : 'Usuario'
+                  }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge--active]="user.activo"
+                    [class.badge--inactive]="!user.activo"
+                    >{{ user.activo ? 'Activo' : 'Inactivo' }}</span
+                  >
+                </td>
+                <td>{{ formatLastAccess(user.ultimoAcceso) }}</td>
+                <td>
+                  <div class="row-actions">
+                    <span class="tooltip-host">
+                      <button
+                        type="button"
+                        class="icon-button"
+                        [attr.aria-label]="'Editar a ' + user.nombre"
+                        [attr.aria-describedby]="'edit-tooltip-' + rowIndex"
+                        (click)="openEdit(user, $event)"
+                      >
+                        <svg
+                          data-icon="edit"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        </svg>
+                      </button>
+                      <span class="action-tooltip" role="tooltip" [id]="'edit-tooltip-' + rowIndex">
+                        Editar usuario
+                      </span>
+                    </span>
+                    <span
+                      class="tooltip-host"
+                      [class.tooltip-host--disabled]="isCurrentUser(user) && user.activo"
+                      [attr.tabindex]="isCurrentUser(user) && user.activo ? 0 : null"
+                      [attr.aria-describedby]="
+                        isCurrentUser(user) && user.activo ? 'status-tooltip-' + rowIndex : null
+                      "
+                    >
+                      <button
+                        type="button"
+                        class="icon-button"
+                        [attr.aria-label]="
+                          (user.activo ? 'Desactivar a ' : 'Activar a ') + user.nombre
+                        "
+                        [attr.aria-describedby]="'status-tooltip-' + rowIndex"
+                        [disabled]="isCurrentUser(user) && user.activo"
+                        (click)="openStatus(user, $event)"
+                      >
+                        @if (user.activo) {
+                          <svg
+                            data-icon="deactivate"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M8 12h8" />
+                          </svg>
+                        } @else {
+                          <svg
+                            data-icon="activate"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="m8 12 2.5 2.5L16 9" />
+                          </svg>
+                        }
+                      </button>
+                      <span
+                        class="action-tooltip"
+                        role="tooltip"
+                        [id]="'status-tooltip-' + rowIndex"
+                      >
+                        {{
+                          isCurrentUser(user) && user.activo
+                            ? 'No puede desactivar su propio acceso'
+                            : user.activo
+                              ? 'Desactivar usuario'
+                              : 'Activar usuario'
+                        }}
+                      </span>
+                    </span>
+                    <span
+                      class="tooltip-host"
+                      [class.tooltip-host--disabled]="isCurrentUser(user)"
+                      [attr.tabindex]="isCurrentUser(user) ? 0 : null"
+                      [attr.aria-describedby]="
+                        isCurrentUser(user) ? 'delete-tooltip-' + rowIndex : null
+                      "
+                    >
+                      <button
+                        type="button"
+                        class="icon-button icon-button--danger"
+                        [attr.aria-label]="'Eliminar a ' + user.nombre"
+                        [attr.aria-describedby]="'delete-tooltip-' + rowIndex"
+                        [disabled]="isCurrentUser(user)"
+                        (click)="openDelete(user, $event)"
+                      >
+                        <svg
+                          data-icon="delete"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M4 7h16" />
+                          <path d="M9 7V4h6v3" />
+                          <path d="m7 7 1 13h8l1-13" />
+                          <path d="M10 11v5M14 11v5" />
+                        </svg>
+                      </button>
+                      <span
+                        class="action-tooltip"
+                        role="tooltip"
+                        [id]="'delete-tooltip-' + rowIndex"
+                      >
+                        {{
+                          isCurrentUser(user)
+                            ? 'No puede eliminar su propio registro'
+                            : 'Eliminar usuario'
+                        }}
+                      </span>
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards" aria-label="Usuarios autorizados">
+        @for (user of users.visibleUsers(); track user.documentId) {
+          <article class="user-card">
+            <div class="identity-cell">
+              <span class="user-avatar" aria-hidden="true">{{
+                user.nombre.charAt(0).toUpperCase()
+              }}</span>
+              <span
+                ><strong>{{ user.nombre }}</strong
+                ><small>{{ user.correo }}</small></span
+              >
+            </div>
+            <dl>
+              <div>
+                <dt>Rol</dt>
+                <dd>{{ user.rol === 'admin' ? 'Administrador' : 'Usuario' }}</dd>
+              </div>
+              <div>
+                <dt>Estado</dt>
+                <dd>{{ user.activo ? 'Activo' : 'Inactivo' }}</dd>
+              </div>
+              <div>
+                <dt>Último acceso</dt>
+                <dd>{{ formatLastAccess(user.ultimoAcceso) }}</dd>
+              </div>
+            </dl>
+            <div class="row-actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                (click)="openEdit(user, $event)"
+              >
+                Editar
+              </button>
+              <button
+                class="button button--secondary"
+                type="button"
+                [disabled]="isCurrentUser(user) && user.activo"
+                (click)="openStatus(user, $event)"
+              >
+                {{ user.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+              <button
+                class="button button--danger"
+                type="button"
+                [disabled]="isCurrentUser(user)"
+                (click)="openDelete(user, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <footer class="pagination" aria-label="Paginación de usuarios">
+        <label for="page-size">Mostrar</label>
+        <select id="page-size" [value]="users.pageSize()" (change)="changePageSize($event)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+        </select>
+        <span>Página {{ users.page() }} de {{ users.totalPages() }}</span>
+        <div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página anterior"
+            [disabled]="users.page() === 1"
+            (click)="previousPage()"
+          >
+            ‹
+          </button>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página siguiente"
+            [disabled]="users.page() === users.totalPages()"
+            (click)="nextPage()"
+          >
+            ›
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
+
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop">
+    <section
+      class="users-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="mode === 'form' ? 'user-form-title' : 'confirmation-title'"
+      [attr.aria-describedby]="
+        mode === 'form' ? 'user-form-description' : 'confirmation-description'
+      "
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      @if (mode === 'form') {
+        <header>
+          <div>
+            <p class="eyebrow">
+              {{ editing() ? 'Editar autorización' : 'Nueva autorización' }}
+            </p>
+            <h2 id="user-form-title">
+              {{ editing() ? 'Editar usuario' : 'Nuevo usuario' }}
+            </h2>
+            <p id="user-form-description">Capture los datos de autorización institucional.</p>
+          </div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Cerrar diálogo"
+            (click)="closeDialog()"
+          >
+            ×
+          </button>
+        </header>
+        <form (ngSubmit)="submitForm()" [formGroup]="userForm">
+          <div class="form-field">
+            <label for="user-name">Nombre completo</label>
+            <input
+              id="user-name"
+              type="text"
+              formControlName="nombre"
+              autocomplete="name"
+              aria-describedby="user-name-error"
+              [attr.aria-invalid]="
+                userForm.controls.nombre.invalid && userForm.controls.nombre.touched
+              "
+            />
+            @if (userForm.controls.nombre.invalid && userForm.controls.nombre.touched) {
+              <small id="user-name-error" class="field-error">Capture el nombre.</small>
+            }
+          </div>
+          <div class="form-field">
+            <label for="user-email">Correo institucional</label>
+            <input
+              id="user-email"
+              type="email"
+              formControlName="correo"
+              autocomplete="email"
+              aria-describedby="user-email-help user-email-error"
+              [attr.aria-invalid]="
+                userForm.controls.correo.invalid && userForm.controls.correo.touched
+              "
+            />
+            @if (selectedUser()?.uid) {
+              <small id="user-email-help"
+                >El correo queda bloqueado porque la cuenta ya está vinculada.</small
+              >
+            }
+            @if (
+              userForm.controls.correo.hasError('institutionalDomain') &&
+              userForm.controls.correo.touched
+            ) {
+              <small id="user-email-error" class="field-error"
+                >Utilice un correo &#64;{{ institutionalDomain }}.</small
+              >
+            } @else if (userForm.controls.correo.invalid && userForm.controls.correo.touched) {
+              <small id="user-email-error" class="field-error">Capture un correo válido.</small>
+            }
+          </div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="user-role">Rol</label>
+              <select id="user-role" formControlName="rol">
+                <option value="usuario">Usuario</option>
+                <option value="admin">Administrador</option>
+              </select>
+              @if (isSelf()) {
+                <small>No puede reducir su propio rol.</small>
+              }
+            </div>
+            @if (!editing()) {
+              <label class="checkbox-field"
+                ><input type="checkbox" formControlName="activo" /><span
+                  >Acceso activo desde el alta</span
+                ></label
+              >
+            }
+          </div>
+          <div class="dialog-actions">
+            <button class="button button--secondary" type="button" (click)="closeDialog()">
+              Cancelar
+            </button>
+            <button
+              class="button button--primary"
+              type="submit"
+              [disabled]="users.mutating()"
+              [attr.aria-busy]="users.mutating()"
+            >
+              {{ users.mutating() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      } @else {
+        <header>
+          <div>
+            <p class="eyebrow">Confirmación</p>
+            <h2 id="confirmation-title">
+              {{
+                mode === 'delete'
+                  ? 'Eliminar autorización'
+                  : mode === 'status'
+                    ? selectedUser()?.activo
+                      ? 'Desactivar usuario'
+                      : 'Activar usuario'
+                    : 'Cambiar rol administrativo'
+              }}
+            </h2>
+          </div>
+        </header>
+        @if (selectedUser(); as user) {
+          <div id="confirmation-description" class="confirmation-copy">
+            @if (mode === 'delete') {
+              <p>
+                Se eliminará la autorización de <strong>{{ user.nombre }}</strong> ({{
+                  user.correo
+                }}).
+              </p>
+              <p>La cuenta Google y la cuenta de Firebase Authentication no se eliminarán.</p>
+            } @else if (mode === 'status') {
+              <p>
+                {{
+                  user.activo
+                    ? 'Se retirará el acceso de'
+                    : 'Se habilitará el acceso
+        de'
+                }}
+                <strong>{{ user.nombre }}</strong
+                >.
+              </p>
+              @if (user.activo && user.uid) {
+                <p>
+                  Se revocarán sus sesiones renovables; un token ya emitido puede permanecer válido
+                  hasta aproximadamente una hora.
+                </p>
+              }
+            } @else {
+              <p>
+                <strong>{{ user.nombre }}</strong> dejará de ser administrador y conservará
+                únicamente el rol Usuario.
+              </p>
+              <p>Se actualizarán sus claims y se revocarán sus sesiones renovables.</p>
+            }
+          </div>
+        }
+        <div class="dialog-actions">
+          <button
+            class="button button--secondary"
+            type="button"
+            (click)="mode === 'demote' ? returnToForm() : closeDialog()"
+          >
+            Cancelar
+          </button>
+          <button
+            class="button"
+            [class.button--danger]="
+              mode === 'delete' || (mode === 'status' && selectedUser()?.activo)
+            "
+            [class.button--primary]="
+              mode === 'demote' || (mode === 'status' && !selectedUser()?.activo)
+            "
+            type="button"
+            [disabled]="users.mutating()"
+            [attr.aria-busy]="users.mutating()"
+            (click)="
+              mode === 'delete'
+                ? confirmDelete()
+                : mode === 'status'
+                  ? confirmStatus()
+                  : confirmDemotion()
+            "
+          >
+            {{
+              users.mutating()
+                ? 'Procesando…'
+                : mode === 'delete'
+                  ? 'Eliminar
+        autorización'
+                  : mode === 'status'
+                    ? selectedUser()?.activo
+                      ? 'Desactivar'
+                      : 'Activar'
+                    : 'Cambiar rol'
+            }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

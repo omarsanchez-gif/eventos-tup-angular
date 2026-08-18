@@ -16,7 +16,7 @@ Objetivo: validar integración real y aceptación antes de producción.
 - Proyecto Firebase: `eventos-tup-angular-stg`.
 - Alias Firebase CLI obligatorio: `staging`.
 - Aplicación web registrada: `Eventos TUP Angular Staging Web`.
-- Firestore `(default)` creado vacío en `nam5`, modo nativo y edición Standard.
+- Firestore `(default)` creado en `nam5`, modo nativo y edición Standard; contiene únicamente la autorización admin inicial y datos de staging aprobados.
 - Firebase Hosting aprovisionado para el proyecto de staging.
 - Plan Blaze habilitado mediante una cuenta de facturación activa; el consumo es pago por uso.
 - Google Sign-In habilitado con `omar.sanchez@tecplayacar.edu.mx` como correo público de soporte OAuth.
@@ -37,9 +37,11 @@ Cuenta autorizada para la validación inicial:
 - Nombre visible: `Omar Sanchez`.
 - Rol: `admin`.
 - Estado: activo.
-- UID y último acceso: pendientes hasta el primer inicio de sesión.
+- UID y último acceso: administrados exclusivamente por `bootstrapAuthorization` y no asumidos por la documentación operativa.
 
-Cloud Storage está aprovisionado y enlazado a Firebase. Las Rules de Firestore y Storage permanecen sin desplegar hasta ejecutar sus pruebas con Java 21 o posterior. Los casos de aceptación restantes requieren cuentas sintéticas para `usuario`, inactivo y no autorizado.
+Las cinco callables administrativas de Usuarios fueron aprobadas con datos sintéticos en Auth y Firestore Emulator y desplegadas en `us-central1` para staging el 18 de agosto de 2026. La callable pública exige sesión autorizada y las mutaciones revalidan el perfil canónico `admin`.
+
+Java Temurin 21.0.12 está instalado. Las 8 pruebas de Firestore y Storage Rules fueron aprobadas; Firestore Rules se desplegaron a staging después de la validación y Storage Rules permanecen sin desplegar por estar fuera del incremento de Usuarios. Los casos de aceptación visual restantes requieren sesión autenticada y un segundo administrador antes de probar reducción de privilegios en staging.
 
 ## Producción
 

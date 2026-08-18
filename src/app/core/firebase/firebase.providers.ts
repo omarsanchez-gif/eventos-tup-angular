@@ -52,6 +52,9 @@ export function provideFirebase(): EnvironmentProviders {
     FirebaseAuthGateway,
     FirebaseAuthorizationGateway,
     { provide: AUTH_GATEWAY, useExisting: FirebaseAuthGateway },
-    { provide: AUTHORIZATION_GATEWAY, useExisting: FirebaseAuthorizationGateway },
+    {
+      provide: AUTHORIZATION_GATEWAY,
+      useExisting: FirebaseAuthorizationGateway,
+    },
   ]);
 }

@@ -33,7 +33,10 @@ describe('AdminShell', () => {
       activo: true,
     });
     loading.set(false);
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1280,
+    });
 
     await TestBed.configureTestingModule({
       imports: [AdminShell],
@@ -44,28 +47,26 @@ describe('AdminShell', () => {
     fixture.detectChanges();
   });
 
-  it('renders the private shell with semantic navigation and active dashboard', () => {
+  it('renders the private shell with semantic navigation and module links', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('aside[aria-label="Navegación administrativa"]')).toBeTruthy();
     expect(element.querySelector('header[aria-label="Barra superior"]')).toBeTruthy();
     expect(element.querySelector('main#main-content')).toBeTruthy();
     expect(element.querySelector('router-outlet')).toBeTruthy();
-    expect(element.querySelector('a[aria-current="page"]')?.textContent).toContain('Dashboard');
+    expect(element.querySelector('a[href="/dashboard"]')?.textContent).toContain('Dashboard');
+    expect(element.querySelector('a[href="/usuarios"]')?.textContent).toContain('Usuarios');
     expect(element.querySelector('.skip-link')?.textContent).toContain('Saltar al contenido');
   });
 
-  it('shows disabled future modules for an admin', () => {
+  it('keeps only Eventos disabled for an admin', () => {
     const disabledItems = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
         '.nav-item[aria-disabled="true"]',
       ),
     );
-    expect(disabledItems).toHaveLength(2);
+    expect(disabledItems).toHaveLength(1);
     expect(disabledItems.every((item) => item.disabled)).toBe(true);
-    expect(disabledItems.map((item) => item.textContent)).toEqual([
-      expect.stringContaining('Eventos'),
-      expect.stringContaining('Usuarios'),
-    ]);
+    expect(disabledItems[0]?.textContent).toContain('Eventos');
   });
 
   it('hides Usuarios for the usuario role', () => {
@@ -92,7 +93,10 @@ describe('AdminShell', () => {
   });
 
   it('closes the mobile sidebar with Escape', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 600 });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 600,
+    });
     window.dispatchEvent(new Event('resize'));
     fixture.detectChanges();
 

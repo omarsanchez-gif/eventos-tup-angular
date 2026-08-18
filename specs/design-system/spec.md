@@ -97,6 +97,14 @@ Cada control interactivo debe definir:
 - Loading cuando corresponda.
 - Error cuando corresponda.
 
+## Botones de icono y ayudas contextuales
+
+- Los botones que no muestran texto visible usan SVG lineales coherentes con la iconografía del shell; no usan letras, emojis o caracteres tipográficos como sustituto.
+- El icono de eliminación es una papelera y conserva la variante visual de peligro.
+- Todo botón de icono tiene un nombre accesible y una ayuda contextual visible al posicionar el puntero o al recibir foco visible.
+- La ayuda describe la acción; cuando el control está deshabilitado, también explica la restricción.
+- La ayuda contextual no sustituye `aria-label`, foco visible ni el objetivo mínimo de 44 × 44 px y no debe provocar desplazamiento horizontal global.
+
 ## Wireframe de Login — escritorio
 
 ```text
@@ -157,7 +165,7 @@ Cada control interactivo debe definir:
 │ Cerrar sesión    │                                                  │
 │ [Avatar] Perfil  │                                                  │
 └──────────────────┴──────────────────────────────────────────────────┘
-* Solo admin. Eventos y Usuarios permanecen deshabilitados en el incremento actual.
+* Solo admin. Usuarios está habilitado conforme a su spec; Eventos permanece deshabilitado.
 ```
 
 ## Wireframe del shell administrativo — móvil
@@ -177,7 +185,7 @@ Menú abierto:
 │ [×]                  │          │
 │ Dashboard            │          │
 │ Eventos Próximamente │          │
-│ Usuarios* Próximamente│         │
+│ Usuarios*             │         │
 │ Cerrar sesión        │          │
 │ Perfil               │          │
 └──────────────────────┴──────────┘

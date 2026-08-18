@@ -2,13 +2,17 @@
 
 ## Decisiones resueltas
 
-| Tema                 | Decisión                                                       | Referencia                                    |
-| -------------------- | -------------------------------------------------------------- | --------------------------------------------- |
-| Autorización backend | Firestore canónico + Custom Claims sincronizados por Functions | `decisiones/ADR-001-autorizacion-firebase.md` |
-| Integración Firebase | Firebase Web SDK modular, sin AngularFire inicialmente         | `decisiones/ADR-002-sdk-firebase.md`          |
-| Estado Angular       | Signals + RxJS, sin NgRx inicialmente                          | `decisiones/ADR-003-estado-angular.md`        |
-| UI                   | Angular Material/CDK + tema institucional propio               | `decisiones/ADR-004-libreria-visual.md`       |
-| Ambiente staging     | Proyecto aislado, Firestore vacío y aliases explícitos         | `decisiones/ADR-005-ambiente-staging.md`      |
+| Tema                   | Decisión                                                         | Referencia                                    |
+| ---------------------- | ---------------------------------------------------------------- | --------------------------------------------- |
+| Autorización backend   | Firestore canónico + Custom Claims sincronizados por Functions   | `decisiones/ADR-001-autorizacion-firebase.md` |
+| Integración Firebase   | Firebase Web SDK modular, sin AngularFire inicialmente           | `decisiones/ADR-002-sdk-firebase.md`          |
+| Estado Angular         | Signals + RxJS, sin NgRx inicialmente                            | `decisiones/ADR-003-estado-angular.md`        |
+| UI                     | Angular Material/CDK + tema institucional propio                 | `decisiones/ADR-004-libreria-visual.md`       |
+| Ambiente staging       | Proyecto aislado, sin copia productiva y aliases explícitos      | `decisiones/ADR-005-ambiente-staging.md`      |
+| Búsqueda de Usuarios   | Lista administrativa limitada a 500; búsqueda y paginación local | `modulo-usuarios/spec.md`, USR-D01            |
+| Identidad de usuario   | Correo inmutable después de asociar UID                          | `modulo-usuarios/spec.md`, USR-D02            |
+| Continuidad admin      | Sin auto-retiro y siempre al menos un admin activo               | `modulo-usuarios/spec.md`, USR-D03            |
+| Claims administrativos | Estado objetivo idempotente, fallo cerrado y reconciliación      | `modulo-usuarios/spec.md`, USR-D04            |
 
 ## Pendientes antes de integración real
 
@@ -18,12 +22,13 @@
 - Inventariar índices Firestore existentes.
 - Confirmar límites y cuotas aplicables del proyecto Firebase.
 
-## Pendientes antes de Usuarios
+## Pendientes antes de aceptar Usuarios
 
-- Especificar las callables administrativas y sus contratos finales.
-- Definir atomicidad, reintento o reconciliación cuando Firestore se actualice pero falle la escritura de claims.
-- Implementar y probar revocación de refresh tokens al desactivar un usuario.
-- Crear pruebas de Security Rules para operaciones administrativas por rol.
+- Confirmar mediante un inventario que el volumen esperado de `usuarios` permanece por debajo de 500; si lo supera, actualizar specs antes de implementar búsqueda.
+- Crear al menos un segundo administrador activo antes de validar operaciones que reduzcan privilegios en staging.
+- Validar manualmente en staging la revocación de refresh tokens al desactivar, eliminar o degradar un administrador sintético.
+- Completar revisión visual autenticada en 320 px, tableta y escritorio y el recorrido con teclado/lector de pantalla.
+- Obtener aceptación funcional antes de habilitar Hosting; producción continúa fuera de alcance.
 
 ## Pendientes antes de Eventos
 
@@ -40,12 +45,11 @@
 
 ## Pendientes de verificación del primer incremento
 
-- Instalar Java 21 o posterior en el entorno local y ejecutar `npm run test:rules`.
-- Ejecutar el flujo integral con cuentas sintéticas en Authentication, Firestore y Functions Emulator.
+- Ejecutar el recorrido manual completo con una cuenta `admin` en staging.
 - Revisar el shell con una sesión autorizada en 320 px, tableta y escritorio; el navegador automatizado confirma Login, pero no dispone de la sesión Google del usuario.
 - Revisar antes de publicar las alertas moderadas transitivas reportadas por `npm audit` en el SDK Admin de Firebase; no aplicar el downgrade automático sugerido porque afectaría versiones soportadas.
 - Crear cuentas sintéticas y validar el flujo con Google Sign-In y `bootstrapAuthorization`; ambos servicios ya están configurados en staging.
 
 ## Estado para iniciar
 
-La base Angular y el shell administrativo están disponibles en local conectados a staging; Google Sign-In, `bootstrapAuthorization`, Cloud Storage y una cuenta `admin` activa están disponibles en el proyecto de staging. La validación integral permanece pendiente hasta probar el primer acceso, completar los casos negativos con cuentas sintéticas, ejecutar las pruebas de Rules con Java 21 y realizar la aceptación visual autenticada.
+La base Angular, el shell y el módulo de Usuarios están operativos localmente contra staging. Java 21, pruebas unitarias, Auth/Firestore Emulator y Security Rules están aprobados. Las cinco callables y Firestore Rules están desplegadas únicamente a `eventos-tup-angular-stg`; `npm run start:staging` sirve la aplicación en `http://localhost:4200`. Permanecen pendientes la aceptación visual/manual y un segundo administrador antes de probar reducción de privilegios. Producción no fue utilizada ni modificada.

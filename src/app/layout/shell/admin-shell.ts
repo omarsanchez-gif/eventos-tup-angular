@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthFacade } from '../../core/auth/auth.facade';
 
@@ -16,7 +16,7 @@ const DESKTOP_BREAKPOINT = 960;
 
 @Component({
   selector: 'app-admin-shell',
-  imports: [RouterLink, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './admin-shell.html',
   styleUrl: './admin-shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +48,7 @@ export class AdminShell {
     }
   }
 
-  protected selectDashboard(): void {
+  protected selectNavigation(): void {
     if (!this.isDesktop()) {
       this.closeSidebar();
     }

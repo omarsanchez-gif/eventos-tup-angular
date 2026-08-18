@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   useEmulators: false,
+  institutionalDomain: 'tecplayacar.edu.mx',
   firebase: {
     apiKey: 'AIzaSyB-YYRG3Bz4zOXxQmFW7fJfDjV9uVdJSWc',
     authDomain: 'eventos-tup-angular-stg.firebaseapp.com',
