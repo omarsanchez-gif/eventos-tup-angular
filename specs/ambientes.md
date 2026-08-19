@@ -41,6 +41,8 @@ Cuenta autorizada para la validación inicial:
 
 Las cinco callables administrativas de Usuarios fueron aprobadas con datos sintéticos en Auth y Firestore Emulator y desplegadas en `us-central1` para staging el 18 de agosto de 2026. La callable pública exige sesión autorizada y las mutaciones revalidan el perfil canónico `admin`.
 
+Las seis callables de Coordinaciones (`listCoordinations`, `listSelectableCoordinations`, `createCoordination`, `updateCoordination`, `setCoordinationStatus` y `deleteCoordination`) fueron desplegadas por alcance explícito en `us-central1` para staging el 19 de agosto de 2026. Firestore Rules se publicaron en un despliegue separado después de aprobar la automatización. La verificación remota confirmó las seis Functions y el rechazo `401` de una llamada anónima a `listCoordinations`. Hosting no fue desplegado y la aceptación autenticada con datos sintéticos continúa pendiente.
+
 Java Temurin 21.0.12 está instalado. Las 8 pruebas de Firestore y Storage Rules fueron aprobadas; Firestore Rules se desplegaron a staging después de la validación y Storage Rules permanecen sin desplegar por estar fuera del incremento de Usuarios. Los casos de aceptación visual restantes requieren sesión autenticada y un segundo administrador antes de probar reducción de privilegios en staging.
 
 ## Producción

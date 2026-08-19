@@ -54,6 +54,9 @@ describe('AdminShell', () => {
     expect(element.querySelector('main#main-content')).toBeTruthy();
     expect(element.querySelector('router-outlet')).toBeTruthy();
     expect(element.querySelector('a[href="/dashboard"]')?.textContent).toContain('Dashboard');
+    expect(element.querySelector('a[href="/coordinaciones"]')?.textContent).toContain(
+      'Coordinaciones',
+    );
     expect(element.querySelector('a[href="/usuarios"]')?.textContent).toContain('Usuarios');
     expect(element.querySelector('.skip-link')?.textContent).toContain('Saltar al contenido');
   });
@@ -69,13 +72,14 @@ describe('AdminShell', () => {
     expect(disabledItems[0]?.textContent).toContain('Eventos');
   });
 
-  it('hides Usuarios for the usuario role', () => {
+  it('hides Usuarios and Coordinaciones for the usuario role', () => {
     user.update((current) => (current ? { ...current, rol: 'usuario' } : current));
     fixture.detectChanges();
 
     const content = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(content).toContain('Eventos');
     expect(content).not.toContain('Usuarios');
+    expect(content).not.toContain('Coordinaciones');
     expect(content).toContain('Usuario');
   });
 

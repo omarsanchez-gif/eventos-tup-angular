@@ -27,6 +27,15 @@ export const routes: Routes = [
         title: 'Bienvenida | Sistema de Eventos TUP',
       },
       {
+        path: 'coordinaciones',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/coordinations/coordinations-page/coordinations-page').then(
+            (component) => component.CoordinationsPage,
+          ),
+        title: 'Coordinaciones | Sistema de Eventos TUP',
+      },
+      {
         path: 'usuarios',
         canActivate: [adminGuard],
         loadComponent: () =>

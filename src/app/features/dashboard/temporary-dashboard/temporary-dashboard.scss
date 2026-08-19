@@ -49,9 +49,9 @@ h2 {
 
 h1 {
   max-width: 650px;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.08;
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-tight);
 }
 
 .welcome__lead {

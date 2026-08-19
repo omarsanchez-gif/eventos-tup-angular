@@ -55,12 +55,21 @@ Implementar únicamente cuando el usuario lo solicite explícitamente:
 - Vista temporal autenticada en `/dashboard`, limitada a nombre, correo, rol y cierre de sesión.
 - `modulo-usuarios`, autorizado expresamente el 18 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-usuarios`.
 - Ruta privada `/usuarios`, guard de rol `admin`, cinco callables administrativas, sincronización de claims y revocación previstas en la spec de Usuarios.
+- `modulo-coordinaciones`, autorizado expresamente el 19 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-coordinaciones`.
+- Ruta privada `/coordinaciones`, guard de rol `admin`, seis callables, catálogo completo administrativo y catálogo sanitizado para Eventos.
+- Las seis callables de Coordinaciones y Firestore Rules fueron desplegadas únicamente a `eventos-tup-angular-stg` el 19 de agosto de 2026. Hosting, Eventos y producción no formaron parte de ese despliegue.
+
+Documentación autorizada, sin autorización de implementación:
+
+- Ampliación de `modulo-eventos` para coordinaciones involucradas y notificaciones por creación, actualización, retiro y cancelación.
+- Arquitectura de notificaciones idempotentes y separación entre correo y asistentes de Google Calendar conforme a `ADR-006`.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
 - Eventos.
-- Nuevas integraciones distintas del bootstrap de autorización y las cinco callables de Usuarios especificadas.
+- Workers, triggers, callables o colecciones de notificaciones de Eventos.
+- Nuevas integraciones distintas del bootstrap de autorización, las cinco callables de Usuarios y las seis callables de Coordinaciones autorizadas.
 - Migraciones de datos.
 
 ## Seguridad autorizada

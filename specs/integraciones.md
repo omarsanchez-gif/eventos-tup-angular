@@ -29,26 +29,72 @@ Debe ser idempotente y no crear documentos de usuario.
 - Zona horaria: `America/Cancun`.
 - Enviar fecha y hora local sin conversión previa con `toISOString()`.
 - Integración exclusiva mediante Cloud Functions.
+- Los contactos de Coordinaciones no se agregan a `attendees`.
+- Calendar se procesa independientemente del correo; un fallo SMTP no recrea, elimina ni revierte el evento de Calendar.
 
 ## Correo
 
-- Confirmación dirigida al creador del evento.
-- Contenido mínimo: nombre, fecha, hora y responsable.
+- La creación se dirige individualmente al creador y a los correos institucionales vigentes de las coordinaciones seleccionadas.
+- La actualización se genera cuando cambia nombre, fecha, horario o coordinaciones.
+- Retirar una coordinación genera un aviso específico para ella.
+- La eliminación genera cancelación para creador, contactos vigentes y destinatarios previamente notificados aplicables.
+- Se normalizan y deduplican destinatarios antes de crear trabajos.
+- El contenido mínimo incluye tipo de aviso, nombre, fecha, horario y responsable.
 - SMTP y secretos exclusivamente en backend.
+- Los destinatarios proceden del perfil canónico y de `coordinaciones`; nunca del correo libre enviado por el cliente.
+- Cada destinatario tiene un registro idempotente protegido en `notificacionesEventos`.
 
-## Functions de eventos existentes
+## Bandeja de salida y reintentos
+
+1. La operación autorizada de Eventos calcula una revisión y el conjunto canónico de destinatarios.
+2. Una transacción crea como máximo un registro por `claveIdempotencia`.
+3. Un worker backend reclama el registro `pendiente` sin permitir dos procesadores simultáneos.
+4. Al confirmar SMTP, registra `enviado` y `fechaEnvio`.
+5. Ante fallo sanitizado, aumenta `intentos`, registra `fallido` y permite reintento conforme a la política operativa.
+6. Reintentar una revisión no vuelve a enviar registros ya confirmados como `enviado`.
+
+Política aprobada por destinatario:
+
+- Intento 1: inmediatamente.
+- Reintento 1: 5 minutos después.
+- Reintento 2: 30 minutos después del fallo anterior.
+- Reintento 3: 2 horas después del fallo anterior.
+- Después del cuarto intento fallido se marca fallo permanente y no se programa otro intento.
+- Un rechazo SMTP identificado como permanente finaliza inmediatamente, sin consumir reintentos innecesarios.
+- Los registros `enviado` o con fallo permanente se purgan 90 días después de `fechaFinalizacion`.
+
+El evento y Calendar no se revierten por un fallo de correo. La UI muestra “evento guardado con notificaciones pendientes” cuando corresponda.
+
+## PDFs de Eventos
+
+- Al reemplazar un protocolo se carga primero el PDF nuevo y se confirma la referencia nueva en Firestore antes de eliminar el anterior.
+- Si la eliminación del PDF anterior falla, se registra para reintento; no se revierte la referencia nueva válida.
+- Una creación que falle después de cargar el archivo intenta eliminarlo inmediatamente.
+- Una limpieza programada elimina después de 24 horas los archivos temporales o cargados que no estén referenciados por un evento.
+- La limpieza nunca elimina un archivo referenciado por el estado canónico del evento.
+
+## Verificación de staging
+
+- Calendar usa exclusivamente el calendario sintético configurado para `eventos-tup-angular-stg`.
+- SMTP usa un buzón de prueba y una lista permitida de destinatarios para impedir correos accidentales a coordinaciones reales.
+- Se prueban creación, actualización, eliminación, zona horaria, ausencia de asistentes, deduplicación, fallos parciales y reintentos.
+- La verificación es obligatoria antes de autorizar producción y no implica desplegar este incremento.
+
+## Contratos objetivo de Functions de Eventos
 
 ### `processEventIntegrations`
 
-Entrada: `eventId`. Crea Calendar, persiste `calendarEventId` y envía correo.
+Entrada: `eventId`. Valida autorización y propiedad, crea Calendar si falta, persiste `calendarEventId` y genera trabajos idempotentes de creación. No envía a destinatarios proporcionados por el cliente.
 
-### `syncUpdatedEventCalendar`
+### `syncUpdatedEventIntegrations`
 
-Entrada: `eventId`. Valida propiedad, actualiza Calendar o lo recrea si ya no existe.
+Entrada: `eventId` y la revisión esperada. Valida propiedad, actualiza Calendar o lo recrea si ya no existe y genera trabajos de actualización o retiro calculados desde el estado canónico y la fotografía anterior.
 
 ### `deleteEvent`
 
-Entrada: `eventId`. Valida propiedad y elimina Calendar, protocolo vigente y documento Firestore.
+Entrada: `eventId`. Valida propiedad, elimina Calendar y protocolo de forma idempotente y, en una transacción final, crea trabajos de cancelación con su fotografía y elimina el documento Firestore.
+
+Los nombres representan contratos objetivo y no autorizan implementación ni despliegue hasta aprobar tareas y pruebas.
 
 ## Requisitos comunes
 
@@ -58,8 +104,7 @@ Entrada: `eventId`. Valida propiedad y elimina Calendar, protocolo vigente y doc
 - Usar mensajes funcionales y logs backend sin secretos.
 - Evitar duplicados mediante idempotencia.
 
-## Pendientes fuera del alcance Auth
+## Pendientes antes de implementar Eventos
 
-- Reintento confiable de correo.
-- Recuperación de integraciones parcialmente completadas.
-- Limpieza del PDF anterior al reemplazarlo.
+- Provisionar y comprobar el calendario, buzón SMTP y lista permitida exclusivos de staging.
+- Confirmar las cuotas reales del proveedor SMTP y del worker con la carga esperada.

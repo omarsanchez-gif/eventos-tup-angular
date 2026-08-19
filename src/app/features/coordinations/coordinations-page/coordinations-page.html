@@ -1,0 +1,497 @@
+<section class="coordinations-page">
+  <header class="page-header panel">
+    <div>
+      <p class="eyebrow">Catálogo institucional</p>
+      <h1>Coordinaciones</h1>
+      <p>Administre las áreas y los correos que recibirán avisos de eventos.</p>
+    </div>
+    <button class="button button--primary" type="button" (click)="openCreate($event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Nueva coordinación
+    </button>
+  </header>
+
+  @if (coordinations.error(); as error) {
+    <div class="alert alert--error" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="coordinations.clearError()">
+        ×
+      </button>
+    </div>
+  }
+  @if (coordinations.notice(); as notice) {
+    <div class="alert alert--success" role="status">
+      <span>{{ notice }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="coordinations.clearNotice()">
+        ×
+      </button>
+    </div>
+  }
+
+  <form class="search-panel panel" [formGroup]="searchForm" (ngSubmit)="applySearch()">
+    <label class="search-field" for="coordination-search">
+      <span class="sr-only">Buscar coordinación</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+      <input
+        id="coordination-search"
+        type="search"
+        placeholder="Buscar por coordinación o correo"
+        formControlName="term"
+        (input)="applyLiveSearch($event)"
+      />
+    </label>
+    @if (coordinations.searchTerm()) {
+      <button class="button button--secondary" type="button" (click)="clearSearch()">
+        Limpiar
+      </button>
+    }
+  </form>
+
+  <section
+    class="list-panel panel"
+    aria-labelledby="coordination-list-title"
+    [attr.aria-busy]="coordinations.loading()"
+  >
+    <header class="list-header">
+      <div>
+        <h2 id="coordination-list-title">Listado de coordinaciones</h2>
+        <p>Los correos se mantienen privados y se usarán desde el backend de Eventos.</p>
+      </div>
+      @if (!coordinations.loading()) {
+        <span class="result-count"
+          >{{ coordinations.resultCount() }}
+          {{ coordinations.resultCount() === 1 ? 'registro' : 'registros' }}</span
+        >
+      }
+    </header>
+
+    @if (coordinations.loading()) {
+      <div class="state-block" role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <strong>Cargando coordinaciones…</strong>
+        <span>Consultando el catálogo institucional.</span>
+      </div>
+    } @else if (!coordinations.hasRecords() && !coordinations.error()) {
+      <div class="state-block">
+        <strong>No hay coordinaciones</strong>
+        <span>Cree la primera coordinación para comenzar el catálogo.</span>
+      </div>
+    } @else if (!coordinations.hasMatches()) {
+      <div class="state-block">
+        <strong>No se encontraron coordinaciones</strong>
+        <span>Pruebe otro nombre o correo.</span>
+        <button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar búsqueda
+        </button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Catálogo administrativo de coordinaciones
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Coordinación</th>
+              <th scope="col">Correos</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Actualización</th>
+              <th scope="col" class="actions-heading">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              coordination of coordinations.visibleRecords();
+              track coordination.documentId;
+              let rowIndex = $index
+            ) {
+              <tr>
+                <td>
+                  <strong>{{ coordination.nombre }}</strong>
+                  @if (coordination.utilizada) {
+                    <small class="used-label">Utilizada en eventos</small>
+                  }
+                </td>
+                <td>
+                  <ul class="email-summary">
+                    @for (email of coordination.correos; track email) {
+                      <li>{{ email }}</li>
+                    }
+                  </ul>
+                  <span class="email-count"
+                    >{{ coordination.correos.length }} de {{ maxEmails }}</span
+                  >
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge--active]="coordination.activo"
+                    [class.badge--inactive]="!coordination.activo"
+                    >{{ coordination.activo ? 'Activa' : 'Suspendida' }}</span
+                  >
+                </td>
+                <td>{{ formatTimestamp(coordination.fechaActualizacion) }}</td>
+                <td>
+                  <div class="row-actions">
+                    <span class="tooltip-host">
+                      <button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="'Editar ' + coordination.nombre"
+                        [attr.aria-describedby]="'coord-edit-tip-' + rowIndex"
+                        (click)="openEdit(coordination, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        </svg>
+                      </button>
+                      <span
+                        class="action-tooltip"
+                        role="tooltip"
+                        [id]="'coord-edit-tip-' + rowIndex"
+                        >Editar coordinación</span
+                      >
+                    </span>
+                    <span class="tooltip-host">
+                      <button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="
+                          (coordination.activo ? 'Suspender ' : 'Activar ') + coordination.nombre
+                        "
+                        [attr.aria-describedby]="'coord-status-tip-' + rowIndex"
+                        (click)="openStatus(coordination, $event)"
+                      >
+                        @if (coordination.activo) {
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M8 12h8" />
+                          </svg>
+                        } @else {
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="m8 12 2.5 2.5L16 9" />
+                          </svg>
+                        }
+                      </button>
+                      <span
+                        class="action-tooltip"
+                        role="tooltip"
+                        [id]="'coord-status-tip-' + rowIndex"
+                        >{{
+                          coordination.activo ? 'Suspender coordinación' : 'Activar coordinación'
+                        }}</span
+                      >
+                    </span>
+                    <span
+                      class="tooltip-host"
+                      [class.tooltip-host--disabled]="coordination.utilizada"
+                      [attr.tabindex]="coordination.utilizada ? 0 : null"
+                      [attr.aria-describedby]="
+                        coordination.utilizada ? 'coord-delete-tip-' + rowIndex : null
+                      "
+                    >
+                      <button
+                        class="icon-button icon-button--danger"
+                        type="button"
+                        [attr.aria-label]="'Eliminar ' + coordination.nombre"
+                        [attr.aria-describedby]="'coord-delete-tip-' + rowIndex"
+                        [disabled]="coordination.utilizada"
+                        (click)="openDelete(coordination, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                        </svg>
+                      </button>
+                      <span
+                        class="action-tooltip"
+                        role="tooltip"
+                        [id]="'coord-delete-tip-' + rowIndex"
+                        >{{
+                          coordination.utilizada
+                            ? 'No puede eliminarse porque ya
+                    fue utilizada; puede suspenderla'
+                            : 'Eliminar coordinación'
+                        }}</span
+                      >
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-cards" aria-label="Coordinaciones">
+        @for (coordination of coordinations.visibleRecords(); track coordination.documentId) {
+          <article class="coordination-card">
+            <header>
+              <strong>{{ coordination.nombre }}</strong
+              ><span
+                class="badge"
+                [class.badge--active]="coordination.activo"
+                [class.badge--inactive]="!coordination.activo"
+                >{{ coordination.activo ? 'Activa' : 'Suspendida' }}</span
+              >
+            </header>
+            <div>
+              <span class="card-label">Correos institucionales</span>
+              <ul class="email-summary">
+                @for (email of coordination.correos; track email) {
+                  <li>{{ email }}</li>
+                }
+              </ul>
+            </div>
+            <span class="card-label"
+              >Actualización: {{ formatTimestamp(coordination.fechaActualizacion) }}</span
+            >
+            @if (coordination.utilizada) {
+              <p class="used-note">Ya fue utilizada y no puede eliminarse.</p>
+            }
+            <div class="card-actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                (click)="openEdit(coordination, $event)"
+              >
+                Editar</button
+              ><button
+                class="button button--secondary"
+                type="button"
+                (click)="openStatus(coordination, $event)"
+              >
+                {{ coordination.activo ? 'Suspender' : 'Activar' }}</button
+              ><button
+                class="button button--danger"
+                type="button"
+                [disabled]="coordination.utilizada"
+                (click)="openDelete(coordination, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+
+      <footer class="pagination" aria-label="Paginación de coordinaciones">
+        <label for="coord-page-size">Mostrar</label
+        ><select
+          id="coord-page-size"
+          [value]="coordinations.pageSize()"
+          (change)="changePageSize($event)"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+        </select>
+        <span>Página {{ coordinations.page() }} de {{ coordinations.totalPages() }}</span>
+        <div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página anterior"
+            [disabled]="coordinations.page() === 1"
+            (click)="previousPage()"
+          >
+            ‹</button
+          ><button
+            class="icon-button"
+            type="button"
+            aria-label="Página siguiente"
+            [disabled]="coordinations.page() === coordinations.totalPages()"
+            (click)="nextPage()"
+          >
+            ›
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
+
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop">
+    <section
+      class="coordination-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="mode === 'form' ? 'coord-form-title' : 'coord-confirm-title'"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">
+            {{ mode === 'form' ? 'Catálogo institucional' : 'Confirmación' }}
+          </p>
+          <h2 [id]="mode === 'form' ? 'coord-form-title' : 'coord-confirm-title'">
+            {{
+              mode === 'form'
+                ? selectedCoordination()
+                  ? 'Editar coordinación'
+                  : 'Nueva coordinación'
+                : mode === 'delete'
+                  ? 'Eliminar coordinación'
+                  : selectedCoordination()?.activo
+                    ? 'Suspender coordinación'
+                    : 'Activar
+          coordinación'
+            }}
+          </h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar diálogo"
+          (click)="closeDialog()"
+        >
+          ×
+        </button>
+      </header>
+      @if (mode === 'form') {
+        <form [formGroup]="coordinationForm" (ngSubmit)="submitForm()">
+          <div class="form-field">
+            <label for="coordination-name">Nombre</label
+            ><input
+              id="coordination-name"
+              type="text"
+              formControlName="nombre"
+              autocomplete="organization"
+              [attr.aria-invalid]="
+                coordinationForm.controls.nombre.invalid && coordinationForm.controls.nombre.touched
+              "
+            />
+            @if (
+              coordinationForm.controls.nombre.invalid && coordinationForm.controls.nombre.touched
+            ) {
+              <small class="field-error">Capture el nombre de la coordinación.</small>
+            }
+          </div>
+          <fieldset formArrayName="correos">
+            <legend>Correos institucionales</legend>
+            <p class="field-help">
+              Agregue hasta {{ maxEmails }} correos &#64;{{ institutionalDomain }}.
+            </p>
+            <p class="sr-only" aria-live="polite">{{ emailListAnnouncement() }}</p>
+            @for (control of emailControls; track control; let emailIndex = $index) {
+              <div class="email-row">
+                <div class="form-field">
+                  <label [for]="'coordination-email-' + emailIndex"
+                    >Correo {{ emailIndex + 1 }}</label
+                  ><input
+                    [id]="'coordination-email-' + emailIndex"
+                    type="email"
+                    [formControlName]="emailIndex"
+                    autocomplete="email"
+                    [attr.aria-invalid]="control.invalid && control.touched"
+                  />
+                  @if (control.hasError('institutionalDomain') && control.touched) {
+                    <small class="field-error"
+                      >Utilice un correo &#64;{{ institutionalDomain }}.</small
+                    >
+                  } @else if (control.invalid && control.touched) {
+                    <small class="field-error">Capture un correo válido.</small>
+                  }
+                </div>
+                <button
+                  class="icon-button icon-button--danger remove-email"
+                  type="button"
+                  [attr.aria-label]="'Retirar correo ' + (emailIndex + 1)"
+                  (click)="removeEmail(emailIndex)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
+                  </svg>
+                </button>
+              </div>
+            }
+            <button
+              class="button button--secondary add-email"
+              type="button"
+              [disabled]="emailControls.length >= maxEmails"
+              (click)="addEmail()"
+            >
+              Agregar correo
+            </button>
+            @if (coordinationForm.hasError('activeRequiresEmail')) {
+              <small class="field-error"
+                >Una coordinación activa requiere al menos un correo.</small
+              >
+            }
+            @if (coordinationForm.hasError('duplicateEmails')) {
+              <small class="field-error">No puede repetir un correo en la coordinación.</small>
+            }
+          </fieldset>
+          @if (!selectedCoordination()) {
+            <label class="checkbox-field"
+              ><input type="checkbox" formControlName="activo" /><span
+                >Coordinación activa desde el alta</span
+              ></label
+            >
+          }
+          <div class="dialog-actions">
+            <button class="button button--secondary" type="button" (click)="closeDialog()">
+              Cancelar</button
+            ><button
+              class="button button--primary"
+              type="submit"
+              [disabled]="coordinations.mutating()"
+              [attr.aria-busy]="coordinations.mutating()"
+            >
+              {{ coordinations.mutating() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      } @else if (selectedCoordination(); as coordination) {
+        <div class="confirmation-copy">
+          @if (mode === 'delete') {
+            <p>
+              Se eliminará <strong>{{ coordination.nombre }}</strong
+              >. Esta acción solo es válida porque nunca fue utilizada.
+            </p>
+          } @else if (coordination.activo) {
+            <p>
+              <strong>{{ coordination.nombre }}</strong> dejará de aparecer en nuevos eventos. Sus
+              referencias históricas y correos se conservarán.
+            </p>
+          } @else {
+            <p>
+              <strong>{{ coordination.nombre }}</strong> volverá a estar disponible para nuevos
+              eventos.
+            </p>
+          }
+        </div>
+        <div class="dialog-actions">
+          <button class="button button--secondary" type="button" (click)="closeDialog()">
+            Cancelar</button
+          ><button
+            class="button"
+            [class.button--danger]="mode === 'delete' || coordination.activo"
+            [class.button--primary]="mode === 'status' && !coordination.activo"
+            type="button"
+            [disabled]="coordinations.mutating()"
+            (click)="mode === 'delete' ? confirmDelete() : confirmStatus()"
+          >
+            {{
+              coordinations.mutating()
+                ? 'Procesando…'
+                : mode === 'delete'
+                  ? 'Eliminar'
+                  : coordination.activo
+                    ? 'Suspender'
+                    : 'Activar'
+            }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

@@ -52,6 +52,21 @@
 
       @if (isAdmin()) {
         <a
+          #coordinationsLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/coordinaciones"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="coordinationsLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h10M17 16v5M14.5 18.5h5" />
+          </svg>
+          <span>Coordinaciones</span>
+        </a>
+
+        <a
           #usersLink="routerLinkActive"
           class="nav-item"
           routerLink="/usuarios"

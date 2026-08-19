@@ -37,6 +37,7 @@ src/app/
   features/
     authentication/
     users/
+    coordinations/
     events/
     dashboard/
 ```
@@ -83,9 +84,10 @@ Angular Material/CDK aporta comportamiento y accesibilidad. El tema instituciona
 /dashboard
 /eventos
 /usuarios
+/coordinaciones
 ```
 
-El alcance actual autoriza Login, `/dashboard` y `/usuarios` dentro del shell administrativo. `/usuarios` se habilita únicamente para `admin`; `/eventos` permanece como ruta objetivo deshabilitada hasta autorizar su módulo.
+El alcance actual autoriza código para Login, `/dashboard`, `/usuarios` y `/coordinaciones` dentro del shell administrativo. `/usuarios` y `/coordinaciones` se habilitan únicamente para `admin`. `/eventos`, disponible para todo usuario autorizado, permanece como ruta objetivo documentada y deshabilitada hasta autorización expresa de implementación.
 
 ## Composición de rutas privadas
 
@@ -93,7 +95,8 @@ El alcance actual autoriza Login, `/dashboard` y `/usuarios` dentro del shell ad
 Rutas privadas [authorizedGuard]
   └── AdminShell
       ├── /dashboard → TemporaryDashboard
-      └── /usuarios [adminGuard] → UsersPage
+      ├── /usuarios [adminGuard] → UsersPage
+      └── /coordinaciones [adminGuard] → CoordinationsPage
 ```
 
 `AdminShell` es un componente standalone de presentación y navegación. Consume el estado público de `AuthFacade`, ejecuta logout mediante la facade y aloja el `router-outlet`; no consulta Firebase ni contiene reglas de negocio de módulos.
@@ -101,6 +104,42 @@ Rutas privadas [authorizedGuard]
 El módulo de Usuarios sigue el flujo `UsersPage → UsersFacade → UsersGateway → callables`. El componente no importa Firebase. Las cinco callables Gen 2 revalidan claims y el documento canónico del administrador, ejecutan las validaciones y escrituras Firestore y sincronizan Authentication mediante Admin SDK. Firestore permanece como fuente canónica ante cualquier reconciliación.
 
 Las cinco callables de Usuarios están desplegadas únicamente en staging, región `us-central1`, después de aprobar pruebas unitarias, Auth/Firestore Emulator y Security Rules. Firestore Rules de staging bloquean escrituras directas y limitan la lectura de `usuarios` a claims administrativos; las mutaciones continúan exclusivamente por Admin SDK.
+
+## Arquitectura objetivo de Coordinaciones y Eventos
+
+```text
+CoordinationPage [admin]
+    ↓
+CoordinationFacade
+    ↓
+CoordinationGateway
+    ↓
+Callables administrativas → coordinaciones
+
+EventForm [authorized]
+    ↓ solicita catálogo sanitizado: ID + nombre
+listSelectableCoordinations
+    ↓ envía únicamente IDs seleccionados
+Callable de Eventos
+    ↓ revalida coordinaciones y crea fotografía histórica
+eventos
+    ├── integración idempotente con Calendar
+    └── notificacionesEventos → worker SMTP idempotente
+```
+
+- Los documentos completos de `coordinaciones`, incluidos sus correos, son administrativos y no se exponen a usuarios normales.
+- El formulario de Eventos recibe exclusivamente coordinaciones activas con `coordinacionId` y `nombre`.
+- Una coordinación contiene como máximo 10 correos; el selector de Eventos no impone un máximo funcional y puede incluir todas las activas disponibles.
+- El backend obtiene los correos canónicos; no confía en destinatarios enviados por el navegador.
+- El evento conserva IDs y nombres como fotografía histórica, pero no almacena correos visibles para todo usuario autorizado.
+- Calendar no recibe los contactos como asistentes. La creación, actualización o eliminación en el calendario institucional no depende del resultado SMTP.
+- Cada correo se representa mediante un registro protegido e idempotente en `notificacionesEventos`; un worker backend controla envío, reintentos y estados por destinatario.
+- El worker ejecuta un intento inmediato y reintentos a los 5 minutos, 30 minutos y 2 horas; los registros terminales expiran después de 90 días.
+- Eventos pagina 25 registros mediante cursores de Firestore. El catálogo administrativo de Coordinaciones conserva búsqueda local sobre un máximo técnico aprobado de 500 registros y falla sin resultados parciales si se excede.
+- Calendar y SMTP se validan en staging mediante recursos sintéticos y una lista permitida antes de cualquier autorización productiva.
+- La decisión completa está registrada en `decisiones/ADR-006-coordinaciones-notificaciones-eventos.md`.
+
+Coordinaciones implementa el flujo `CoordinationsPage → CoordinationsFacade → CoordinationsGateway → callables`. Sus seis callables revalidan claims y perfil canónico; las mutaciones usan transacciones para nombre único, capacidad, estado y eliminación. Firestore Rules permite lectura completa solo a `admin` y bloquea toda escritura de cliente. La implementación fue validada localmente y sus seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026. La verificación remota confirmó las Functions en `us-central1` y el rechazo `401` de una llamada anónima; Hosting y producción no fueron modificados.
 
 ## Configuración
 

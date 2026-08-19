@@ -53,9 +53,10 @@
 .identity h1 {
   max-width: 560px;
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2.25rem, 5vw, 4.5rem);
-  line-height: 1.02;
+  font-family: var(--font-family-ui);
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.08;
   letter-spacing: -0.035em;
 }
 
@@ -92,8 +93,8 @@
 .access h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
-  line-height: 1.2;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-tight);
 }
 
 .access__guidance {
@@ -130,8 +131,20 @@
 
 .google-button {
   width: 100%;
-  min-height: 48px;
+  min-height: var(--control-height);
+  border: 1px solid var(--color-control-border);
   border-radius: var(--radius-small);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: none;
+}
+
+.google-button:hover:not(:disabled) {
+  border-color: var(--color-primary-700);
+  background: var(--color-primary-soft);
 }
 
 .google-button img {

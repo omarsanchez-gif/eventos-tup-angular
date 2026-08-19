@@ -77,6 +77,49 @@ describe('Firestore authorization rules', () => {
     await assertFails(adminDocument.delete());
   });
 
+  it('allows only admin to read complete coordination documents', async () => {
+    const anonymousFirestore = environment.unauthenticatedContext().firestore();
+    const userFirestore = environment
+      .authenticatedContext('regular-user', {
+        authorized: true,
+        role: 'usuario',
+      })
+      .firestore();
+    const adminFirestore = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore();
+
+    await assertFails(anonymousFirestore.collection('coordinaciones').get());
+    await assertFails(userFirestore.collection('coordinaciones').get());
+    await assertSucceeds(adminFirestore.collection('coordinaciones').get());
+  });
+
+  it('blocks direct coordination writes for every client role', async () => {
+    const userDocument = environment
+      .authenticatedContext('regular-user', {
+        authorized: true,
+        role: 'usuario',
+      })
+      .firestore()
+      .doc('coordinaciones/academia');
+    const adminDocument = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore()
+      .doc('coordinaciones/academia');
+    const data = {
+      nombre: 'Academia',
+      nombreNormalizado: 'academia',
+      correos: ['academia@tecplayacar.edu.mx'],
+      activo: true,
+      utilizada: false,
+    };
+
+    await assertFails(userDocument.set(data));
+    await assertFails(adminDocument.set(data));
+    await assertFails(adminDocument.update({ activo: false }));
+    await assertFails(adminDocument.delete());
+  });
+
   it('allows event updates only to the creator and blocks direct deletion', async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc('eventos/event-1').set({

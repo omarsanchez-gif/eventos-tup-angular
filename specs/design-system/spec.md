@@ -9,7 +9,8 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 - Angular Material y CDK.
 - Tema institucional propio.
 - SCSS y CSS Custom Properties.
-- Componentes wrapper para variantes del sistema.
+- Tokens y primitivas visuales globales en `src/styles.scss`; los estilos encapsulados controlan únicamente la distribución específica de cada vista.
+- Los componentes wrapper se introducirán solo cuando una primitiva necesite comportamiento Angular compartido, no para duplicar estilos estáticos.
 - Sin TailwindCSS inicialmente.
 
 ## Principios
@@ -22,34 +23,46 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 - Movimiento limitado y respeto a `prefers-reduced-motion`.
 - Estados visibles de carga, vacío, error y éxito.
 
-## Tokens de color iniciales
+## Tokens de color implementados
 
 ```text
---color-primary-700: #252a86
---color-primary-800: #271e5d
---color-neutral-500: #888887
---color-background:  #f8f9fb
---color-surface:     #ffffff
---color-text:        #101828
---color-text-muted:  #667085
---color-border:      #dfe3ea
---color-error:       #b3261e
---color-success:     #18794e
---color-warning:     #9a6700
---color-info:        #175cd3
+--color-primary-700:       #252a86
+--color-primary-800:       #271e5d
+--color-primary-soft:      #eeeef9
+--color-primary-soft-hover: #e2e2f4
+--color-neutral-500:       #888887
+--color-background:        #f8f9fb
+--color-surface:           #ffffff
+--color-surface-subtle:    #f6f7f9
+--color-text:              #101828
+--color-text-muted:        #667085
+--color-border:            #dfe3ea
+--color-control-border:    #b8c0cc
+--color-error:             #b3261e
+--color-error-hover:       #8f1f18
+--color-error-soft:        #fff2f0
+--color-error-border:      #efb5b0
+--color-success:           #18794e
+--color-success-soft:      #ecfdf3
+--color-warning:           #9a6700
+--color-info:              #175cd3
 ```
 
-Los tonos adicionales se derivarán conservando contraste AA. No se usarán colores arbitrarios dentro de componentes.
+Los valores anteriores corresponden a las Custom Properties actuales de `src/styles.scss`. Los tonos futuros se derivarán conservando contraste AA, se incorporarán primero a esta tabla y no se escribirán como colores arbitrarios dentro de componentes.
 
 ## Tipografía
 
-- Interfaz y datos: familia sans-serif institucional o fallback de sistema.
-- Títulos de Login: se permite una familia serif académica aprobada y licenciada.
+- Toda la aplicación usa una sola pila sans-serif: `Inter`, `Segoe UI`, `Roboto`, `Arial`, `sans-serif`.
+- No se mezclan familias serif y sans-serif entre Login, Dashboard y módulos administrativos.
 - Tamaño base: 16 px.
 - Texto auxiliar mínimo: 12 px solo cuando conserve legibilidad.
 - Altura de línea de texto corrido: 1.5 o superior.
+- Título de página: `clamp(28px, 3vw, 36px)`, peso 800 y altura de línea 1.2.
+- Título de sección: 18 px, peso 700.
+- Texto de botones y datos compactos: 14 px, peso 700 en acciones y 400–600 en datos.
+- Eyebrow institucional: 12 px, peso 800, mayúsculas y espaciado de letras de `0.08em`.
 
-La familia final queda pendiente de aprobación de identidad; no bloquea estructura ni pruebas.
+La pila se mantiene local y no depende de descargar fuentes externas. Si posteriormente se licencia Inter institucionalmente, se podrá servir como activo propio sin cambiar métricas ni componentes.
 
 ## Espaciado y forma
 
@@ -80,10 +93,32 @@ Las sombras serán suaves; no sustituirán bordes o contraste.
 - Diálogos y confirmaciones.
 - Tabla, paginación y búsqueda.
 - Badges de rol y estado.
+- Lista dinámica de correos con agregar, validar y retirar cada entrada.
+- Selector múltiple buscable de coordinaciones con chips o lista equivalente.
+- Estado de integración parcial para Calendar y notificaciones.
 - KPI cards.
 - Sidebar, topbar y shell.
 - Skeleton o indicador de carga.
 - Estados vacíos y de error.
+
+## Estándar transversal de botones
+
+Todos los módulos reutilizan las clases globales `.button` e `.icon-button`; una vista no redefine color, tipografía, radio, altura o estados de estas clases.
+
+- Altura mínima: 44 px.
+- Radio: 8 px en botones con texto y botones de icono.
+- Texto: 14 px, peso 700, familia global y altura de línea 1.25.
+- Icono: SVG lineal de 20 × 20 px, trazo de 1.9 y color heredado.
+- Primario: fondo morado institucional, texto blanco y sombra discreta; se usa para la acción principal de una vista o formulario.
+- Secundario: superficie blanca, borde gris de control y texto morado; se usa para cancelar, limpiar, volver o agregar elementos auxiliares.
+- Peligro: fondo rojo institucional y texto blanco; se reserva para confirmaciones destructivas o de reducción de acceso.
+- Icono normal: superficie blanca, borde neutro y color morado.
+- Icono peligro: fondo rojo tenue, borde rojo tenue e icono rojo; la papelera conserva esta variante.
+- Hover, focus, active, disabled y loading conservan la misma jerarquía en Usuarios, Coordinaciones y módulos futuros.
+- Disabled usa opacidad de 0.52, elimina sombra y mantiene nombre accesible y ayuda contextual cuando corresponda.
+- Una fila de acciones no mezcla botones circulares, cuadrados o sin borde para acciones equivalentes.
+
+Las variantes se definen en `src/styles.scss`; los estilos encapsulados de una pantalla solo pueden controlar distribución, no redefinir la identidad visual de los controles compartidos.
 
 ## Estados de controles
 
@@ -159,13 +194,14 @@ Cada control interactivo debe definir:
 │ [■] Dashboard    │  CONTENIDO DE LA RUTA                            │
 │ [ ] Eventos      │  Superficie institucional                        │
 │     Próximamente │                                                  │
-│ [ ] Usuarios*    │                                                  │
+│ [ ] Coordinac.*  │                                                  │
 │     Próximamente │                                                  │
+│ [ ] Usuarios*    │                                                  │
 │                  │                                                  │
 │ Cerrar sesión    │                                                  │
 │ [Avatar] Perfil  │                                                  │
 └──────────────────┴──────────────────────────────────────────────────┘
-* Solo admin. Usuarios está habilitado conforme a su spec; Eventos permanece deshabilitado.
+* Solo admin. Usuarios y Coordinaciones están habilitados en código; Eventos permanece documentado y deshabilitado hasta autorizarlo.
 ```
 
 ## Wireframe del shell administrativo — móvil
@@ -185,6 +221,8 @@ Menú abierto:
 │ [×]                  │          │
 │ Dashboard            │          │
 │ Eventos Próximamente │          │
+│ Coordinaciones*      │          │
+│   Próximamente       │          │
 │ Usuarios*             │         │
 │ Cerrar sesión        │          │
 │ Perfil               │          │
@@ -199,6 +237,40 @@ Menú abierto:
 - El área principal mantiene máximo 1280 px, padding fluido y un encabezado de página legible.
 - Iconografía de navegación: SVG lineal coherente, tamaño 20–22 px y texto siempre visible.
 - El estado activo combina superficie clara, peso tipográfico e indicador lateral; no depende solo del color.
+
+## Wireframe de Coordinaciones — escritorio
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ CATÁLOGO INSTITUCIONAL  Coordinaciones    [Nueva coordinación] │
+├─────────────────────────────────────────────────────────────┤
+│ [ Buscar por coordinación o correo                         ] │
+├─────────────────────────────────────────────────────────────┤
+│ Coordinación │ Correos │ Estado │ Actualización │ Acciones │
+│ Academia     │ 2       │ Activa │ ...           │ ...      │
+│ Deportes     │ 1       │ Activa │ ...           │ ...      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- La lista dinámica de correos usa un campo por dirección, no una cadena separada por comas.
+- Agregar o retirar un correo mantiene orden de foco predecible y anuncia el cambio.
+- La suspensión y la eliminación utilizada explican consecuencias diferentes.
+
+## Apartado de Coordinaciones en Eventos
+
+```text
+┌ Coordinaciones involucradas ────────────────────────────────┐
+│ Selección opcional                                          │
+│ [ Buscar coordinación                                     ] │
+│ [Academia ×] [Marketing ×]                                  │
+│ Solo se muestran coordinaciones activas.                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- El selector muestra nombres, no correos.
+- Las seleccionadas tienen nombre accesible y pueden retirarse por teclado.
+- Una coordinación histórica suspendida se muestra con texto “Suspendida”; el estado no depende solo del color.
+- Calendar pendiente y notificaciones pendientes se muestran como estados separados.
 
 ## Restricciones
 
