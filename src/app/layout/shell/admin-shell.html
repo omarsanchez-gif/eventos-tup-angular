@@ -82,6 +82,21 @@
         </a>
 
         <a
+          #equipmentLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/equipos"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="equipmentLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h16v10H4zM8 17v3M16 17v3M8 11h.01M12 11h4" />
+          </svg>
+          <span>Equipos</span>
+        </a>
+
+        <a
           #usersLink="routerLinkActive"
           class="nav-item"
           routerLink="/usuarios"

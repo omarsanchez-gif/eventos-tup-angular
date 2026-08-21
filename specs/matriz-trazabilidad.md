@@ -2,25 +2,27 @@
 
 ## Equivalencia del producto actual
 
-| Comportamiento actual          | Spec Angular                    | Prueba requerida                                  | Estado                                                                                                 |
-| ------------------------------ | ------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Google Sign-In                 | `modulo-autenticacion/spec.md`  | AUTH-001                                          | Implementado; validación integral pendiente                                                            |
-| Rechazo de usuario inexistente | `modulo-autenticacion/spec.md`  | AUTH-002                                          | Implementado; prueba backend aprobada                                                                  |
-| Rechazo de usuario inactivo    | `modulo-autenticacion/spec.md`  | AUTH-003                                          | Implementado; prueba backend aprobada                                                                  |
-| Validación de dominio          | `modulo-autenticacion/spec.md`  | AUTH-004                                          | Implementado; prueba backend aprobada                                                                  |
-| Asociación y conflicto de UID  | `modulo-autenticacion/spec.md`  | AUTH-005 y AUTH-006                               | Implementado; prueba backend aprobada                                                                  |
-| Persistencia de sesión         | `modulo-autenticacion/spec.md`  | AUTH-008                                          | Implementado; validación integral pendiente                                                            |
-| Protección de rutas            | `modulo-autenticacion/spec.md`  | AUTH-009, AUTH-011 y AUTH-012                     | Implementado; pruebas frontend aprobadas                                                               |
-| Roles `admin` / `usuario`      | `seguridad.md`                  | AUTH-013, AUTH-014, AUTH-017, AUTH-018 y AUTH-019 | Implementado; 8 pruebas de Rules aprobadas y Firestore Rules publicadas en staging                     |
-| Vista temporal autenticada     | `modulo-autenticacion/spec.md`  | AUTH-029                                          | Implementado; prueba frontend aprobada                                                                 |
-| Sidebar y topbar               | `modulo-layout/spec.md`         | LAYOUT-001 a LAYOUT-013                           | Implementado; 6 pruebas unitarias aprobadas; aceptación visual pendiente                               |
-| Gestión de usuarios            | `modulo-usuarios/spec.md`       | USR-001 a USR-069                                 | Implementado y desplegado en staging; emuladores y Rules aprobados; aceptación visual/manual pendiente |
-| Gestión de coordinaciones      | `modulo-coordinaciones/spec.md` | COO-001 a COO-034                                 | Implementado y desplegado en staging; automatización aprobada y revisión manual pendiente              |
-| Gestión de campus              | `modulo-campus/spec.md`         | CAM-001 a CAM-031                                 | Implementado, validado y desplegado en staging; prueba manual y aceptación pendientes                  |
-| Gestión de eventos             | `modulo-eventos/spec.md`        | EVT-001 a EVT-050                                 | Redefinido documentalmente; depende de Coordinaciones y no autoriza código                             |
-| PDF en Storage                 | `modulo-eventos/spec.md`        | EVT-008, EVT-028 y EVT-031                        | Documentado; implementación pendiente                                                                  |
-| Calendar y correo              | `integraciones.md`              | EVT-011 a EVT-020 y EVT-028 a EVT-032             | Arquitectura idempotente documentada; implementación pendiente                                         |
-| Dashboard real                 | `modulo-dashboard/spec.md`      | Pendiente                                         | Fuera del alcance actual                                                                               |
+| Comportamiento actual          | Spec Angular                      | Prueba requerida                                  | Estado                                                                                                 |
+| ------------------------------ | --------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Google Sign-In                 | `modulo-autenticacion/spec.md`    | AUTH-001                                          | Implementado; validación integral pendiente                                                            |
+| Rechazo de usuario inexistente | `modulo-autenticacion/spec.md`    | AUTH-002                                          | Implementado; prueba backend aprobada                                                                  |
+| Rechazo de usuario inactivo    | `modulo-autenticacion/spec.md`    | AUTH-003                                          | Implementado; prueba backend aprobada                                                                  |
+| Validación de dominio          | `modulo-autenticacion/spec.md`    | AUTH-004                                          | Implementado; prueba backend aprobada                                                                  |
+| Asociación y conflicto de UID  | `modulo-autenticacion/spec.md`    | AUTH-005 y AUTH-006                               | Implementado; prueba backend aprobada                                                                  |
+| Persistencia de sesión         | `modulo-autenticacion/spec.md`    | AUTH-008                                          | Implementado; validación integral pendiente                                                            |
+| Protección de rutas            | `modulo-autenticacion/spec.md`    | AUTH-009, AUTH-011 y AUTH-012                     | Implementado; pruebas frontend aprobadas                                                               |
+| Roles `admin` / `usuario`      | `seguridad.md`                    | AUTH-013, AUTH-014, AUTH-017, AUTH-018 y AUTH-019 | Implementado; 8 pruebas de Rules aprobadas y Firestore Rules publicadas en staging                     |
+| Vista temporal autenticada     | `modulo-autenticacion/spec.md`    | AUTH-029                                          | Implementado; prueba frontend aprobada                                                                 |
+| Sidebar y topbar               | `modulo-layout/spec.md`           | LAYOUT-001 a LAYOUT-013                           | Implementado; 6 pruebas unitarias aprobadas; aceptación visual pendiente                               |
+| Gestión de usuarios            | `modulo-usuarios/spec.md`         | USR-001 a USR-069                                 | Implementado y desplegado en staging; emuladores y Rules aprobados; aceptación visual/manual pendiente |
+| Gestión de coordinaciones      | `modulo-coordinaciones/spec.md`   | COO-001 a COO-034                                 | Implementado y desplegado en staging; automatización aprobada y revisión manual pendiente              |
+| Gestión de campus              | `modulo-campus/spec.md`           | CAM-001 a CAM-031                                 | Implementado, validado y desplegado en staging; prueba manual y aceptación pendientes                  |
+| Gestión de equipos             | `modulo-equipos/spec.md`          | EQP-001 a EQP-033                                 | Incremento A implementado, validado y desplegado a staging; prueba manual y aceptación pendientes      |
+| Reservación y logística        | `modulo-equipos/reservaciones.md` | RES-001 a RES-020                                 | Contrato futuro; bloqueado por eventos de varios días y estrategia transaccional                       |
+| Gestión de eventos             | `modulo-eventos/spec.md`          | EVT-001 a EVT-060                                 | Redefinido documentalmente; depende de catálogos y reservaciones y no autoriza código                  |
+| PDF en Storage                 | `modulo-eventos/spec.md`          | EVT-008, EVT-028 y EVT-031                        | Documentado; implementación pendiente                                                                  |
+| Calendar y correo              | `integraciones.md`                | EVT-011 a EVT-020 y EVT-028 a EVT-032             | Arquitectura idempotente documentada; implementación pendiente                                         |
+| Dashboard real                 | `modulo-dashboard/spec.md`        | Pendiente                                         | Fuera del alcance actual                                                                               |
 
 ## Correcciones deliberadas
 
@@ -39,6 +41,9 @@
 | Calendar y SMTP acoplados sin reintento granular   | Integraciones independientes + outbox    | ADR-006       |
 | Correos de coordinación visibles en Eventos        | Catálogo sanitizado y backend canónico   | ADR-006       |
 | Campus fijos y horarios codificados                | Catálogo Campus y horarios administrados | ADR-007       |
+| Equipos fijos dentro del documento de Evento       | Catálogo dinámico + fotografía histórica | ADR-007       |
+| Disponibilidad guardada como contador mutable      | Cálculo transaccional por intervalos     | ADR-007       |
+| Reservación parcial de equipos                     | Confirmación atómica de todo o nada      | ADR-007       |
 
 ## Regla
 
@@ -93,3 +98,18 @@ Ninguna fila puede pasar a “Implementado” sin evidencia de su prueba corresp
 - La verificación remota confirmó las seis Functions, Hosting `200` y rechazo `401` de `listCampuses` sin autenticación.
 - Producción no fue utilizada ni modificada.
 - Persisten la captura manual de TUP/FCS, la revisión visual con sesión `admin` y la aceptación funcional.
+
+## Evidencia de Equipos — 21 de agosto de 2026
+
+- Catálogo, reservaciones futuras, 33 pruebas de catálogo, 20 pruebas logísticas y tareas documentadas.
+- Modelo de dominio, ruta lazy `/equipos`, gateway, facade, pantalla administrativa y navegación exclusiva de `admin` implementados.
+- Seis callables, repositorio transaccional y Firestore Rules implementados; las escrituras directas permanecen bloqueadas.
+- 5 pruebas Angular específicas; la suite frontend completa suma 51 pruebas aprobadas.
+- 10 pruebas unitarias de Functions específicas; la suite backend completa suma 51 pruebas aprobadas.
+- 7 pruebas transaccionales propias con Firestore Emulator y 14 pruebas de Firestore/Storage Rules aprobadas.
+- Suite completa `npm run test:all`, lint Angular/Functions, compilación TypeScript de Functions y build de staging aprobados.
+- Bundle inicial de staging de 468.19 kB y `equipment-page` diferido de 33.71 kB.
+- Catálogo y reservaciones permanecen separados: no se implementaron disponibilidad, reservaciones, logística ni Eventos.
+- Las seis Functions de Equipos, Firestore Rules y Hosting fueron desplegados únicamente a staging el 21 de agosto de 2026.
+- La verificación remota confirmó las seis Functions Gen 2 en `us-central1`, Hosting `200` con la aplicación Angular y rechazo `401` de `listEquipment` sin autenticación.
+- Producción no fue utilizada ni modificada.

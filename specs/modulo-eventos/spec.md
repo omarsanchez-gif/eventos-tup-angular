@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables. No autoriza implementación ni despliegue. El módulo depende de que `modulo-coordinaciones` esté implementado y aceptado.
+Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables, y ampliada el 21 de agosto de 2026 con Campus y Equipos dinámicos. No autoriza implementación ni despliegue.
 
 ## Objetivo
 
@@ -23,6 +23,8 @@ Antes de implementar Eventos deben existir y estar aceptados:
 
 - Administración de Coordinaciones por `admin`.
 - Administración de Campus por `admin` y catálogo sanitizado de campus activos.
+- Catálogo de Equipos implementado y aceptado.
+- Contrato de reservaciones, concurrencia e índices Firestore aprobado por separado.
 - Contrato sanitizado de coordinaciones activas para usuarios autorizados.
 - Rules y callables de Coordinaciones aprobadas en Emulator Suite.
 - Políticas aprobadas de límites, reintentos, retención, PDFs, paginación y verificación de staging.
@@ -35,7 +37,7 @@ Antes de implementar Eventos deben existir y estar aceptados:
 - Paginación de 25 registros por página mediante cursores de Firestore.
 - Creación, detalle, edición y eliminación por el creador.
 - Un protocolo PDF vigente.
-- Equipamiento estructurado.
+- Equipamiento dinámico con cantidades y reservación atómica.
 - Selección opcional y múltiple de coordinaciones activas.
 - Sin máximo funcional de coordinaciones seleccionadas; se permiten todas las activas disponibles.
 - Fotografía histórica de coordinaciones.
@@ -85,13 +87,12 @@ Antes de implementar Eventos deben existir y estar aceptados:
 
 ### Equipamiento
 
-- Laptops.
-- Proyectores.
-- Pantallas.
-- Bocinas.
-- Micrófonos.
-- Consola de audio.
-- Extensiones.
+- Selector dinámico después de capturar campus, fecha y horario válidos.
+- Muestra nombre, campus base, clasificación y disponibilidad calculada para el intervalo.
+- Permite cantidad entera positiva hasta la disponibilidad confirmable.
+- Una solicitud con varios equipos se confirma completa o se rechaza completa.
+- Equipos fijos aparecen solo en su campus base. Transferibles aparecen únicamente para destinos explícitamente permitidos y antes del corte logístico.
+- Los nombres fijos históricos del objeto `eventos.equipos` permanecen solo para compatibilidad de lectura y no definen el catálogo nuevo.
 
 ### Protocolo
 
@@ -109,11 +110,26 @@ coordinacionesInvolucradas:
   - coordinacionId: string
     nombre: string
 revisionNotificacion: number
+campusId: string
+campusHistorico:
+  campusId: string
+  nombre: string
+  direccion: string | null
+equipoIds: string[]
+equiposSolicitados:
+  - equipoId: string
+    nombre: string
+    cantidad: integer
+    campusBaseId: string
+    campusBaseNombre: string
+    clasificacion: "fijo" | "transferible"
 ```
 
 El cliente envía `coordinacionIds`. El backend elimina duplicados, exige que cada coordinación nueva exista y esté activa, obtiene el nombre canónico y construye ambos campos. Nunca acepta nombres o correos como autoridad.
 
 Los eventos históricos sin estos campos se leen como sin coordinaciones y revisión `0`.
+
+Los eventos históricos conservan el objeto fijo `equipos` y se leen como “sin reservación administrada”. No existe migración implícita hacia `reservasEquipo`.
 
 ## Estados
 
@@ -124,10 +140,10 @@ Los eventos históricos sin estos campos se leen como sin coordinaciones y revis
 
 ## Flujo de creación
 
-1. Validar sesión, perfil canónico, datos, fechas, equipamiento y PDF.
-2. Validar IDs únicos y coordinaciones activas.
+1. Validar sesión, perfil canónico, datos, fechas, campus, equipamiento y PDF; ningún intervalo puede tocar domingo.
+2. Validar IDs únicos, coordinaciones activas, equipos canónicos, cantidades y destinos.
 3. Cargar PDF a `eventos/{year}/{fileName}`.
-4. Crear Firestore con creador canónico, fotografía de coordinaciones, `revisionNotificacion: 1` y timestamps de servidor.
+4. Crear Firestore con creador canónico, fotografías de campus, coordinaciones y equipos, `revisionNotificacion: 1`, reservaciones completas y timestamps de servidor mediante la estrategia atómica aprobada.
 5. Marcar permanentemente `utilizada: true` en las coordinaciones seleccionadas.
 6. Crear o reconciliar Calendar mediante `processEventIntegrations`.
 7. Calcular creador más contactos vigentes, normalizar y deduplicar.
@@ -140,6 +156,7 @@ El evento no se elimina porque SMTP falle.
 
 - Solo el creador puede editar.
 - El backend compara estado previo y objetivo.
+- Cambiar fecha, hora, campus, equipos o cantidades recalcula la reservación completa. Si el nuevo estado no puede confirmarse, conserva el anterior.
 - Cambiar nombre, fecha, hora o coordinaciones aumenta `revisionNotificacion` exactamente una vez.
 - Cambiar únicamente estatus, observaciones, equipamiento o protocolo no aumenta la revisión ni genera correo.
 - Calendar se actualiza cuando cambie información que forme parte de su contenido.
@@ -159,6 +176,8 @@ El evento no se elimina porque SMTP falle.
 4. Eliminar o confirmar ausente el PDF vigente.
 5. En una transacción, crear trabajos idempotentes `cancelacion` y eliminar Firestore.
 6. Informar eliminación completa con notificaciones en proceso o integración parcial.
+
+Las reservaciones locales se cancelan y liberan. Si un equipo ya salió de su campus base, conserva su ventana de regreso y el registro logístico necesario aunque el evento se elimine.
 
 La cancelación se dirige al creador y a la unión sin duplicados de destinatarios previamente notificados y contactos vigentes de las coordinaciones involucradas. Eliminar el evento no habilita eliminar una coordinación utilizada.
 
@@ -224,8 +243,14 @@ permission-denied
 event-not-found
 coordination-not-found
 coordination-inactive
+equipment-not-found
+equipment-inactive
+equipment-unavailable
+equipment-cutoff-missed
+equipment-reservation-review-required
 invalid-argument
 invalid-date-range
+event-on-sunday
 invalid-pdf
 integration-partial
 notification-reconciliation-required
@@ -235,6 +260,8 @@ service-unavailable
 ## Criterios de aceptación
 
 - Un evento válido puede crearse con cero o varias coordinaciones activas.
+- Todos los equipos solicitados quedan reservados o ninguno; nunca se excede cantidad operativa.
+- Eventos que tocan domingo son rechazados.
 - El creador siempre queda registrado y recibe notificación.
 - Las coordinaciones seleccionadas reciben correos individuales y deduplicados.
 - Ningún correo de coordinación procede directamente del cliente ni aparece en el documento público del evento.
@@ -266,9 +293,15 @@ service-unavailable
 - EVT-D14: Los PDFs huérfanos se purgan después de 24 horas y el PDF anterior se elimina solo tras confirmar la referencia nueva.
 - EVT-D15: El listado utiliza paginación por cursor de 25 eventos.
 - EVT-D16: Calendar y SMTP se verifican en staging con recursos sintéticos y destinatarios permitidos.
+- EVT-D17: Equipos se seleccionan desde catálogo dinámico y se reservan en una operación completa, sin asignación parcial.
+- EVT-D18: El objeto fijo histórico `eventos.equipos` permanece para lectura y no se migra implícitamente.
+- EVT-D19: Equipo local usa márgenes de 60 minutos antes y 30 después; el transferido permanece bloqueado hasta regresar.
+- EVT-D20: No se permiten eventos que inicien, terminen o transcurran en domingo.
 
 ## Pendientes antes de implementar
 
 - Implementar y aceptar Coordinaciones.
+- Implementar y aceptar Campus y el catálogo de Equipos.
+- Resolver si se permiten eventos de varios días y aprobar reservaciones e índices Firestore.
 - Provisionar y verificar Calendar, SMTP, lista permitida y cuotas del worker en staging.
 - Autorizar expresamente el código de Eventos.

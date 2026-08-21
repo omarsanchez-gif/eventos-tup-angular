@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada para Campus el 21 de agosto de 2026. La implementación de Equipos, reservaciones, traslados y su integración con Eventos permanece pendiente de autorización separada.
+Aprobada para Campus y ampliada documentalmente para Equipos el 21 de agosto de 2026. La implementación de Equipos, reservaciones, traslados y su integración con Eventos permanece pendiente de autorización separada.
 
 ## Contexto
 
@@ -33,6 +33,34 @@ La institución opera inicialmente en dos campus: Tecnológico Universitario Pla
 - Cancelar después del traslado conserva la ventana de regreso.
 - Una solicitud fuera del horario normal de Sistemas sí reserva inventario; queda con cobertura de Sistemas pendiente, notificando a la coordinación de Sistemas. Solo `admin` confirma esa cobertura.
 
+## Decisión documental para Equipos
+
+1. El catálogo registra cantidades agrupadas por nombre y campus base; no identifica cada unidad física.
+2. La combinación nombre normalizado y campus base es única. La cantidad operativa admite de 0 a 999 y el catálogo un máximo técnico de 500 registros.
+3. Cada registro es `fijo` o `transferible`. Los fijos no tienen destinos; los transferibles declaran campus destino permitidos de forma explícita.
+4. Con TUP y FCS, el otro campus se selecciona expresamente como destino. Agregar un campus no autoriza traslados hacia él y exige una política posterior.
+5. El inventario contiene solo equipo utilizable y no requiere fotografía, número de serie ni control de mantenimiento en el primer incremento.
+6. Un equipo utilizado no se elimina y su campus base queda inmutable. Las fotografías históricas conservan nombre, campus y clasificación.
+7. La disponibilidad se calcula a partir de cantidad operativa y reservas coincidentes; no se almacena un contador mutable.
+8. El catálogo y las reservaciones son incrementos distintos. Implementar el catálogo no autoriza disponibilidad ni integración con Eventos.
+
+## Decisión documental para reservaciones
+
+1. Una solicitud con varios equipos se confirma completa o se rechaza completa mediante una operación atómica.
+2. No existe asignación parcial cuando una cantidad es insuficiente.
+3. Reducir inventario por debajo de compromisos futuros marca las reservas afectadas `requiere_revision`, notifica a Sistemas y no cancela eventos silenciosamente.
+4. Cobertura de Sistemas usa `no_requerida`, `pendiente` y `confirmada`; pendiente no bloquea la reserva y solo `admin` confirma.
+5. La coordinación responsable se selecciona desde Coordinaciones y se guarda por ID canónico; nunca se identifica por nombre ni por correos enviados desde el cliente.
+6. Una coordinación suspendida o sin correos conserva la reserva y genera una reconciliación de notificación.
+7. Una demora de regreso exige nueva fecha y hora estimada. Esta sustituye la liberación previa y una recepción anticipada puede liberar antes.
+8. No se aceptan eventos que inicien, terminen o transcurran en domingo.
+9. El evento del lunes en FCS traslada equipo remoto el viernes a las 17:00, porque el sábado no permite completar recepción después de esa hora.
+10. Cambiar fecha, horario, campus, equipos o cantidades recalcula la solicitud completa; si el nuevo estado no puede confirmarse, se conserva el anterior.
+
+## Pendiente bloqueante de reservaciones
+
+Debe definirse si Eventos permitirá intervalos de varios días. Esta decisión no bloquea el catálogo, pero sí la autorización de reservaciones y Eventos.
+
 ## Fuera del incremento Campus
 
 - Colecciones de Equipos, inventarios o reservaciones.
@@ -41,6 +69,8 @@ La institución opera inicialmente en dos campus: Tecnológico Universitario Pla
 - Correos logísticos.
 - Integración con Eventos o Calendar.
 - Calendario de festivos.
+
+El detalle del catálogo y de las reservaciones objetivo está en `../modulo-equipos/spec.md` y `../modulo-equipos/reservaciones.md`.
 
 ## Consecuencias
 

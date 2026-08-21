@@ -61,19 +61,23 @@ Implementar únicamente cuando el usuario lo solicite explícitamente:
 - `modulo-campus`, autorizado expresamente el 21 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-campus`.
 - Ruta privada `/campus`, guard de rol `admin`, seis callables, catálogo administrativo completo y catálogo sanitizado para consumidores futuros.
 - Campus desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
+- `modulo-equipos`, incremento A autorizado expresamente el 21 de agosto de 2026, limitado al catálogo administrativo de `/specs/modulo-equipos/spec.md`.
+- Ruta privada `/equipos`, guard `admin`, seis callables, catálogo completo administrativo y catálogo activo sanitizado sin disponibilidad.
+- Equipos desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
 
 Documentación autorizada, sin autorización de implementación:
 
 - Ampliación de `modulo-eventos` para coordinaciones involucradas y notificaciones por creación, actualización, retiro y cancelación.
 - Arquitectura de notificaciones idempotentes y separación entre correo y asistentes de Google Calendar conforme a `ADR-006`.
-- Equipos, inventario, reservaciones y logística conforme a `ADR-007`; la decisión no autoriza todavía su implementación.
+- Reservaciones, disponibilidad y logística de Equipos conforme a `ADR-007`; permanecen sin autorización de implementación.
+- `modulo-equipos/reservaciones.md` permanece exclusivamente documental. No están autorizadas reservaciones, disponibilidad por intervalo, logística operativa ni integración con Eventos.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
 - Eventos.
 - Workers, triggers, callables o colecciones de notificaciones de Eventos.
-- Nuevas integraciones distintas del bootstrap de autorización y las callables autorizadas de Usuarios, Coordinaciones y Campus.
+- Nuevas integraciones distintas del bootstrap de autorización y las callables autorizadas de Usuarios, Coordinaciones, Campus y el catálogo de Equipos.
 - Migraciones de datos.
 
 ## Seguridad autorizada

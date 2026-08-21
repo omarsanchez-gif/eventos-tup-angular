@@ -25,6 +25,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /equipos/{equipmentId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     match /eventos/{eventId} {
       allow read: if isAuthorized();
       allow create: if isAuthorized()

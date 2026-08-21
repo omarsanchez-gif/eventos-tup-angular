@@ -95,6 +95,9 @@ Las sombras serán suaves; no sustituirán bordes o contraste.
 - Badges de rol y estado.
 - Lista dinámica de correos con agregar, validar y retirar cada entrada.
 - Selector múltiple buscable de coordinaciones con chips o lista equivalente.
+- Selector de campus base, clasificación fija/transferible y destinos permitidos.
+- Campo numérico entero para cantidad operativa con límites y ayuda asociada.
+- Estado futuro de disponibilidad suficiente, insuficiente o `requiere revisión` sin depender solo del color.
 - Estado de integración parcial para Calendar y notificaciones.
 - KPI cards.
 - Sidebar, topbar y shell.
@@ -273,6 +276,44 @@ Menú abierto:
 - Cada día operativo usa checkbox, hora de inicio y hora de fin con etiquetas propias.
 - Domingo se muestra como inactivo en esta versión.
 - En móvil, cada campus se presenta como tarjeta con las mismas acciones y restricciones.
+
+## Wireframe de Equipos — escritorio
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ INVENTARIO INSTITUCIONAL  Equipos                         [Nuevo equipo] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [ Buscar por equipo, campus o clasificación                              ] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ EQUIPO │ CAMPUS │ CANTIDAD │ TIPO │ DESTINOS │ ESTADO │ ACTUALIZACIÓN │ … │
+│ Bocina │ TUP    │    2     │ Transf. │ FCS    │ Activo │ ...          │ … │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- El formulario agrupa identidad, inventario y traslado.
+- Campus base es un selector de campus activos y cantidad operativa usa entero de 0 a 999.
+- Elegir `fijo` oculta y limpia destinos; elegir `transferible` muestra selección de campus activos excluyendo el origen.
+- El texto explica que destino permitido no equivale a disponibilidad para una fecha.
+- Un equipo utilizado muestra la restricción histórica y deshabilita eliminación con ayuda contextual.
+- En móvil cada equipo se presenta como tarjeta con nombre, campus, cantidad, clasificación, destinos, estado y las mismas acciones.
+
+## Apartado futuro de Equipos en Eventos
+
+```text
+┌ Equipos requeridos ─────────────────────────────────────────────────────┐
+│ Campus: FCS       Fecha y horario: 14/09/2026 · 12:00–14:00            │
+│ [ Buscar equipo                                                        ] │
+│ Bocina · origen TUP · disponible 2       Cantidad [ 1 ]                │
+│ Proyector · origen FCS · disponible 1     Cantidad [ 1 ]                │
+│ [!] Cobertura de Sistemas pendiente fuera del horario regular          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+- La disponibilidad solo se muestra después de conocer campus, fecha y horario completos.
+- El formulario no presenta cantidades provenientes del catálogo sanitizado como si fueran disponibilidad.
+- Una solicitud insuficiente explica la cantidad requerida y la confirmable, sin hacer asignación parcial.
+- `requiere revisión`, cobertura pendiente, traslado y hora de liberación se presentan como estados separados.
+- Este apartado permanece sin autorización de código hasta aprobar reservaciones y Eventos.
 
 ## Apartado de Coordinaciones en Eventos
 

@@ -44,6 +44,16 @@ Debe ser idempotente y no crear documentos de usuario.
 - Los destinatarios proceden del perfil canónico y de `coordinaciones`; nunca del correo libre enviado por el cliente.
 - Cada destinatario tiene un registro idempotente protegido en `notificacionesEventos`.
 
+## Notificaciones logísticas de Equipos — objetivo no autorizado
+
+- La coordinación responsable de Sistemas se selecciona desde el catálogo de Coordinaciones y se persiste únicamente por ID canónico en configuración protegida.
+- El backend resuelve los correos institucionales vigentes al crear cada aviso; el cliente no envía destinatarios.
+- Requieren aviso futuro: cobertura fuera de horario pendiente, reducción de inventario con reservas afectadas, cambio incompatible después de traslado, demora reportada y cancelación posterior a salida.
+- Una coordinación suspendida o sin correos no revierte la reservación; registra notificación pendiente de reconciliación y una advertencia administrativa.
+- Los avisos son individuales, deduplicados e idempotentes y deben adoptar la misma política de reintentos aprobada para SMTP antes de implementarse.
+- Las notificaciones logísticas no convierten contactos en usuarios ni asistentes de Google Calendar.
+- Calendar permanece separado de la disponibilidad y los movimientos de equipo.
+
 ## Bandeja de salida y reintentos
 
 1. La operación autorizada de Eventos calcula una revisión y el conjunto canónico de destinatarios.

@@ -2,11 +2,14 @@
 
 ## Estado
 
-Plan documental. No iniciar hasta aceptar Coordinaciones y resolver decisiones pendientes.
+Plan documental. No iniciar hasta aceptar Coordinaciones, Campus, catálogo de Equipos, reservaciones y decisiones pendientes.
 
 ## Bloqueos previos
 
 - [ ] EVT-T01 Implementar y aceptar `modulo-coordinaciones`.
+- [ ] EVT-T01A Aceptar Campus con TUP/FCS capturados.
+- [ ] EVT-T01B Implementar y aceptar el catálogo de Equipos.
+- [ ] EVT-T01C Resolver eventos de varios días y aprobar reservaciones de Equipos.
 - [x] EVT-T02 Aprobar máximo de 10 correos por coordinación y selección sin límite funcional.
 - [x] EVT-T03 Aprobar tres reintentos y retención de 90 días.
 - [x] EVT-T04 Aprobar limpieza posterior del PDF reemplazado y purga de huérfanos después de 24 horas.
@@ -31,6 +34,9 @@ Plan documental. No iniciar hasta aceptar Coordinaciones y resolver decisiones p
 - [ ] EVT-T17 Implementar retiro de coordinaciones.
 - [ ] EVT-T18 Implementar eliminación idempotente y fotografía de cancelación.
 - [ ] EVT-T19 Implementar compatibilidad con eventos históricos.
+- [ ] EVT-T19A Implementar campus y fotografía histórica.
+- [ ] EVT-T19B Implementar reserva atómica y fotografías de equipos.
+- [ ] EVT-T19C Implementar edición, cancelación y logística de reservas.
 
 ## Calendar futuro
 
@@ -63,6 +69,7 @@ Plan documental. No iniciar hasta aceptar Coordinaciones y resolver decisiones p
 - [ ] EVT-T37 Crear listado, búsqueda y paginación.
 - [ ] EVT-T38 Crear formulario y propiedad de solo lectura.
 - [ ] EVT-T39 Crear selector múltiple sanitizado y opcional.
+- [ ] EVT-T39A Crear selector dinámico de Equipos con disponibilidad por intervalo.
 - [ ] EVT-T40 Crear carga y reemplazo de PDF.
 - [ ] EVT-T41 Crear detalle con fotografías de coordinaciones.
 - [ ] EVT-T42 Crear edición y eliminación por propietario.
@@ -71,7 +78,7 @@ Plan documental. No iniciar hasta aceptar Coordinaciones y resolver decisiones p
 
 ## Pruebas y cierre futuro
 
-- [ ] EVT-T45 Ejecutar EVT-001 a EVT-050.
+- [ ] EVT-T45 Ejecutar EVT-001 a EVT-060.
 - [ ] EVT-T46 Ejecutar unitarias, integración, Rules y concurrencia.
 - [ ] EVT-T47 Ejecutar dobles de Calendar y SMTP.
 - [ ] EVT-T48 Ejecutar lint, formato, builds y presupuesto.

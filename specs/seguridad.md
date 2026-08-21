@@ -75,6 +75,26 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-COO-005: `utilizada`, `nombreNormalizado` y timestamps son campos administrados por servidor.
 - SEC-COO-006: La eliminación revalida `utilizada`; ocultar o deshabilitar el botón no sustituye la validación backend.
 
+## Equipos — objetivo no autorizado
+
+- SEC-EQP-001: Solo `admin` lee documentos completos y ejecuta mutaciones del catálogo.
+- SEC-EQP-002: Usuarios autorizados reciben únicamente catálogo activo sanitizado mediante backend; no leen `equipos` directamente.
+- SEC-EQP-003: Firestore Rules bloquean toda escritura directa a `equipos`; cada callable revalida claims y perfil canónico.
+- SEC-EQP-004: El backend valida campus base, destinos, unicidad, cantidad, clasificación, uso y campos permitidos.
+- SEC-EQP-005: `nombreNormalizado`, `utilizado` y timestamps son administrados exclusivamente por servidor.
+- SEC-EQP-006: Ocultar acciones en Angular no sustituye revalidar uso, campus y compromisos antes de mutar.
+- SEC-EQP-007: El catálogo sanitizado no expone cantidades operativas, uso, timestamps ni disponibilidad aparente.
+
+## Reservaciones de Equipos — objetivo no autorizado
+
+- SEC-RES-001: `reservasEquipo` no admite escritura directa de clientes; las operaciones atómicas usan Admin SDK.
+- SEC-RES-002: El backend obtiene equipo, cantidad operativa, campus, horarios, clasificación y destinos desde fuentes canónicas.
+- SEC-RES-003: Solo el propietario autorizado del evento solicita o modifica sus equipos; solo `admin` confirma cobertura, recepción o demora.
+- SEC-RES-004: El cliente nunca establece disponibilidad, intervalos calculados, fotografías históricas ni estados logísticos.
+- SEC-RES-005: La configuración logística y el ID de Coordinación de Sistemas son protegidos y no aceptan correos enviados por el navegador.
+- SEC-RES-006: Logs y errores no incluyen listas de destinatarios, contenido de correo ni detalles innecesarios del inventario.
+- SEC-RES-007: Una operación concurrente falla de forma cerrada y no deja reservas parciales.
+
 ## Notificaciones de Eventos
 
 - SEC-NOT-001: `notificacionesEventos` no admite lectura o escritura desde clientes, incluidos administradores; solo Admin SDK y herramientas operativas expresamente autorizadas.

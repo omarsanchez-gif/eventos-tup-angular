@@ -155,6 +155,41 @@ describe('Firestore authorization rules', () => {
     await assertFails(adminDocument.delete());
   });
 
+  it('allows only admin to read complete equipment documents', async () => {
+    const anonymousFirestore = environment.unauthenticatedContext().firestore();
+    const userFirestore = environment
+      .authenticatedContext('regular-user', { authorized: true, role: 'usuario' })
+      .firestore();
+    const adminFirestore = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore();
+
+    await assertFails(anonymousFirestore.collection('equipos').get());
+    await assertFails(userFirestore.collection('equipos').get());
+    await assertSucceeds(adminFirestore.collection('equipos').get());
+  });
+
+  it('blocks direct equipment writes for every client role', async () => {
+    const adminDocument = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore()
+      .doc('equipos/speaker');
+    await assertFails(
+      adminDocument.set({
+        nombre: 'Bocina',
+        nombreNormalizado: 'bocina',
+        campusBaseId: 'tup',
+        cantidadOperativa: 2,
+        clasificacion: 'transferible',
+        campusDestinoIdsPermitidos: ['fcs'],
+        activo: true,
+        utilizado: false,
+      }),
+    );
+    await assertFails(adminDocument.update({ cantidadOperativa: 1 }));
+    await assertFails(adminDocument.delete());
+  });
+
   it('allows event updates only to the creator and blocks direct deletion', async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc('eventos/event-1').set({

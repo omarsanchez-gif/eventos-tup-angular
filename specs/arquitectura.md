@@ -38,6 +38,8 @@ src/app/
     authentication/
     users/
     coordinations/
+    campuses/
+    equipment/
     events/
     dashboard/
 ```
@@ -86,9 +88,10 @@ Angular Material/CDK aporta comportamiento y accesibilidad. El tema instituciona
 /usuarios
 /coordinaciones
 /campus
+/equipos
 ```
 
-El alcance actual autoriza código para Login, `/dashboard`, `/usuarios`, `/coordinaciones` y `/campus` dentro del shell administrativo. Las tres rutas administrativas se habilitan únicamente para `admin`. `/eventos`, disponible para todo usuario autorizado, permanece como ruta objetivo documentada y deshabilitada hasta autorización expresa de implementación.
+El alcance actual autoriza código para Login, `/dashboard`, `/usuarios`, `/coordinaciones`, `/campus` y el catálogo `/equipos` dentro del shell administrativo. Las rutas administrativas se habilitan únicamente para `admin`. `/eventos`, disponible para todo usuario autorizado, permanece documentada y deshabilitada; las reservaciones de Equipos tampoco están autorizadas.
 
 ## Composición de rutas privadas
 
@@ -99,6 +102,7 @@ Rutas privadas [authorizedGuard]
       ├── /usuarios [adminGuard] → UsersPage
       └── /coordinaciones [adminGuard] → CoordinationsPage
       └── /campus [adminGuard] → CampusesPage
+      └── /equipos [adminGuard] → EquipmentPage
 ```
 
 `AdminShell` es un componente standalone de presentación y navegación. Consume el estado público de `AuthFacade`, ejecuta logout mediante la facade y aloja el `router-outlet`; no consulta Firebase ni contiene reglas de negocio de módulos.
@@ -144,6 +148,37 @@ eventos
 Coordinaciones implementa el flujo `CoordinationsPage → CoordinationsFacade → CoordinationsGateway → callables`. Sus seis callables revalidan claims y perfil canónico; las mutaciones usan transacciones para nombre único, capacidad, estado y eliminación. Firestore Rules permite lectura completa solo a `admin` y bloquea toda escritura de cliente. La implementación fue validada localmente y sus seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026. La verificación remota confirmó las Functions en `us-central1` y el rechazo `401` de una llamada anónima; Hosting y producción no fueron modificados.
 
 Campus implementa el flujo `CampusesPage → CampusesFacade → CampusesGateway → seis callables`. Firestore conserva documentos completos administrativos; `listSelectableCampuses` entrega a usuarios autorizados solo ID, nombre, clave, dirección y referencia de registros activos. Equipos y Eventos consumirán este contrato en incrementos posteriores.
+
+## Arquitectura objetivo de Equipos
+
+```text
+EquipmentPage [admin]
+    ↓
+EquipmentFacade
+    ↓
+EquipmentGateway
+    ↓
+seis callables administrativas → equipos
+
+EventForm [authorized, futuro]
+    ↓ solicita campus + intervalo + cantidades
+EquipmentReservationService backend
+    ↓ valida catálogos y disponibilidad de forma atómica
+reservasEquipo
+    ├── fotografía histórica
+    ├── cobertura de Sistemas
+    └── traslado y liberación
+```
+
+- El catálogo y las reservaciones son límites arquitectónicos distintos.
+- `listSelectableEquipment` entrega un catálogo sanitizado y nunca se utiliza como prueba de disponibilidad.
+- La disponibilidad, los intervalos, fotografías y estados logísticos se calculan en backend.
+- El cliente envía IDs y cantidades solicitadas; no envía disponibilidad, campus históricos, clasificación, correos o estados.
+- Una reserva de varios equipos se confirma completa o no escribe ningún elemento.
+- `cantidadDisponible` no se persiste. Antes del código de reservaciones se aprobará una estrategia transaccional e índices Firestore que impida sobreasignación concurrente.
+- La configuración logística referencia la coordinación de Sistemas por ID canónico y conserva `America/Cancun` como zona horaria.
+- La primera política admite traslados TUP–FCS de 30 minutos con destinos explícitos; un campus futuro requiere extensión documental.
+- La definición completa está en `modulo-equipos/spec.md`, `modulo-equipos/reservaciones.md` y ADR-007.
 
 ## Configuración
 

@@ -89,6 +89,38 @@
 - RN-064: El listado de Eventos usa páginas de 25 registros y cursores de Firestore; no descarga la colección completa para simular páginas.
 - RN-065: El catálogo administrativo admite como máximo 500 coordinaciones en esta versión. Las listas nunca devuelven resultados parciales; al excederlo se exige una nueva estrategia de consulta aprobada.
 
+## Equipos
+
+- RN-EQP-001: Solo `admin` administra el catálogo completo de Equipos.
+- RN-EQP-002: El inventario se registra como cantidad agrupada por nombre y campus base, sin unidades serializadas.
+- RN-EQP-003: Nombre normalizado y campus base forman una combinación única.
+- RN-EQP-004: La cantidad operativa es entera de 0 a 999; un equipo activo requiere al menos una unidad.
+- RN-EQP-005: Un equipo fijo no tiene destinos. Un transferible exige al menos un campus destino activo, único y diferente del campus base.
+- RN-EQP-006: Agregar un campus no autoriza automáticamente el traslado de equipos existentes hacia él.
+- RN-EQP-007: Un equipo utilizado no se elimina y su campus base queda inmutable; solo puede suspenderse o modificarse dentro de las restricciones vigentes.
+- RN-EQP-008: Suspender impide nuevas selecciones sin eliminar reservaciones ni fotografías históricas.
+- RN-EQP-009: `cantidadDisponible` se calcula; no se almacena como estado canónico mutable.
+- RN-EQP-010: El catálogo administrativo admite un máximo técnico de 500 registros y nunca devuelve resultados parciales.
+- RN-EQP-011: El catálogo sanitizado no expone cantidades administrativas, uso ni timestamps y no constituye confirmación de disponibilidad.
+
+## Reservaciones y logística de Equipos — objetivo no autorizado
+
+- RN-RES-001: Una solicitud confirma todos los equipos y cantidades o ninguno; no existen asignaciones parciales.
+- RN-RES-002: La disponibilidad resta las cantidades de reservas coincidentes en estado `confirmada` o `requiere_revision`.
+- RN-RES-003: Equipo local se bloquea 60 minutos antes y se libera 30 minutos después del evento.
+- RN-RES-004: Equipo transferido se bloquea desde la salida del campus base hasta su liberación de regreso.
+- RN-RES-005: La salida regular ocurre a las 17:00 del día operativo anterior que permita completar recepción; después del corte no se confirma equipo remoto.
+- RN-RES-006: TUP–FCS usa 30 minutos. Un tercer campus requiere política aprobada antes de aceptar destinos.
+- RN-RES-007: El regreso comienza al cierre operativo del destino o en la siguiente ventana válida y se libera 60 minutos después, salvo recepción anticipada o demora administrativa.
+- RN-RES-008: Una demora exige nueva fecha y hora estimada y sustituye la liberación automática previa.
+- RN-RES-009: El equipo que espera regreso no puede reutilizarse en el campus destino.
+- RN-RES-010: Cancelar después de la salida conserva la ventana de regreso.
+- RN-RES-011: Cobertura de Sistemas usa `no_requerida`, `pendiente` o `confirmada`; quedar pendiente no bloquea inventario y solo `admin` confirma.
+- RN-RES-012: La coordinación de Sistemas se referencia por ID canónico desde Coordinaciones; no se localiza por texto ni recibe correos desde el cliente.
+- RN-RES-013: Reducir inventario por debajo de compromisos marca reservas afectadas `requiere_revision`, notifica a Sistemas y no cancela ni reasigna silenciosamente.
+- RN-RES-014: Cambiar fecha, horario, campus, equipos o cantidades recalcula la solicitud completa; si el nuevo estado falla, se conserva el anterior.
+- RN-RES-015: No se aceptan eventos que inicien, terminen o transcurran en domingo.
+
 ## Consultas
 
 - RN-028: Usuarios se buscan por nombre o correo.

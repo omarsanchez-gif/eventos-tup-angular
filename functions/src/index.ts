@@ -41,6 +41,17 @@ import {
   type CoordinationRequestIdentity,
 } from './admin-coordinations.js';
 import {
+  AdminEquipmentError,
+  createEquipmentRecord,
+  deleteEquipmentRecord,
+  listEquipmentRecords,
+  listSelectableEquipmentRecords,
+  setEquipmentRecordStatus,
+  updateEquipmentRecord,
+  type AdminEquipmentDependencies,
+  type EquipmentRequestIdentity,
+} from './admin-equipment.js';
+import {
   AdminUsersError,
   createAuthorizedUser as createUser,
   deleteAuthorizedUser as deleteUser,
@@ -52,6 +63,7 @@ import {
 } from './admin-users.js';
 import { createFirestoreAdminCampusesRepository } from './firestore-admin-campuses.repository.js';
 import { createFirestoreAdminCoordinationsRepository } from './firestore-admin-coordinations.repository.js';
+import { createFirestoreAdminEquipmentRepository } from './firestore-admin-equipment.repository.js';
 import { createFirestoreAdminUsersRepository } from './firestore-admin-users.repository.js';
 
 if (getApps().length === 0) {
@@ -63,6 +75,7 @@ const firestore = getFirestore();
 const adminAuth = getAuth();
 const adminCampusesRepository = createFirestoreAdminCampusesRepository(firestore);
 const adminCoordinationsRepository = createFirestoreAdminCoordinationsRepository(firestore);
+const adminEquipmentRepository = createFirestoreAdminEquipmentRepository(firestore);
 const adminUsersRepository = createFirestoreAdminUsersRepository(firestore);
 
 function dataToUserRecord(
@@ -250,6 +263,25 @@ function adminCampusesDependencies(): AdminCampusesDependencies {
   };
 }
 
+function toEquipmentIdentity(
+  auth: Readonly<{ uid: string; token: Readonly<Record<string, unknown>> }> | undefined,
+): EquipmentRequestIdentity | null {
+  return auth
+    ? {
+        uid: auth.uid,
+        authorized: auth.token['authorized'] === true,
+        role: auth.token['role'],
+      }
+    : null;
+}
+
+function adminEquipmentDependencies(): AdminEquipmentDependencies {
+  return {
+    repository: adminEquipmentRepository,
+    logger,
+  };
+}
+
 async function executeAdminOperation<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
@@ -299,6 +331,25 @@ async function executeCampusOperation<T>(operation: () => Promise<T>): Promise<T
     }
 
     logger.error('Error no controlado en una operación de Campus.', {
+      cause: error instanceof Error ? error.name : 'unknown',
+    });
+    throw new HttpsError('unavailable', 'El servicio no está disponible.', {
+      functionalCode: 'service-unavailable',
+    });
+  }
+}
+
+async function executeEquipmentOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof AdminEquipmentError) {
+      throw new HttpsError(error.functionsCode, error.message, {
+        functionalCode: error.functionalCode,
+      });
+    }
+
+    logger.error('Error no controlado en una operación de Equipos.', {
       cause: error instanceof Error ? error.name : 'unknown',
     });
     throw new HttpsError('unavailable', 'El servicio no está disponible.', {
@@ -432,5 +483,57 @@ export const setCampusStatus = onCall(adminCallableOptions, async (request) =>
 export const deleteCampus = onCall(adminCallableOptions, async (request) =>
   executeCampusOperation(() =>
     deleteCampusRecord(toCampusIdentity(request.auth), request.data, adminCampusesDependencies()),
+  ),
+);
+
+export const listEquipment = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    listEquipmentRecords(toEquipmentIdentity(request.auth), adminEquipmentDependencies()),
+  ),
+);
+
+export const listSelectableEquipment = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    listSelectableEquipmentRecords(toEquipmentIdentity(request.auth), adminEquipmentDependencies()),
+  ),
+);
+
+export const createEquipment = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    createEquipmentRecord(
+      toEquipmentIdentity(request.auth),
+      request.data,
+      adminEquipmentDependencies(),
+    ),
+  ),
+);
+
+export const updateEquipment = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    updateEquipmentRecord(
+      toEquipmentIdentity(request.auth),
+      request.data,
+      adminEquipmentDependencies(),
+    ),
+  ),
+);
+
+export const setEquipmentStatus = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    setEquipmentRecordStatus(
+      toEquipmentIdentity(request.auth),
+      request.data,
+      adminEquipmentDependencies(),
+    ),
+  ),
+);
+
+export const deleteEquipment = onCall(adminCallableOptions, async (request) =>
+  executeEquipmentOperation(() =>
+    deleteEquipmentRecord(
+      toEquipmentIdentity(request.auth),
+      request.data,
+      adminEquipmentDependencies(),
+    ),
   ),
 );

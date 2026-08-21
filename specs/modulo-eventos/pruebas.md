@@ -220,6 +220,48 @@ Cada consulta devuelve como máximo 25 eventos en orden determinista; avanzar y 
 
 Calendar usa el calendario sintético y SMTP solo entrega a la lista permitida; ningún contacto real ni recurso de producción recibe efectos durante la aceptación.
 
+## Campus, Equipos y reservaciones
+
+### EVT-051 — Campus canónico
+
+Solo permite campus activo y guarda ID, nombre y dirección históricos desde backend.
+
+### EVT-052 — Catálogo dinámico
+
+Después de capturar campus, fecha y horario muestra equipos aplicables sin usar el objeto fijo histórico como catálogo.
+
+### EVT-053 — Disponibilidad por intervalo
+
+Muestra cantidades calculadas para la ventana completa; el catálogo sanitizado por sí solo no se presenta como disponibilidad.
+
+### EVT-054 — Reserva completa
+
+Varios equipos y cantidades se confirman todos o ninguno; un fallo no deja documentos parciales.
+
+### EVT-055 — Concurrencia
+
+Dos eventos simultáneos no pueden superar la cantidad operativa aunque se confirmen concurrentemente.
+
+### EVT-056 — Corte de traslado
+
+Después del corte correspondiente, equipo remoto queda no disponible y equipo local válido continúa seleccionable.
+
+### EVT-057 — Edición con nueva disponibilidad
+
+Cambiar fecha, horario, campus, equipos o cantidades conserva la reserva anterior cuando el estado nuevo no puede confirmarse.
+
+### EVT-058 — Domingo
+
+Rechaza un evento que inicie, termine o transcurra en domingo desde frontend y backend.
+
+### EVT-059 — Eliminación con equipo local
+
+Cancela reservas locales y libera capacidad sin restaurar marcas históricas de uso.
+
+### EVT-060 — Eliminación después del traslado
+
+El evento puede eliminarse, pero el registro logístico conserva la ventana de regreso hasta liberar el equipo en su campus base.
+
 ## Evidencia requerida
 
 - Unitarias Angular y Functions.
@@ -227,5 +269,6 @@ Calendar usa el calendario sintético y SMTP solo entrega a la lista permitida; 
 - Pruebas Rules para propiedad, catálogos y bandeja protegida.
 - Dobles de Calendar y SMTP con fallos parciales y reintentos.
 - Concurrencia de revisiones, idempotencia y uso de coordinación.
+- Concurrencia de inventario, reserva atómica, traslado y compatibilidad del objeto histórico `equipos`.
 - Recorrido manual accesible y responsive.
 - Staging con calendario y SMTP sintéticos; nunca producción.

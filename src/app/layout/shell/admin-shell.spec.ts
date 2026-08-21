@@ -58,6 +58,7 @@ describe('AdminShell', () => {
       'Coordinaciones',
     );
     expect(element.querySelector('a[href="/campus"]')?.textContent).toContain('Campus');
+    expect(element.querySelector('a[href="/equipos"]')?.textContent).toContain('Equipos');
     expect(element.querySelector('a[href="/usuarios"]')?.textContent).toContain('Usuarios');
     expect(element.querySelector('.skip-link')?.textContent).toContain('Saltar al contenido');
   });
@@ -82,6 +83,7 @@ describe('AdminShell', () => {
     expect(content).not.toContain('Usuarios');
     expect(content).not.toContain('Coordinaciones');
     expect(content).not.toContain('Campus');
+    expect(content).not.toContain('Equipos');
     expect(content).toContain('Usuario');
   });
 

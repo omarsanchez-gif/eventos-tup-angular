@@ -2,7 +2,7 @@
 
 ## Estado
 
-Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. Equipos, reservaciones, logística y la ampliación de Eventos permanecen documentados sin autorización de código.
+Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. El incremento A del catálogo de Equipos fue implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026; su prueba manual y aceptación continúan pendientes. Reservaciones, logística y la ampliación de Eventos permanecen solo documentadas y sin código.
 
 ## Propósito
 
@@ -38,8 +38,9 @@ Los roles proceden de Firestore. No se agregarán roles durante la migración.
 3. Usuarios.
 4. Coordinaciones.
 5. Campus.
-6. Eventos.
-7. Dashboard.
+6. Equipos.
+7. Eventos.
+8. Dashboard.
 
 No se crearán módulos adicionales sin una especificación aprobada.
 
@@ -58,6 +59,11 @@ No se crearán módulos adicionales sin una especificación aprobada.
 
 - El catálogo de Coordinaciones se administra antes de implementar Eventos.
 - El catálogo de Campus se administra antes de Equipos y Eventos; TUP y FCS son registros capturables, no constantes del frontend.
+- El catálogo de Equipos se administra por nombre, campus, cantidad operativa y clasificación antes de integrar reservaciones con Eventos.
+- La disponibilidad se calcula por intervalo y nunca se guarda como contador mutable.
+- Las reservaciones confirman todos los equipos solicitados o ninguno y permanecen como incremento separado sin autorización de código.
+- Equipos locales usan márgenes de montaje de 60 minutos y desmontaje de 30; los transferidos permanecen bloqueados hasta regresar al campus base.
+- No existen eventos en domingo. La posibilidad de eventos de varios días continúa pendiente y bloquea reservaciones, no el catálogo.
 - Una coordinación contiene un nombre, varios correos institucionales y un estado activo o suspendido.
 - Seleccionar coordinaciones en un evento es opcional.
 - El creador siempre recibe correo; las coordinaciones seleccionadas se agregan como destinatarias sin reemplazarlo.
@@ -92,7 +98,7 @@ No se crearán módulos adicionales sin una especificación aprobada.
 - Múltiples protocolos por evento.
 - Flujos de aprobación.
 - Reportes avanzados.
-- Renombrado o eliminación de campos históricos y backfills productivos implícitos. La colección `coordinaciones` está autorizada en código y emuladores; los campos de Eventos y `notificacionesEventos` solo podrán implementarse conforme a ADR-006 y una autorización posterior.
+- Renombrado o eliminación de campos históricos y backfills productivos implícitos. Las colecciones y campos objetivo de Equipos, reservaciones, Eventos y notificaciones solo podrán implementarse conforme a ADR-006, ADR-007 y autorizaciones posteriores.
 - SSR.
 - Sustitución de Firebase.
 
