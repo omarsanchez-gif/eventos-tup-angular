@@ -2,7 +2,7 @@
 
 ## Estado
 
-Base documental de la migración Angular. Autenticación, Layout, Usuarios y Coordinaciones cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. La ampliación de Eventos permanece definida únicamente de forma documental.
+Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. Equipos, reservaciones, logística y la ampliación de Eventos permanecen documentados sin autorización de código.
 
 ## Propósito
 
@@ -37,8 +37,9 @@ Los roles proceden de Firestore. No se agregarán roles durante la migración.
 2. Layout administrativo.
 3. Usuarios.
 4. Coordinaciones.
-5. Eventos.
-6. Dashboard.
+5. Campus.
+6. Eventos.
+7. Dashboard.
 
 No se crearán módulos adicionales sin una especificación aprobada.
 
@@ -56,6 +57,7 @@ No se crearán módulos adicionales sin una especificación aprobada.
 ## Cambio funcional aprobado para Eventos
 
 - El catálogo de Coordinaciones se administra antes de implementar Eventos.
+- El catálogo de Campus se administra antes de Equipos y Eventos; TUP y FCS son registros capturables, no constantes del frontend.
 - Una coordinación contiene un nombre, varios correos institucionales y un estado activo o suspendido.
 - Seleccionar coordinaciones en un evento es opcional.
 - El creador siempre recibe correo; las coordinaciones seleccionadas se agregan como destinatarias sin reemplazarlo.

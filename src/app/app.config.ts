@@ -9,6 +9,8 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { AuthFacade } from './core/auth/auth.facade';
 import { provideFirebase } from './core/firebase/firebase.providers';
+import { CAMPUSES_GATEWAY } from './features/campuses/data/campuses.gateway';
+import { FirebaseCampusesGateway } from './features/campuses/data/firebase-campuses.gateway';
 import { COORDINATIONS_GATEWAY } from './features/coordinations/data/coordinations.gateway';
 import { FirebaseCoordinationsGateway } from './features/coordinations/data/firebase-coordinations.gateway';
 import { FirebaseUsersGateway } from './features/users/data/firebase-users.gateway';
@@ -19,6 +21,8 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideFirebase(),
+    FirebaseCampusesGateway,
+    { provide: CAMPUSES_GATEWAY, useExisting: FirebaseCampusesGateway },
     FirebaseCoordinationsGateway,
     {
       provide: COORDINATIONS_GATEWAY,

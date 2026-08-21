@@ -58,18 +58,22 @@ Implementar únicamente cuando el usuario lo solicite explícitamente:
 - `modulo-coordinaciones`, autorizado expresamente el 19 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-coordinaciones`.
 - Ruta privada `/coordinaciones`, guard de rol `admin`, seis callables, catálogo completo administrativo y catálogo sanitizado para Eventos.
 - Las seis callables de Coordinaciones y Firestore Rules fueron desplegadas únicamente a `eventos-tup-angular-stg` el 19 de agosto de 2026. Hosting, Eventos y producción no formaron parte de ese despliegue.
+- `modulo-campus`, autorizado expresamente el 21 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-campus`.
+- Ruta privada `/campus`, guard de rol `admin`, seis callables, catálogo administrativo completo y catálogo sanitizado para consumidores futuros.
+- Campus desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
 
 Documentación autorizada, sin autorización de implementación:
 
 - Ampliación de `modulo-eventos` para coordinaciones involucradas y notificaciones por creación, actualización, retiro y cancelación.
 - Arquitectura de notificaciones idempotentes y separación entre correo y asistentes de Google Calendar conforme a `ADR-006`.
+- Equipos, inventario, reservaciones y logística conforme a `ADR-007`; la decisión no autoriza todavía su implementación.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
 - Eventos.
 - Workers, triggers, callables o colecciones de notificaciones de Eventos.
-- Nuevas integraciones distintas del bootstrap de autorización, las cinco callables de Usuarios y las seis callables de Coordinaciones autorizadas.
+- Nuevas integraciones distintas del bootstrap de autorización y las callables autorizadas de Usuarios, Coordinaciones y Campus.
 - Migraciones de datos.
 
 ## Seguridad autorizada

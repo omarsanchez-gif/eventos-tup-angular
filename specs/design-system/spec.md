@@ -256,6 +256,24 @@ Menú abierto:
 - Agregar o retirar un correo mantiene orden de foco predecible y anuncia el cambio.
 - La suspensión y la eliminación utilizada explican consecuencias diferentes.
 
+## Wireframe de Campus — escritorio
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│ CATÁLOGO INSTITUCIONAL  Campus                  [Nuevo campus] │
+├────────────────────────────────────────────────────────────────┤
+│ [ Buscar por nombre, clave o dirección                       ] │
+├────────────────────────────────────────────────────────────────┤
+│ CAMPUS │ DIRECCIÓN │ HORARIOS │ ESTADO │ ACTUALIZACIÓN │ ... │
+│ TUP    │ Pendiente │ L–V...   │ Activo │ ...           │ ... │
+└────────────────────────────────────────────────────────────────┘
+```
+
+- El formulario agrupa identidad, ubicación opcional y horarios de Sistemas.
+- Cada día operativo usa checkbox, hora de inicio y hora de fin con etiquetas propias.
+- Domingo se muestra como inactivo en esta versión.
+- En móvil, cada campus se presenta como tarjeta con las mismas acciones y restricciones.
+
 ## Apartado de Coordinaciones en Eventos
 
 ```text

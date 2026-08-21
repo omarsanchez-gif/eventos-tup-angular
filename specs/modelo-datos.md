@@ -2,7 +2,32 @@
 
 ## Principio
 
-La migración Angular conserva los campos históricos sin renombrarlos, eliminarlos o convertirlos. El 19 de agosto de 2026 se autorizó e implementó localmente la colección aditiva `coordinaciones`; su creación en staging o producción exige despliegue separado. Los campos aditivos de Eventos y `notificacionesEventos` continúan sin autorización de código.
+La migración Angular conserva los campos históricos sin renombrarlos, eliminarlos o convertirlos. El 19 de agosto de 2026 se autorizó la colección aditiva `coordinaciones`. El 21 de agosto de 2026 se autorizó la colección aditiva `campus`. Los campos aditivos de Eventos, Equipos, reservaciones y `notificacionesEventos` continúan sin autorización de código.
+
+## Colección `campus`
+
+```text
+nombre: string
+nombreNormalizado: string
+clave: string
+direccion: string | null
+referencia: string | null
+activo: boolean
+utilizado: boolean
+horariosSistemas:
+  lunes..sabado:
+    operativo: boolean
+    inicio: string | null
+    fin: string | null
+  domingo:
+    operativo: false
+    inicio: null
+    fin: null
+fechaCreacion: Timestamp
+fechaActualizacion: Timestamp
+```
+
+Nombre y clave son únicos. Dirección y referencia son opcionales. Los horarios usan `HH:mm`, domingo permanece inactivo y `utilizado` cambia permanentemente a `true` cuando un consumidor futuro crea la primera referencia. El ID Firestore es independiente de la clave.
 
 ## Colección `usuarios`
 

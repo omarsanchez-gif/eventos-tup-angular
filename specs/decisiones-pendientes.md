@@ -21,6 +21,7 @@
 | Retención de envíos      | Purga 90 días después del estado terminal                        | `modelo-datos.md`, `integraciones.md`                         |
 | Limpieza de PDFs         | Reemplazo seguro y purga de huérfanos después de 24 h            | `integraciones.md`                                            |
 | Paginación de Eventos    | 25 registros por cursor de Firestore                             | `modulo-eventos/spec.md`, EVT-D15                             |
+| Campus y logística       | Catálogo dinámico, horarios por sede y política futura           | `decisiones/ADR-007-campus-equipos-logistica.md`              |
 
 ## Pendientes antes de integración real
 
@@ -44,9 +45,18 @@
 - Ejecutar revisión manual accesible y responsive con sesión `admin`.
 - Ejecutar el recorrido funcional y visual autenticado en staging con datos sintéticos.
 
+## Pendientes para aceptar Campus
+
+- Capturar manualmente TUP y FCS con sus horarios aprobados; no existe semilla automática.
+- Agregar las direcciones oficiales cuando estén disponibles y validar búsqueda por ubicación.
+- Ejecutar el recorrido funcional con datos sintéticos como `admin`: alta, edición, suspensión, activación y eliminación condicionada.
+- Revisar accesibilidad y responsive en 320 px, tableta y escritorio.
+- Completar la aceptación funcional y visual en el Hosting de staging antes de considerar producción.
+
 ## Pendientes antes de Eventos
 
 - Implementar y aceptar Coordinaciones primero.
+- Implementar y aceptar Campus antes de Equipos y Eventos.
 - Verificar comportamiento con eventos históricos incompletos.
 - Provisionar y verificar Calendar, buzón SMTP, lista permitida y cuotas del worker exclusivos de staging.
 
@@ -68,3 +78,5 @@
 La base Angular, el shell y el módulo de Usuarios están operativos localmente contra staging. Java 21, pruebas unitarias, Auth/Firestore Emulator y Security Rules están aprobados. Las cinco callables y Firestore Rules están desplegadas únicamente a `eventos-tup-angular-stg`; `npm run start:staging` sirve la aplicación en `http://localhost:4200`. Permanecen pendientes la aceptación visual/manual y un segundo administrador antes de probar reducción de privilegios. Producción no fue utilizada ni modificada.
 
 Coordinaciones está implementado con capacidad técnica de 500 registros: 41 pruebas Angular, 32 de Functions, 8 transaccionales propias y 10 de Rules están en verde; lint y build de staging también pasan. Sus seis callables y Firestore Rules fueron desplegadas únicamente a `eventos-tup-angular-stg` el 19 de agosto de 2026. La lista remota confirmó las seis Functions y una prueba de humo anónima recibió `401`, según lo esperado. Permanecen pendientes el recorrido autenticado con datos sintéticos y la aceptación funcional y visual. La ampliación de Eventos continúa solo como documentación: no existen workers, callables, colecciones de notificaciones ni despliegues autorizados para Eventos.
+
+Campus fue implementado, validado y desplegado a staging el 21 de agosto de 2026 como prerrequisito de Equipos. La suite completa quedó en verde: 46 pruebas Angular, 41 de Functions, 6 transaccionales propias y 12 de Rules, además de lint, formato y build de staging. Las seis Functions, Firestore Rules y Hosting se publicaron únicamente en `eventos-tup-angular-stg`; la verificación remota obtuvo Hosting `200` y rechazo anónimo `401`. Su incremento no incluye inventario, reservaciones, rutas editables ni Eventos. Permanecen pendientes la captura manual de TUP/FCS, sus direcciones oficiales, el recorrido autenticado y la aceptación visual. Producción no fue utilizada ni modificada.

@@ -27,6 +27,15 @@ export const routes: Routes = [
         title: 'Bienvenida | Sistema de Eventos TUP',
       },
       {
+        path: 'campus',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/campuses/campuses-page/campuses-page').then(
+            (component) => component.CampusesPage,
+          ),
+        title: 'Campus | Sistema de Eventos TUP',
+      },
+      {
         path: 'coordinaciones',
         canActivate: [adminGuard],
         loadComponent: () =>

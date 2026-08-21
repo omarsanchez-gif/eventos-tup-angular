@@ -16,6 +16,7 @@
 | Sidebar y topbar               | `modulo-layout/spec.md`         | LAYOUT-001 a LAYOUT-013                           | Implementado; 6 pruebas unitarias aprobadas; aceptación visual pendiente                               |
 | Gestión de usuarios            | `modulo-usuarios/spec.md`       | USR-001 a USR-069                                 | Implementado y desplegado en staging; emuladores y Rules aprobados; aceptación visual/manual pendiente |
 | Gestión de coordinaciones      | `modulo-coordinaciones/spec.md` | COO-001 a COO-034                                 | Implementado y desplegado en staging; automatización aprobada y revisión manual pendiente              |
+| Gestión de campus              | `modulo-campus/spec.md`         | CAM-001 a CAM-031                                 | Implementado, validado y desplegado en staging; prueba manual y aceptación pendientes                  |
 | Gestión de eventos             | `modulo-eventos/spec.md`        | EVT-001 a EVT-050                                 | Redefinido documentalmente; depende de Coordinaciones y no autoriza código                             |
 | PDF en Storage                 | `modulo-eventos/spec.md`        | EVT-008, EVT-028 y EVT-031                        | Documentado; implementación pendiente                                                                  |
 | Calendar y correo              | `integraciones.md`              | EVT-011 a EVT-020 y EVT-028 a EVT-032             | Arquitectura idempotente documentada; implementación pendiente                                         |
@@ -37,6 +38,7 @@
 | Correo histórico solo al creador                   | Creador + coordinaciones seleccionadas   | ADR-006       |
 | Calendar y SMTP acoplados sin reintento granular   | Integraciones independientes + outbox    | ADR-006       |
 | Correos de coordinación visibles en Eventos        | Catálogo sanitizado y backend canónico   | ADR-006       |
+| Campus fijos y horarios codificados                | Catálogo Campus y horarios administrados | ADR-007       |
 
 ## Regla
 
@@ -78,3 +80,16 @@ Ninguna fila puede pasar a “Implementado” sin evidencia de su prueba corresp
 - Build vigente de staging aprobado: bundle inicial de 466.21 kB, `users-page` diferido de 37.62 kB y `coordinations-page` diferido de 34.75 kB.
 - Este incremento visual no modificó contratos, modelo de datos, Functions, Rules ni recursos desplegados de Firebase.
 - Revisión visual manual autenticada continúa pendiente; Hosting y producción no fueron modificados.
+
+## Evidencia de Campus — 21 de agosto de 2026
+
+- 5 pruebas Angular específicas de pantalla y facade; la suite frontend completa suma 46 pruebas aprobadas.
+- 9 pruebas unitarias de Functions específicas; la suite backend completa suma 41 pruebas aprobadas.
+- 6 pruebas transaccionales con Firestore Emulator, incluida unicidad concurrente de nombre y clave, estado idempotente y protección de históricos.
+- 12 pruebas de Firestore y Storage Rules aprobadas; lectura completa exclusiva de `admin` y escrituras directas bloqueadas.
+- Suite completa `npm run test:all`, lint Angular/Functions, formato Prettier y build de staging aprobados.
+- Bundle inicial de staging de 467.09 kB y `campuses-page` diferido de 33.06 kB.
+- Las seis Functions de Campus, Firestore Rules y Hosting fueron desplegados únicamente a staging el 21 de agosto de 2026.
+- La verificación remota confirmó las seis Functions, Hosting `200` y rechazo `401` de `listCampuses` sin autenticación.
+- Producción no fue utilizada ni modificada.
+- Persisten la captura manual de TUP/FCS, la revisión visual con sesión `admin` y la aceptación funcional.

@@ -120,6 +120,41 @@ describe('Firestore authorization rules', () => {
     await assertFails(adminDocument.delete());
   });
 
+  it('allows only admin to read complete campus documents', async () => {
+    const anonymousFirestore = environment.unauthenticatedContext().firestore();
+    const userFirestore = environment
+      .authenticatedContext('regular-user', {
+        authorized: true,
+        role: 'usuario',
+      })
+      .firestore();
+    const adminFirestore = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore();
+
+    await assertFails(anonymousFirestore.collection('campus').get());
+    await assertFails(userFirestore.collection('campus').get());
+    await assertSucceeds(adminFirestore.collection('campus').get());
+  });
+
+  it('blocks direct campus writes for every client role', async () => {
+    const adminDocument = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore()
+      .doc('campus/tup');
+    await assertFails(
+      adminDocument.set({
+        nombre: 'Tecnológico Universitario Playacar',
+        nombreNormalizado: 'tecnológico universitario playacar',
+        clave: 'TUP',
+        activo: true,
+        utilizado: false,
+      }),
+    );
+    await assertFails(adminDocument.update({ activo: false }));
+    await assertFails(adminDocument.delete());
+  });
+
   it('allows event updates only to the creator and blocks direct deletion', async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc('eventos/event-1').set({

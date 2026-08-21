@@ -57,6 +57,7 @@ describe('AdminShell', () => {
     expect(element.querySelector('a[href="/coordinaciones"]')?.textContent).toContain(
       'Coordinaciones',
     );
+    expect(element.querySelector('a[href="/campus"]')?.textContent).toContain('Campus');
     expect(element.querySelector('a[href="/usuarios"]')?.textContent).toContain('Usuarios');
     expect(element.querySelector('.skip-link')?.textContent).toContain('Saltar al contenido');
   });
@@ -72,7 +73,7 @@ describe('AdminShell', () => {
     expect(disabledItems[0]?.textContent).toContain('Eventos');
   });
 
-  it('hides Usuarios and Coordinaciones for the usuario role', () => {
+  it('hides administrative catalogs for the usuario role', () => {
     user.update((current) => (current ? { ...current, rol: 'usuario' } : current));
     fixture.detectChanges();
 
@@ -80,6 +81,7 @@ describe('AdminShell', () => {
     expect(content).toContain('Eventos');
     expect(content).not.toContain('Usuarios');
     expect(content).not.toContain('Coordinaciones');
+    expect(content).not.toContain('Campus');
     expect(content).toContain('Usuario');
   });
 

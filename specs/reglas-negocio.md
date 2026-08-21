@@ -54,6 +54,19 @@
 - RN-045: Una coordinación marcada como utilizada por al menos un evento no puede eliminarse; únicamente puede suspenderse.
 - RN-046: Los contactos de Coordinaciones reciben notificaciones, pero no adquieren acceso al sistema ni se convierten en asistentes de Google Calendar.
 
+## Campus
+
+- RN-CAM-001: Solo `admin` administra el catálogo completo de campus.
+- RN-CAM-002: Nombre y clave son obligatorios y únicos; la clave se normaliza a mayúsculas.
+- RN-CAM-003: Dirección y referencia son opcionales y pueden completarse después.
+- RN-CAM-004: Domingo es inactivo. Un día operativo exige inicio y fin válidos con fin posterior.
+- RN-CAM-005: Un campus activo requiere al menos un día operativo entre lunes y sábado.
+- RN-CAM-006: Un campus utilizado no puede eliminarse; solo suspenderse.
+- RN-CAM-007: Suspender no modifica referencias históricas ni consumidores existentes.
+- RN-CAM-008: Los usuarios autorizados reciben únicamente el catálogo activo sanitizado.
+- RN-CAM-009: La clave de un campus utilizado queda inmutable.
+- RN-CAM-010: El catálogo admite como máximo técnico 100 campus en esta versión y nunca devuelve resultados parciales.
+
 ## Coordinaciones involucradas y notificaciones
 
 - RN-047: Seleccionar coordinaciones en un evento es opcional; sin coordinaciones, el creador continúa siendo destinatario obligatorio.

@@ -64,6 +64,13 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-COO-001: Solo `admin` puede leer documentos completos de `coordinaciones` y ejecutar mutaciones.
 - SEC-COO-002: Usuarios autorizados no administrativos obtienen únicamente ID y nombre de coordinaciones activas mediante un contrato backend sanitizado.
 - SEC-COO-003: Firestore Rules bloquean toda escritura directa a `coordinaciones`; las mutaciones se realizan con Admin SDK después de revalidar claims y perfil canónico del admin.
+
+## Campus
+
+- SEC-CAM-001: Solo `admin` puede leer documentos completos de `campus` y ejecutar mutaciones.
+- SEC-CAM-002: Usuarios autorizados no administrativos obtienen solo el catálogo activo sanitizado mediante callable.
+- SEC-CAM-003: Firestore Rules bloquean toda escritura directa; Functions revalidan claims y perfil canónico antes de usar Admin SDK.
+- SEC-CAM-004: Horarios, uso y timestamps no se exponen en el catálogo seleccionable.
 - SEC-COO-004: El backend valida dominio institucional, normalización, duplicados, estado y campos permitidos.
 - SEC-COO-005: `utilizada`, `nombreNormalizado` y timestamps son campos administrados por servidor.
 - SEC-COO-006: La eliminación revalida `utilizada`; ocultar o deshabilitar el botón no sustituye la validación backend.

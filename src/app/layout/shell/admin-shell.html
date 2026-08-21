@@ -52,6 +52,21 @@
 
       @if (isAdmin()) {
         <a
+          #campusesLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/campus"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="campusesLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6M8 10h2M14 10h2" />
+          </svg>
+          <span>Campus</span>
+        </a>
+
+        <a
           #coordinationsLink="routerLinkActive"
           class="nav-item"
           routerLink="/coordinaciones"

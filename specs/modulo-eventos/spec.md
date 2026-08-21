@@ -22,6 +22,7 @@ Gestionar eventos institucionales autorizados, protocolos PDF, coordinaciones in
 Antes de implementar Eventos deben existir y estar aceptados:
 
 - Administración de Coordinaciones por `admin`.
+- Administración de Campus por `admin` y catálogo sanitizado de campus activos.
 - Contrato sanitizado de coordinaciones activas para usuarios autorizados.
 - Rules y callables de Coordinaciones aprobadas en Emulator Suite.
 - Políticas aprobadas de límites, reintentos, retención, PDFs, paginación y verificación de staging.
@@ -65,6 +66,7 @@ Antes de implementar Eventos deben existir y estar aceptados:
 ### Información general
 
 - Nombre del evento.
+- Campus activo obligatorio, resuelto por ID canónico; el evento futuro conserva nombre y dirección históricos.
 - Fecha y hora de inicio.
 - Fecha y hora de término.
 - Responsable de solo lectura desde la sesión.

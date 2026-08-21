@@ -19,6 +19,17 @@ import {
   type UserRole,
 } from './bootstrap-authorization.js';
 import {
+  AdminCampusesError,
+  createCampusRecord,
+  deleteCampusRecord,
+  listCampusRecords,
+  listSelectableCampusRecords,
+  setCampusRecordStatus,
+  updateCampusRecord,
+  type AdminCampusesDependencies,
+  type CampusRequestIdentity,
+} from './admin-campuses.js';
+import {
   AdminCoordinationsError,
   createCoordinationRecord,
   deleteCoordinationRecord,
@@ -39,6 +50,7 @@ import {
   type AdminRequestIdentity,
   type AdminUsersDependencies,
 } from './admin-users.js';
+import { createFirestoreAdminCampusesRepository } from './firestore-admin-campuses.repository.js';
 import { createFirestoreAdminCoordinationsRepository } from './firestore-admin-coordinations.repository.js';
 import { createFirestoreAdminUsersRepository } from './firestore-admin-users.repository.js';
 
@@ -49,6 +61,7 @@ if (getApps().length === 0) {
 const institutionalDomain = defineString('INSTITUTIONAL_DOMAIN');
 const firestore = getFirestore();
 const adminAuth = getAuth();
+const adminCampusesRepository = createFirestoreAdminCampusesRepository(firestore);
 const adminCoordinationsRepository = createFirestoreAdminCoordinationsRepository(firestore);
 const adminUsersRepository = createFirestoreAdminUsersRepository(firestore);
 
@@ -218,6 +231,25 @@ function adminCoordinationsDependencies(): AdminCoordinationsDependencies {
   };
 }
 
+function toCampusIdentity(
+  auth: Readonly<{ uid: string; token: Readonly<Record<string, unknown>> }> | undefined,
+): CampusRequestIdentity | null {
+  return auth
+    ? {
+        uid: auth.uid,
+        authorized: auth.token['authorized'] === true,
+        role: auth.token['role'],
+      }
+    : null;
+}
+
+function adminCampusesDependencies(): AdminCampusesDependencies {
+  return {
+    repository: adminCampusesRepository,
+    logger,
+  };
+}
+
 async function executeAdminOperation<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
@@ -248,6 +280,25 @@ async function executeCoordinationOperation<T>(operation: () => Promise<T>): Pro
     }
 
     logger.error('Error no controlado en una operación de Coordinaciones.', {
+      cause: error instanceof Error ? error.name : 'unknown',
+    });
+    throw new HttpsError('unavailable', 'El servicio no está disponible.', {
+      functionalCode: 'service-unavailable',
+    });
+  }
+}
+
+async function executeCampusOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof AdminCampusesError) {
+      throw new HttpsError(error.functionsCode, error.message, {
+        functionalCode: error.functionalCode,
+      });
+    }
+
+    logger.error('Error no controlado en una operación de Campus.', {
       cause: error instanceof Error ? error.name : 'unknown',
     });
     throw new HttpsError('unavailable', 'El servicio no está disponible.', {
@@ -341,5 +392,45 @@ export const deleteCoordination = onCall(adminCallableOptions, async (request) =
       request.data,
       adminCoordinationsDependencies(),
     ),
+  ),
+);
+
+export const listCampuses = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    listCampusRecords(toCampusIdentity(request.auth), adminCampusesDependencies()),
+  ),
+);
+
+export const listSelectableCampuses = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    listSelectableCampusRecords(toCampusIdentity(request.auth), adminCampusesDependencies()),
+  ),
+);
+
+export const createCampus = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    createCampusRecord(toCampusIdentity(request.auth), request.data, adminCampusesDependencies()),
+  ),
+);
+
+export const updateCampus = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    updateCampusRecord(toCampusIdentity(request.auth), request.data, adminCampusesDependencies()),
+  ),
+);
+
+export const setCampusStatus = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    setCampusRecordStatus(
+      toCampusIdentity(request.auth),
+      request.data,
+      adminCampusesDependencies(),
+    ),
+  ),
+);
+
+export const deleteCampus = onCall(adminCallableOptions, async (request) =>
+  executeCampusOperation(() =>
+    deleteCampusRecord(toCampusIdentity(request.auth), request.data, adminCampusesDependencies()),
   ),
 );
