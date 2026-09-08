@@ -1,0 +1,280 @@
+@use '@angular/material' as mat;
+
+$tup-primary-palette: (
+  50: #eeeef9,
+  100: #d4d5ef,
+  200: #b8b9e4,
+  300: #9295d5,
+  400: #6368bd,
+  500: #252a86,
+  600: #232776,
+  700: #271e5d,
+  800: #211a50,
+  900: #171238,
+  contrast: (
+    50: #101828,
+    100: #101828,
+    200: #101828,
+    300: #101828,
+    400: #fff,
+    500: #fff,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+  ),
+);
+
+$tup-accent-palette: (
+  50: #f6f6f6,
+  100: #e8e8e8,
+  200: #d4d4d4,
+  300: #b8b8b8,
+  400: #9f9f9e,
+  500: #888887,
+  600: #747473,
+  700: #5e5e5d,
+  800: #4a4a49,
+  900: #343433,
+  contrast: (
+    50: #101828,
+    100: #101828,
+    200: #101828,
+    300: #101828,
+    400: #101828,
+    500: #101828,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+  ),
+);
+
+$tup-primary: mat.m2-define-palette($tup-primary-palette, 500, 300, 700);
+$tup-accent: mat.m2-define-palette($tup-accent-palette, 500, 300, 700);
+$tup-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $tup-primary,
+      accent: $tup-accent,
+      warn: mat.m2-define-palette(mat.$m2-red-palette),
+    ),
+    typography: mat.m2-define-typography-config(
+        $font-family: (
+          Inter,
+          'Segoe UI',
+          Roboto,
+          Arial,
+          sans-serif,
+        ),
+      ),
+    density: 0,
+  )
+);
+
+@include mat.core();
+@include mat.all-component-themes($tup-theme);
+
+:root {
+  color-scheme: light;
+  --color-primary-700: #252a86;
+  --color-primary-800: #271e5d;
+  --color-primary-soft: #eeeef9;
+  --color-primary-soft-hover: #e2e2f4;
+  --color-neutral-500: #888887;
+  --color-background: #f8f9fb;
+  --color-surface: #fff;
+  --color-surface-subtle: #f6f7f9;
+  --color-text: #101828;
+  --color-text-muted: #667085;
+  --color-border: #dfe3ea;
+  --color-control-border: #b8c0cc;
+  --color-error: #b3261e;
+  --color-error-hover: #8f1f18;
+  --color-error-soft: #fff2f0;
+  --color-error-border: #efb5b0;
+  --color-success: #18794e;
+  --color-success-soft: #ecfdf3;
+  --color-success-border: #a8ddbd;
+  --color-warning: #9a6700;
+  --color-warning-soft: #fff7d6;
+  --color-info: #175cd3;
+  --font-family-ui: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-size-caption: 0.75rem;
+  --font-size-body-small: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-heading: 1.125rem;
+  --font-size-page-title: clamp(1.75rem, 3vw, 2.25rem);
+  --line-height-tight: 1.2;
+  --line-height-body: 1.5;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 800;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 20px;
+  --control-height: 44px;
+  --elevation-1: 0 12px 32px rgb(16 24 40 / 8%);
+  --elevation-2: 0 16px 40px rgb(16 24 40 / 12%);
+  font-family: var(--font-family-ui);
+  font-synthesis: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-background);
+  font-size: 16px;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.button,
+.icon-button {
+  min-height: var(--control-height);
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: 10px var(--space-16);
+  text-decoration: none;
+}
+
+.button svg,
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+.button--primary {
+  color: #fff;
+  background: var(--color-primary-700);
+  box-shadow: 0 2px 6px rgb(37 42 134 / 18%);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: var(--color-primary-800);
+  box-shadow: 0 4px 10px rgb(37 42 134 / 24%);
+}
+
+.button--secondary {
+  border-color: var(--color-control-border);
+  color: var(--color-primary-700);
+  background: var(--color-surface);
+}
+
+.button--secondary:hover:not(:disabled) {
+  border-color: var(--color-primary-700);
+  background: var(--color-primary-soft);
+}
+
+.button--danger {
+  border-color: var(--color-error);
+  color: #fff;
+  background: var(--color-error);
+  box-shadow: 0 2px 6px rgb(179 38 30 / 16%);
+}
+
+.button--danger:hover:not(:disabled) {
+  border-color: var(--color-error-hover);
+  background: var(--color-error-hover);
+}
+
+.icon-button {
+  display: inline-grid;
+  width: var(--control-height);
+  min-width: var(--control-height);
+  place-items: center;
+  border-color: var(--color-border);
+  color: var(--color-primary-700);
+  background: var(--color-surface);
+}
+
+.icon-button:hover:not(:disabled) {
+  border-color: var(--color-primary-700);
+  background: var(--color-primary-soft);
+}
+
+.icon-button--danger {
+  border-color: var(--color-error-border);
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.icon-button--danger:hover:not(:disabled) {
+  border-color: var(--color-error);
+  background: #ffe7e4;
+}
+
+.button:disabled,
+.icon-button:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.52;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

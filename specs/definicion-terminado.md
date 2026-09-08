@@ -7,6 +7,7 @@
 - Incluye estados de carga, error y éxito aplicables.
 - Tiene pruebas automatizadas proporcionales al riesgo.
 - Cumple lint, formato y TypeScript estricto.
+- Si modifica UI, supera `npm run lint:visual` y consume las primitivas globales sin redefinirlas.
 
 ## Para un módulo
 
@@ -15,6 +16,7 @@
 - Todos los casos de `pruebas.md` pasan.
 - Guards, Rules y Functions aplicables fueron probados.
 - Cumple accesibilidad y responsive.
+- Mantiene la identidad visual común de botones, iconos, controles, tipografía, foco y estados.
 - No existen errores conocidos críticos o altos.
 - La trazabilidad está actualizada.
 - Se validó en emuladores y, cuando corresponda, staging.

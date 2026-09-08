@@ -9,7 +9,8 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 - Angular Material y CDK.
 - Tema institucional propio.
 - SCSS y CSS Custom Properties.
-- Componentes wrapper para variantes del sistema.
+- Tokens y primitivas visuales globales en `src/styles.scss`; los estilos encapsulados controlan únicamente la distribución específica de cada vista.
+- Los componentes wrapper se introducirán solo cuando una primitiva necesite comportamiento Angular compartido, no para duplicar estilos estáticos.
 - Sin TailwindCSS inicialmente.
 
 ## Principios
@@ -22,34 +23,48 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 - Movimiento limitado y respeto a `prefers-reduced-motion`.
 - Estados visibles de carga, vacío, error y éxito.
 
-## Tokens de color iniciales
+## Tokens de color implementados
 
 ```text
---color-primary-700: #252a86
---color-primary-800: #271e5d
---color-neutral-500: #888887
---color-background:  #f8f9fb
---color-surface:     #ffffff
---color-text:        #101828
---color-text-muted:  #667085
---color-border:      #dfe3ea
---color-error:       #b3261e
---color-success:     #18794e
---color-warning:     #9a6700
---color-info:        #175cd3
+--color-primary-700:       #252a86
+--color-primary-800:       #271e5d
+--color-primary-soft:      #eeeef9
+--color-primary-soft-hover: #e2e2f4
+--color-neutral-500:       #888887
+--color-background:        #f8f9fb
+--color-surface:           #ffffff
+--color-surface-subtle:    #f6f7f9
+--color-text:              #101828
+--color-text-muted:        #667085
+--color-border:            #dfe3ea
+--color-control-border:    #b8c0cc
+--color-error:             #b3261e
+--color-error-hover:       #8f1f18
+--color-error-soft:        #fff2f0
+--color-error-border:      #efb5b0
+--color-success:           #18794e
+--color-success-soft:      #ecfdf3
+--color-success-border:    #a8ddbd
+--color-warning:           #9a6700
+--color-warning-soft:      #fff7d6
+--color-info:              #175cd3
 ```
 
-Los tonos adicionales se derivarán conservando contraste AA. No se usarán colores arbitrarios dentro de componentes.
+Los valores anteriores corresponden a las Custom Properties actuales de `src/styles.scss`. Los tonos futuros se derivarán conservando contraste AA, se incorporarán primero a esta tabla y no se escribirán como colores arbitrarios dentro de componentes.
 
 ## Tipografía
 
-- Interfaz y datos: familia sans-serif institucional o fallback de sistema.
-- Títulos de Login: se permite una familia serif académica aprobada y licenciada.
+- Toda la aplicación usa una sola pila sans-serif: `Inter`, `Segoe UI`, `Roboto`, `Arial`, `sans-serif`.
+- No se mezclan familias serif y sans-serif entre Login, Dashboard y módulos administrativos.
 - Tamaño base: 16 px.
 - Texto auxiliar mínimo: 12 px solo cuando conserve legibilidad.
 - Altura de línea de texto corrido: 1.5 o superior.
+- Título de página: `clamp(28px, 3vw, 36px)`, peso 800 y altura de línea 1.2.
+- Título de sección: 18 px, peso 700.
+- Texto de botones y datos compactos: 14 px, peso 700 en acciones y 400–600 en datos.
+- Eyebrow institucional: 12 px, peso 800, mayúsculas y espaciado de letras de `0.08em`.
 
-La familia final queda pendiente de aprobación de identidad; no bloquea estructura ni pruebas.
+La pila se mantiene local y no depende de descargar fuentes externas. Si posteriormente se licencia Inter institucionalmente, se podrá servir como activo propio sin cambiar métricas ni componentes.
 
 ## Espaciado y forma
 
@@ -80,10 +95,95 @@ Las sombras serán suaves; no sustituirán bordes o contraste.
 - Diálogos y confirmaciones.
 - Tabla, paginación y búsqueda.
 - Badges de rol y estado.
+- Lista dinámica de correos con agregar, validar y retirar cada entrada.
+- Selector múltiple buscable de coordinaciones con chips o lista equivalente.
+- Selector de campus base, clasificación fija/transferible y destinos permitidos.
+- Campo numérico entero para cantidad operativa con límites y ayuda asociada.
+- Estado futuro de disponibilidad suficiente, insuficiente o `requiere revisión` sin depender solo del color.
+- Estado de integración parcial para Calendar y notificaciones.
 - KPI cards.
 - Sidebar, topbar y shell.
 - Skeleton o indicador de carga.
 - Estados vacíos y de error.
+
+## Estándar transversal de botones
+
+Todos los módulos reutilizan las clases globales `.button` e `.icon-button`; una vista no redefine color, tipografía, radio, altura o estados de estas clases.
+
+- Altura mínima: 44 px.
+- Radio: 8 px en botones con texto y botones de icono.
+- Texto: 14 px, peso 700, familia global y altura de línea 1.25.
+- Icono: SVG lineal de 20 × 20 px, trazo de 1.9 y color heredado.
+- Primario: fondo morado institucional, texto blanco y sombra discreta; se usa para la acción principal de una vista o formulario.
+- Secundario: superficie blanca, borde gris de control y texto morado; se usa para cancelar, limpiar, volver o agregar elementos auxiliares.
+- Peligro: fondo rojo institucional y texto blanco; se reserva para confirmaciones destructivas o de reducción de acceso.
+- Icono normal: superficie blanca, borde neutro y color morado.
+- Icono peligro: fondo rojo tenue, borde rojo tenue e icono rojo; la papelera conserva esta variante.
+- Hover, focus, active, disabled y loading conservan la misma jerarquía en Usuarios, Coordinaciones y módulos futuros.
+- Disabled usa opacidad de 0.52, elimina sombra y mantiene nombre accesible y ayuda contextual cuando corresponda.
+- Una fila de acciones no mezcla botones circulares, cuadrados o sin borde para acciones equivalentes.
+
+Las variantes se definen en `src/styles.scss`; los estilos encapsulados de una pantalla solo pueden controlar distribución, no redefinir la identidad visual de los controles compartidos.
+
+### Contrato visual canónico
+
+`src/styles.scss` es la única fuente de verdad ejecutable para controles compartidos. Todos los módulos existentes y futuros deben consumir exactamente estas variantes:
+
+| Variante               | Uso                                                        | Color y superficie canónicos                                                                                 |
+| ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `.button--primary`     | Alta, guardar o confirmar una acción positiva principal    | `--color-primary-700` con texto blanco; hover `--color-primary-800`                                          |
+| `.button--secondary`   | Cancelar, limpiar, volver o acción auxiliar                | `--color-surface`, borde `--color-control-border`, texto `--color-primary-700`; hover `--color-primary-soft` |
+| `.button--danger`      | Confirmar eliminación, suspensión o reducción destructiva  | Fondo y borde `--color-error`, texto blanco; hover `--color-error-hover`                                     |
+| `.icon-button`         | Editar, consultar, paginar o cambiar estado no destructivo | `--color-surface`, borde `--color-border`, icono `--color-primary-700`; hover `--color-primary-soft`         |
+| `.icon-button--danger` | Eliminar desde una fila o tarjeta                          | `--color-error-soft`, borde `--color-error-border`, icono `--color-error`                                    |
+
+Reglas normativas:
+
+- Altura y ancho táctil mínimo: `--control-height`, actualmente 44 px.
+- Radio: `--radius-small`, actualmente 8 px. Un módulo no convierte localmente las acciones equivalentes en círculos.
+- Tipografía: `--font-family-ui`, `--font-size-body-small` y `--font-weight-semibold`.
+- Foco visible: contorno global basado en `--color-info`; no se sustituye por un morado local.
+- Disabled: opacidad global de 0.52 y sin sombra; conserva `aria-label` y explicación cuando existe una restricción.
+- Los colores de marca, estados, bordes, texto, superficies, controles y foco se consumen mediante Custom Properties. No se agregan valores hexadecimales locales cuando ya existe un token semántico.
+- Las hojas encapsuladas pueden definir distribución como `gap`, alineación, ancho responsive o posición del tooltip, pero no pueden declarar `.button`, `.button--primary`, `.button--secondary`, `.button--danger`, `.icon-button`, `.icon-button--danger` ni sus estados visuales.
+
+### Primitivas administrativas compartidas
+
+La misma regla de fuente única aplica a:
+
+- encabezados de página, `eyebrow`, títulos y texto auxiliar;
+- paneles, bordes, radios y elevación;
+- campos, selects, checkboxes y foco;
+- tablas, encabezados, paginación y tarjetas móviles;
+- badges de estado;
+- alertas de error y éxito;
+- diálogos, overlays, tooltips, spinners y estados vacíos.
+
+Una diferencia de contenido o distribución entre módulos no autoriza una variante nueva de color, tamaño, tipografía, radio o interacción. Toda variante nueva debe incorporarse primero a este documento y a los tokens/primitivas globales.
+
+### Auditoría de conformidad — 21 de agosto de 2026
+
+| Superficie        | Estado verificado               | Hallazgo                                                                                  |
+| ----------------- | ------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/styles.scss` | Canónica                        | Contiene tokens y primitivas globales aprobadas.                                          |
+| Usuarios          | Conforme en botones compartidos | Consume las clases globales y conserva estilos encapsulados de distribución.              |
+| Coordinaciones    | Conforme en botones compartidos | Consume las clases globales y conserva estilos encapsulados de distribución.              |
+| Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
+| Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
+
+La corrección local retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. La aceptación visual continúa pendiente hasta completar la comparación autenticada; staging conserva la versión anterior mientras no exista autorización de despliegue.
+
+### Verificación obligatoria de normalización
+
+Una corrección visual transversal debe demostrar:
+
+1. Ausencia de redefiniciones locales de los selectores compartidos prohibidos.
+2. Uso de tokens semánticos para marca, estados, superficies, bordes y foco.
+3. Igualdad de altura, radio, tipografía, iconografía y estados para acciones equivalentes.
+4. Comparación autenticada de Usuarios, Coordinaciones, Campus y Equipos en escritorio, tableta y 320 px.
+5. Recorrido por teclado de hover/focus, disabled, loading, error, éxito y diálogos.
+6. Pruebas Angular, lint, formato y build aprobados antes de cualquier despliegue de la corrección.
+7. `npm run lint:visual` aprobado como guardia obligatoria de todos los módulos.
 
 ## Estados de controles
 
@@ -96,6 +196,14 @@ Cada control interactivo debe definir:
 - Disabled.
 - Loading cuando corresponda.
 - Error cuando corresponda.
+
+## Botones de icono y ayudas contextuales
+
+- Los botones que no muestran texto visible usan SVG lineales coherentes con la iconografía del shell; no usan letras, emojis o caracteres tipográficos como sustituto.
+- El icono de eliminación es una papelera y conserva la variante visual de peligro.
+- Todo botón de icono tiene un nombre accesible y una ayuda contextual visible al posicionar el puntero o al recibir foco visible.
+- La ayuda describe la acción; cuando el control está deshabilitado, también explica la restricción.
+- La ayuda contextual no sustituye `aria-label`, foco visible ni el objetivo mínimo de 44 × 44 px y no debe provocar desplazamiento horizontal global.
 
 ## Wireframe de Login — escritorio
 
@@ -141,20 +249,151 @@ Cada control interactivo debe definir:
 - La decoración no puede competir con el contenido.
 - El formulario mantiene ancho legible, aproximadamente 420–460 px en escritorio.
 
-## Wireframe del shell futuro
+## Wireframe del shell administrativo — escritorio
 
 ```text
-┌──────────────┬──────────────────────────────────────────────┐
-│ Sidebar      │ Topbar                                       │
-│              ├──────────────────────────────────────────────┤
-│ Dashboard    │                                              │
-│ Eventos      │ Contenido de la ruta                         │
-│ Usuarios*    │                                              │
-│              │                                              │
-│ Cerrar sesión│                                              │
-└──────────────┴──────────────────────────────────────────────┘
-* Solo admin
+┌──────────────────┬──────────────────────────────────────────────────┐
+│ [TUP] SISTEMA    │ [Menú]                              [Iniciales] │
+│       DE EVENTOS │──────────────────────────────────────────────────│
+│                  │                                                  │
+│ [■] Dashboard    │  CONTENIDO DE LA RUTA                            │
+│ [ ] Eventos      │  Superficie institucional                        │
+│     Próximamente │                                                  │
+│ [ ] Coordinac.*  │                                                  │
+│ [ ] Campus*       │                                                  │
+│ [ ] Equipos*      │                                                  │
+│ [ ] Usuarios*    │                                                  │
+│                  │                                                  │
+│ Cerrar sesión    │                                                  │
+│ [Avatar] Perfil  │                                                  │
+└──────────────────┴──────────────────────────────────────────────────┘
+* Solo admin. Usuarios, Coordinaciones, Campus y Equipos están habilitados; Eventos permanece documentado y deshabilitado hasta autorizarlo.
 ```
+
+## Wireframe del shell administrativo — móvil
+
+```text
+┌─────────────────────────────────┐
+│ [Menú]  Sistema de Eventos [OS] │
+├─────────────────────────────────┤
+│                                 │
+│  CONTENIDO DE LA RUTA           │
+│                                 │
+└─────────────────────────────────┘
+
+Menú abierto:
+┌──────────────────────┬──────────┐
+│ [TUP] SISTEMA        │ overlay  │
+│ [×]                  │          │
+│ Dashboard            │          │
+│ Eventos Próximamente │          │
+│ Coordinaciones*      │          │
+│ Campus*              │          │
+│ Equipos*             │          │
+│ Usuarios*             │         │
+│ Cerrar sesión        │          │
+│ Perfil               │          │
+└──────────────────────┴──────────┘
+```
+
+## Comportamiento del shell
+
+- El morado institucional concentra navegación y marca; el contenido usa fondo neutro y superficies blancas.
+- La topbar no agrega buscador, notificaciones ni menú de avatar mientras no exista spec.
+- El sidebar se oculta por completo en escritorio y funciona como drawer superpuesto debajo de 960 px.
+- El área principal mantiene máximo 1280 px, padding fluido y un encabezado de página legible.
+- Iconografía de navegación: SVG lineal coherente, tamaño 20–22 px y texto siempre visible.
+- El estado activo combina superficie clara, peso tipográfico e indicador lateral; no depende solo del color.
+
+## Wireframe de Coordinaciones — escritorio
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ CATÁLOGO INSTITUCIONAL  Coordinaciones    [Nueva coordinación] │
+├─────────────────────────────────────────────────────────────┤
+│ [ Buscar por coordinación o correo                         ] │
+├─────────────────────────────────────────────────────────────┤
+│ Coordinación │ Correos │ Estado │ Actualización │ Acciones │
+│ Academia     │ 2       │ Activa │ ...           │ ...      │
+│ Deportes     │ 1       │ Activa │ ...           │ ...      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- La lista dinámica de correos usa un campo por dirección, no una cadena separada por comas.
+- Agregar o retirar un correo mantiene orden de foco predecible y anuncia el cambio.
+- La suspensión y la eliminación utilizada explican consecuencias diferentes.
+
+## Wireframe de Campus — escritorio
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│ CATÁLOGO INSTITUCIONAL  Campus                  [Nuevo campus] │
+├────────────────────────────────────────────────────────────────┤
+│ [ Buscar por nombre, clave o dirección                       ] │
+├────────────────────────────────────────────────────────────────┤
+│ CAMPUS │ DIRECCIÓN │ HORARIOS │ ESTADO │ ACTUALIZACIÓN │ ... │
+│ TUP    │ Pendiente │ L–V...   │ Activo │ ...           │ ... │
+└────────────────────────────────────────────────────────────────┘
+```
+
+- El formulario agrupa identidad, ubicación opcional y horarios de Sistemas.
+- Cada día operativo usa checkbox, hora de inicio y hora de fin con etiquetas propias.
+- Domingo se muestra como inactivo en esta versión.
+- En móvil, cada campus se presenta como tarjeta con las mismas acciones y restricciones.
+
+## Wireframe de Equipos — escritorio
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ INVENTARIO INSTITUCIONAL  Equipos                         [Nuevo equipo] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ [ Buscar por equipo, campus o clasificación                              ] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ EQUIPO │ CAMPUS │ CANTIDAD │ TIPO │ DESTINOS │ ESTADO │ ACTUALIZACIÓN │ … │
+│ Bocina │ TUP    │    2     │ Transf. │ FCS    │ Activo │ ...          │ … │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+- El formulario agrupa identidad, inventario y traslado.
+- Campus base es un selector de campus activos y cantidad operativa usa entero de 0 a 999.
+- Elegir `fijo` oculta y limpia destinos; elegir `transferible` muestra selección de campus activos excluyendo el origen.
+- El texto explica que destino permitido no equivale a disponibilidad para una fecha.
+- Un equipo utilizado muestra la restricción histórica y deshabilita eliminación con ayuda contextual.
+- En móvil cada equipo se presenta como tarjeta con nombre, campus, cantidad, clasificación, destinos, estado y las mismas acciones.
+
+## Apartado futuro de Equipos en Eventos
+
+```text
+┌ Equipos requeridos ─────────────────────────────────────────────────────┐
+│ Campus: FCS       Fecha y horario: 14/09/2026 · 12:00–14:00            │
+│ [ Buscar equipo                                                        ] │
+│ Bocina · origen TUP · disponible 2       Cantidad [ 1 ]                │
+│ Proyector · origen FCS · disponible 1     Cantidad [ 1 ]                │
+│ [!] Cobertura de Sistemas pendiente fuera del horario regular          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+- La disponibilidad solo se muestra después de conocer campus, fecha y horario completos.
+- El formulario no presenta cantidades provenientes del catálogo sanitizado como si fueran disponibilidad.
+- Una solicitud insuficiente explica la cantidad requerida y la confirmable, sin hacer asignación parcial.
+- `requiere revisión`, cobertura pendiente, traslado y hora de liberación se presentan como estados separados.
+- Este apartado permanece sin autorización de código hasta aprobar reservaciones y Eventos.
+
+## Apartado de Coordinaciones en Eventos
+
+```text
+┌ Coordinaciones involucradas ────────────────────────────────┐
+│ Selección opcional                                          │
+│ [ Buscar coordinación                                     ] │
+│ [Academia ×] [Marketing ×]                                  │
+│ Solo se muestran coordinaciones activas.                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- El selector muestra nombres, no correos.
+- Las seleccionadas tienen nombre accesible y pueden retirarse por teclado.
+- Una coordinación histórica suspendida se muestra con texto “Suspendida”; el estado no depende solo del color.
+- Calendar pendiente y notificaciones pendientes se muestran como estados separados.
 
 ## Restricciones
 

@@ -12,20 +12,32 @@ Reemplazar Vue por Angular sin perder funcionalidad, datos, archivos, integracio
 4. Validar Auth con emuladores y staging.
 5. Autorizar e implementar Layout.
 6. Autorizar e implementar Usuarios.
-7. Autorizar e implementar Eventos.
-8. Autorizar e implementar Dashboard.
-9. Ejecutar regresión integral.
-10. Publicar en staging/preview.
-11. Ejecutar corte productivo con reversión.
+7. Aprobar e implementar Coordinaciones.
+8. Aprobar infraestructura protegida de notificaciones.
+9. Autorizar e implementar Eventos.
+10. Autorizar e implementar Dashboard.
+11. Ejecutar regresión integral.
+12. Publicar en staging/preview.
+13. Ejecutar corte productivo con reversión.
 
 ## Continuidad
 
-- No modificar colecciones o campos durante la migración inicial.
+- No modificar colecciones o campos salvo los cambios explícitos y aprobados de Coordinaciones, Eventos y `notificacionesEventos`.
 - No mover o eliminar PDFs existentes.
 - No cambiar IDs de Calendar.
 - No cambiar roles.
 - Mantener contratos de eventos salvo spec aprobada.
 - Conservar Vue desplegable hasta aceptación final.
+
+## Compatibilidad del cambio de Coordinaciones
+
+- Eventos históricos sin `coordinacionIds`, `coordinacionesInvolucradas` o `revisionNotificacion` se leen como arrays vacíos y revisión cero.
+- No se agregan coordinaciones retrospectivamente.
+- Los correos históricos al creador no se recrean en la bandeja de salida.
+- `utilizada` se establece únicamente a partir de eventos creados o editados por el nuevo contrato; cualquier backfill futuro requiere plan, prueba y autorización separados.
+- Vue debe seguir leyendo eventos con campos adicionales sin perder los campos históricos antes de cualquier despliegue productivo.
+- La paginación nueva consulta 25 eventos por cursor y debe conservar el orden determinista de los registros históricos.
+- Los PDFs existentes no se consideran huérfanos; la limpieza de 24 horas solo actúa sobre cargas temporales o nuevas sin referencia canónica comprobada.
 
 ## Corrección de seguridad aprobada
 
@@ -43,7 +55,7 @@ Conservar build y configuración Hosting de Vue. Si Angular presenta un fallo cr
 
 ## Fuera de alcance
 
-- Nuevas funciones de negocio.
-- Migración de esquema.
 - Nuevos roles.
-- Rediseño del backend de eventos no especificado.
+- Backfill productivo implícito.
+- Agregar contactos como asistentes de Calendar.
+- Cualquier función de negocio distinta de Coordinaciones y notificaciones aprobadas en ADR-006.

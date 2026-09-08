@@ -1,0 +1,189 @@
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="admin-shell" [class.admin-shell--open]="sidebarOpen()">
+  <aside
+    id="admin-sidebar"
+    class="sidebar"
+    aria-label="Navegación administrativa"
+    [class.sidebar--open]="sidebarOpen()"
+    [attr.aria-hidden]="sidebarOpen() ? null : 'true'"
+    [attr.inert]="sidebarOpen() ? null : ''"
+  >
+    <div class="sidebar__brand">
+      <span class="sidebar__brand-mark" aria-hidden="true">
+        <img src="assets/icono-tup.png" alt="" />
+      </span>
+      <span>Sistema de<br />Eventos TUP</span>
+      <button
+        class="sidebar__close"
+        type="button"
+        aria-label="Cerrar menú"
+        (click)="closeSidebar(true)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m6 6 12 12M18 6 6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Secciones principales">
+      <a
+        #dashboardLink="routerLinkActive"
+        class="nav-item"
+        routerLink="/dashboard"
+        routerLinkActive="nav-item--active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        [attr.aria-current]="dashboardLink.isActive ? 'page' : null"
+        (click)="selectNavigation()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+        </svg>
+        <span>Dashboard</span>
+      </a>
+
+      <button class="nav-item" type="button" disabled aria-disabled="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+        </svg>
+        <span>Eventos</span>
+        <span class="nav-item__soon">Próximamente</span>
+      </button>
+
+      @if (isAdmin()) {
+        <a
+          #campusesLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/campus"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="campusesLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6M8 10h2M14 10h2" />
+          </svg>
+          <span>Campus</span>
+        </a>
+
+        <a
+          #coordinationsLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/coordinaciones"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="coordinationsLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h10M17 16v5M14.5 18.5h5" />
+          </svg>
+          <span>Coordinaciones</span>
+        </a>
+
+        <a
+          #equipmentLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/equipos"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="equipmentLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h16v10H4zM8 17v3M16 17v3M8 11h.01M12 11h4" />
+          </svg>
+          <span>Equipos</span>
+        </a>
+
+        <a
+          #usersLink="routerLinkActive"
+          class="nav-item"
+          routerLink="/usuarios"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          [attr.aria-current]="usersLink.isActive ? 'page' : null"
+          (click)="selectNavigation()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 3-4"
+            />
+          </svg>
+          <span>Usuarios</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      <button
+        class="logout"
+        type="button"
+        [disabled]="auth.loading()"
+        [attr.aria-busy]="auth.loading()"
+        (click)="logout()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M10 17l5-5-5-5M15 12H3M14 3h6a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-6" />
+        </svg>
+        <span>{{ auth.loading() ? 'Cerrando sesión…' : 'Cerrar sesión' }}</span>
+      </button>
+
+      @if (auth.user(); as user) {
+        <div class="profile">
+          <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+          <span class="profile__details">
+            <strong>{{ user.nombre }}</strong>
+            <span>{{ roleLabel() }}</span>
+            <span class="profile__status"><span aria-hidden="true"></span>Sesión activa</span>
+          </span>
+        </div>
+      }
+    </div>
+  </aside>
+
+  @if (!isDesktop() && sidebarOpen()) {
+    <button
+      class="sidebar-overlay"
+      type="button"
+      tabindex="-1"
+      aria-label="Cerrar menú de navegación"
+      (click)="closeSidebar(true)"
+    ></button>
+  }
+
+  <div class="workspace">
+    <header class="topbar" aria-label="Barra superior">
+      <button
+        #menuButton
+        class="topbar__menu"
+        type="button"
+        aria-controls="admin-sidebar"
+        [attr.aria-expanded]="sidebarOpen()"
+        [attr.aria-label]="
+          sidebarOpen() ? 'Ocultar menú de navegación' : 'Mostrar menú de navegación'
+        "
+        (click)="toggleSidebar()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <span class="topbar__title">Sistema de Eventos TUP</span>
+
+      <span
+        class="avatar avatar--topbar"
+        [attr.aria-label]="'Usuario: ' + (auth.user()?.nombre ?? '')"
+      >
+        {{ initials() }}
+      </span>
+    </header>
+
+    <main id="main-content" class="main-content" tabindex="-1">
+      <div class="main-content__inner">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>

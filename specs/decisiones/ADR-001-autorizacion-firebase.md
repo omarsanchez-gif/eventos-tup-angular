@@ -32,9 +32,26 @@ Los claims se establecerán únicamente mediante Admin SDK en Cloud Functions. N
 ## Cambios de rol o estado
 
 - Solo una operación backend autorizada para `admin` podrá cambiar rol o estado.
-- Después de cambiar Firestore se sincronizarán claims.
-- Al desactivar se establecerá `authorized: false`, se eliminará el rol y se revocarán refresh tokens.
-- Si falla la sincronización, la operación se registrará como error y no se comunicará éxito total.
+- Cada operación revalidará que el solicitante tenga un documento canónico activo con rol `admin`.
+- Las operaciones escribirán estados objetivo y serán idempotentes; un reintento no alternará ni revertirá el estado solicitado.
+- Firestore se actualizará primero dentro de una transacción y permanecerá como fuente canónica.
+- Después de cambiar Firestore se escribirán únicamente los claims aprobados `authorized` y `role`.
+- Desactivar, eliminar o cambiar `admin` a `usuario` establecerá el estado restrictivo, sincronizará claims y revocará refresh tokens cuando exista UID.
+- No se compensará un fallo restaurando permisos más amplios. La operación conservará el estado más restrictivo posible.
+- Si claims o revocación fallan, se registrará el error, se responderá `reconciliation-required` y no se comunicará éxito.
+- El siguiente reintento o `bootstrapAuthorization` reconciliará los claims con el documento canónico.
+
+## Límite de consistencia entre servicios
+
+Firestore no comparte una transacción atómica con Firebase Authentication. Las transacciones protegen únicamente las lecturas y escrituras de Firestore; claims y revocación son pasos posteriores compensables.
+
+Los ID tokens emitidos duran aproximadamente una hora. Revocar refresh tokens impide obtener tokens nuevos, pero no invalida inmediatamente todos los ID tokens ya emitidos ante Security Rules. La migración inicial acepta y documenta esta ventana; las callables críticas mitigan el riesgo revalidando el perfil canónico. Una revocación inmediata mediante metadatos adicionales requeriría otra spec y cambios de infraestructura.
+
+## Protección administrativa
+
+- Un administrador no puede eliminarse, desactivarse o cambiar su propio rol a `usuario`.
+- Antes de desactivar, degradar o eliminar un admin, una transacción comprobará que permanezca al menos otro documento activo con rol `admin`.
+- El correo de un usuario con UID asociado queda inmutable desde el módulo Usuarios.
 
 ## Security Rules objetivo
 
@@ -56,6 +73,7 @@ Los claims se establecerán únicamente mediante Admin SDK en Cloud Functions. N
 
 - Se requiere sincronización rigurosa de claims.
 - Los cambios no llegan al token hasta renovarlo.
+- La revocación de refresh tokens no elimina de inmediato la validez de un ID token ya emitido.
 - Se requieren Functions y pruebas adicionales.
 
 ## Alternativas descartadas

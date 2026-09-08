@@ -32,7 +32,18 @@ Orden obligatorio:
 - No usar guards del cliente como única autorización.
 - No colocar secretos en el frontend, repositorio o archivos de environment públicos.
 - No usar producción para desarrollo o pruebas manuales.
+- Mantener `demo-eventos-tup` como proyecto predeterminado de Firebase CLI.
+- Usar `staging` únicamente como alias explícito de `eventos-tup-angular-stg`.
+- Usar `production` únicamente como alias explícito de `eventos-tup-bb903`; ningún despliegue productivo está autorizado sin solicitud expresa y evidencia aprobada de staging.
+- El proyecto Firebase `eventos-tup`, visible en la cuenta, no forma parte de esta migración y no está autorizado.
+- El plan Blaze está habilitado únicamente en staging; toda creación de recursos con costo debe limitarse al alcance solicitado y documentarse.
+- El correo `omar.sanchez@tecplayacar.edu.mx` está autorizado como soporte OAuth únicamente para la marca de staging.
+- Storage de staging utiliza exclusivamente `eventos-tup-angular-stg.firebasestorage.app` en `US-CENTRAL1`.
+- No ejecutar `firebase deploy` sin `--only` y `--project staging`; cada servicio se valida y despliega por separado.
 - No copiar funcionalidades históricas no presentes en las nuevas specs.
+- Consumir botones, icon-buttons, campos, badges, alertas, tooltips y diálogos compartidos desde `src/styles.scss`; los SCSS encapsulados solo controlan distribución específica.
+- No redefinir localmente color, tipografía, altura, radio, iconografía ni estados de una primitiva visual global. Toda nueva variante se documenta primero en `specs/design-system/spec.md`.
+- Todo cambio de interfaz y todo módulo nuevo debe superar `npm run lint:visual`; no se permite omitir o desactivar esta guardia para aceptar estilos locales duplicados.
 - Ante una contradicción o ambigüedad, detener la implementación y actualizar specs.
 
 ## Alcance autorizado actual
@@ -40,18 +51,36 @@ Orden obligatorio:
 Implementar únicamente cuando el usuario lo solicite explícitamente:
 
 - Base técnica Angular.
-- Sistema de diseño mínimo necesario para Login.
+- Sistema de diseño institucional para Login y área privada.
 - `modulo-autenticacion`.
-- Navegación mínima requerida para validar la sesión.
+- `modulo-layout` como shell administrativo compartido.
+- Sidebar, topbar, identidad del usuario y navegación responsive.
 - Vista temporal autenticada en `/dashboard`, limitada a nombre, correo, rol y cierre de sesión.
+- `modulo-usuarios`, autorizado expresamente el 18 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-usuarios`.
+- Ruta privada `/usuarios`, guard de rol `admin`, cinco callables administrativas, sincronización de claims y revocación previstas en la spec de Usuarios.
+- `modulo-coordinaciones`, autorizado expresamente el 19 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-coordinaciones`.
+- Ruta privada `/coordinaciones`, guard de rol `admin`, seis callables, catálogo completo administrativo y catálogo sanitizado para Eventos.
+- Las seis callables de Coordinaciones y Firestore Rules fueron desplegadas únicamente a `eventos-tup-angular-stg` el 19 de agosto de 2026. Hosting, Eventos y producción no formaron parte de ese despliegue.
+- `modulo-campus`, autorizado expresamente el 21 de agosto de 2026, limitado a los contratos, reglas, pruebas y tareas de `/specs/modulo-campus`.
+- Ruta privada `/campus`, guard de rol `admin`, seis callables, catálogo administrativo completo y catálogo sanitizado para consumidores futuros.
+- Campus desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
+- `modulo-equipos`, incremento A autorizado expresamente el 21 de agosto de 2026, limitado al catálogo administrativo de `/specs/modulo-equipos/spec.md`.
+- Ruta privada `/equipos`, guard `admin`, seis callables, catálogo completo administrativo y catálogo activo sanitizado sin disponibilidad.
+- Equipos desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
+
+Documentación autorizada, sin autorización de implementación:
+
+- Ampliación de `modulo-eventos` para coordinaciones involucradas y notificaciones por creación, actualización, retiro y cancelación.
+- Arquitectura de notificaciones idempotentes y separación entre correo y asistentes de Google Calendar conforme a `ADR-006`.
+- Reservaciones, disponibilidad y logística de Equipos conforme a `ADR-007`; permanecen sin autorización de implementación.
+- `modulo-equipos/reservaciones.md` permanece exclusivamente documental. No están autorizadas reservaciones, disponibilidad por intervalo, logística operativa ni integración con Eventos.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
 - Eventos.
-- Usuarios.
-- Layout administrativo completo.
-- Nuevas integraciones distintas del bootstrap de autorización especificado.
+- Workers, triggers, callables o colecciones de notificaciones de Eventos.
+- Nuevas integraciones distintas del bootstrap de autorización y las callables autorizadas de Usuarios, Coordinaciones, Campus y el catálogo de Equipos.
 - Migraciones de datos.
 
 ## Seguridad autorizada

@@ -1,0 +1,48 @@
+@if (auth.user(); as user) {
+  <section class="welcome" aria-labelledby="welcome-title">
+    <article class="welcome__hero">
+      <div class="welcome__copy">
+        <p class="eyebrow">Panel administrativo</p>
+        <h1 id="welcome-title">Bienvenido, {{ user.nombre }}</h1>
+        <p class="welcome__lead">
+          Tu sesión institucional está activa. Desde este espacio podrás acceder a los módulos
+          habilitados conforme avance el desarrollo.
+        </p>
+      </div>
+
+      <div class="welcome__seal" aria-hidden="true">
+        <img src="assets/icono-tup.png" alt="" />
+      </div>
+    </article>
+
+    <article class="session" aria-labelledby="session-title">
+      <header class="session__header">
+        <div class="session__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />
+          </svg>
+        </div>
+        <div>
+          <p class="eyebrow">Acceso verificado</p>
+          <h2 id="session-title">Datos de la sesión</h2>
+        </div>
+        <span class="session__status"><span aria-hidden="true"></span>Sesión activa</span>
+      </header>
+
+      <dl>
+        <div>
+          <dt>Nombre</dt>
+          <dd>{{ user.nombre }}</dd>
+        </div>
+        <div>
+          <dt>Correo institucional</dt>
+          <dd>{{ user.correo }}</dd>
+        </div>
+        <div>
+          <dt>Rol asignado</dt>
+          <dd>{{ user.rol === 'admin' ? 'Administrador' : 'Usuario' }}</dd>
+        </div>
+      </dl>
+    </article>
+  </section>
+}

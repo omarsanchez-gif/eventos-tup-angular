@@ -1,0 +1,431 @@
+<section class="equipment-page">
+  <header class="panel page-header">
+    <div>
+      <p class="eyebrow">Recursos institucionales</p>
+      <h1>Equipos</h1>
+      <p>Administre el inventario utilizable y su campus base.</p>
+    </div>
+    <button class="button button--primary" type="button" (click)="openCreate($event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Nuevo equipo
+    </button>
+  </header>
+
+  @if (equipment.error(); as error) {
+    <div class="alert alert--error" role="alert">
+      <span>{{ error }}</span
+      ><button type="button" aria-label="Cerrar mensaje" (click)="equipment.clearError()">×</button>
+    </div>
+  }
+  @if (equipment.notice(); as notice) {
+    <div class="alert alert--success" role="status">
+      <span>{{ notice }}</span
+      ><button type="button" aria-label="Cerrar mensaje" (click)="equipment.clearNotice()">
+        ×
+      </button>
+    </div>
+  }
+
+  <form class="panel search-panel" [formGroup]="searchForm" (submit)="$event.preventDefault()">
+    <label for="equipment-search">
+      <span class="sr-only">Buscar equipos</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+      <input
+        id="equipment-search"
+        type="search"
+        formControlName="term"
+        placeholder="Buscar por equipo, campus o clasificación"
+        (input)="applySearch($event)"
+      />
+    </label>
+    @if (equipment.searchTerm()) {
+      <button class="button button--secondary" type="button" (click)="clearSearch()">
+        Limpiar
+      </button>
+    }
+  </form>
+
+  <section
+    class="panel list-panel"
+    aria-labelledby="equipment-list-title"
+    [attr.aria-busy]="equipment.loading()"
+  >
+    <header class="list-header">
+      <div>
+        <h2 id="equipment-list-title">Inventario utilizable</h2>
+        <p>La cantidad mostrada es operativa; no representa disponibilidad por fecha u horario.</p>
+      </div>
+      @if (!equipment.loading()) {
+        <span
+          >{{ equipment.resultCount() }}
+          {{ equipment.resultCount() === 1 ? 'registro' : 'registros' }}</span
+        >
+      }
+    </header>
+    @if (equipment.loading()) {
+      <div class="state" role="status">
+        <span class="spinner" aria-hidden="true"></span><strong>Cargando equipos…</strong>
+      </div>
+    } @else if (!equipment.records().length && !equipment.error()) {
+      <div class="state">
+        <strong>No hay equipos registrados</strong
+        ><span>Agregue el primer recurso desde “Nuevo equipo”.</span>
+      </div>
+    } @else if (!equipment.filteredRecords().length) {
+      <div class="state">
+        <strong>No se encontraron equipos</strong
+        ><button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar búsqueda
+        </button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Catálogo administrativo de equipos
+          </caption>
+          <thead>
+            <tr>
+              <th>Equipo</th>
+              <th>Campus base</th>
+              <th>Cantidad operativa</th>
+              <th>Clasificación</th>
+              <th>Destinos permitidos</th>
+              <th>Estado</th>
+              <th class="actions-heading">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              record of equipment.visibleRecords();
+              track record.documentId;
+              let index = $index
+            ) {
+              <tr>
+                <td>
+                  <strong>{{ record.nombre }}</strong
+                  ><small
+                    >Actualizado {{ formatTimestamp(record.fechaActualizacion) }}
+                    @if (record.utilizado) {
+                      · Utilizado
+                    }
+                  </small>
+                </td>
+                <td>
+                  {{ equipment.campusName(record.campusBaseId)
+                  }}<small>{{ equipment.campusKey(record.campusBaseId) }}</small>
+                </td>
+                <td>
+                  <strong>{{ record.cantidadOperativa }}</strong>
+                </td>
+                <td>{{ record.clasificacion === 'fijo' ? 'Fijo' : 'Transferible' }}</td>
+                <td>{{ destinationNames(record) }}</td>
+                <td>
+                  <span class="badge" [class.badge--active]="record.activo">{{
+                    record.activo ? 'Activo' : 'Suspendido'
+                  }}</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <span class="tooltip-host"
+                      ><button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="'Editar ' + record.nombre"
+                        [attr.aria-describedby]="'equipment-edit-tip-' + index"
+                        (click)="openEdit(record, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        </svg></button
+                      ><span class="tooltip" role="tooltip" [id]="'equipment-edit-tip-' + index"
+                        >Editar equipo</span
+                      ></span
+                    >
+                    <span class="tooltip-host"
+                      ><button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="
+                          (record.activo ? 'Suspender ' : 'Activar ') + record.nombre
+                        "
+                        [attr.aria-describedby]="'equipment-status-tip-' + index"
+                        (click)="openStatus(record, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" />
+                          <path [attr.d]="record.activo ? 'M8 12h8' : 'm8 12 2.5 2.5L16 9'" />
+                        </svg></button
+                      ><span
+                        class="tooltip"
+                        role="tooltip"
+                        [id]="'equipment-status-tip-' + index"
+                        >{{ record.activo ? 'Suspender equipo' : 'Activar equipo' }}</span
+                      ></span
+                    >
+                    <span class="tooltip-host" [attr.tabindex]="record.utilizado ? 0 : null"
+                      ><button
+                        class="icon-button icon-button--danger"
+                        type="button"
+                        [disabled]="record.utilizado"
+                        [attr.aria-label]="'Eliminar ' + record.nombre"
+                        [attr.aria-describedby]="'equipment-delete-tip-' + index"
+                        (click)="openDelete(record, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                        </svg></button
+                      ><span
+                        class="tooltip"
+                        role="tooltip"
+                        [id]="'equipment-delete-tip-' + index"
+                        >{{
+                          record.utilizado
+                            ? 'No puede eliminarse porque ya fue utilizado'
+                            : 'Eliminar equipo'
+                        }}</span
+                      ></span
+                    >
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="mobile-list">
+        @for (record of equipment.visibleRecords(); track record.documentId) {
+          <article>
+            <header>
+              <div>
+                <strong>{{ record.nombre }}</strong
+                ><span>{{ equipment.campusKey(record.campusBaseId) }}</span>
+              </div>
+              <span class="badge" [class.badge--active]="record.activo">{{
+                record.activo ? 'Activo' : 'Suspendido'
+              }}</span>
+            </header>
+            <p><strong>Cantidad operativa:</strong> {{ record.cantidadOperativa }}</p>
+            <p>
+              <strong>Clasificación:</strong>
+              {{ record.clasificacion === 'fijo' ? 'Fijo' : 'Transferible' }}
+            </p>
+            <div class="card-actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                (click)="openEdit(record, $event)"
+              >
+                Editar</button
+              ><button
+                class="button button--secondary"
+                type="button"
+                (click)="openStatus(record, $event)"
+              >
+                {{ record.activo ? 'Suspender' : 'Activar' }}</button
+              ><button
+                class="button button--danger"
+                type="button"
+                [disabled]="record.utilizado"
+                (click)="openDelete(record, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+      <footer class="pagination">
+        <label for="equipment-page-size">Mostrar</label
+        ><select
+          id="equipment-page-size"
+          [value]="equipment.pageSize()"
+          (change)="changePageSize($event)"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option></select
+        ><span>Página {{ equipment.page() }} de {{ equipment.totalPages() }}</span>
+        <div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página anterior"
+            [disabled]="equipment.page() === 1"
+            (click)="previousPage()"
+          >
+            ‹</button
+          ><button
+            class="icon-button"
+            type="button"
+            aria-label="Página siguiente"
+            [disabled]="equipment.page() === equipment.totalPages()"
+            (click)="nextPage()"
+          >
+            ›
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
+
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop">
+    <section
+      class="equipment-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="equipment-dialog-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">{{ mode === 'form' ? 'Inventario institucional' : 'Confirmación' }}</p>
+          <h2 id="equipment-dialog-title">
+            {{
+              mode === 'form'
+                ? selectedEquipment()
+                  ? 'Editar equipo'
+                  : 'Nuevo equipo'
+                : mode === 'delete'
+                  ? 'Eliminar equipo'
+                  : selectedEquipment()?.activo
+                    ? 'Suspender equipo'
+                    : 'Activar equipo'
+            }}
+          </h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar diálogo"
+          (click)="closeDialog()"
+        >
+          ×
+        </button>
+      </header>
+      @if (mode === 'form') {
+        <form [formGroup]="equipmentForm" (ngSubmit)="submitForm()">
+          <div class="form-grid">
+            <label
+              >Nombre del equipo<input type="text" formControlName="nombre" autocomplete="off" />
+              @if (equipmentForm.controls.nombre.touched && equipmentForm.controls.nombre.invalid) {
+                <small>Capture un nombre de hasta 120 caracteres.</small>
+              }
+            </label>
+            <label
+              >Campus base<select formControlName="campusBaseId" (change)="baseCampusChanged()">
+                <option value="">Seleccione un campus</option>
+                @for (campus of equipment.campuses(); track campus.documentId) {
+                  <option [value]="campus.documentId" [disabled]="!campus.activo">
+                    {{ campus.clave }} · {{ campus.nombre
+                    }}{{ campus.activo ? '' : ' (suspendido)' }}
+                  </option>
+                }
+              </select>
+              @if (selectedEquipment()?.utilizado) {
+                <small class="help">El campus base es histórico y ya no puede modificarse.</small>
+              }
+            </label>
+            <label
+              >Cantidad operativa<input
+                type="number"
+                min="0"
+                max="999"
+                step="1"
+                formControlName="cantidadOperativa"
+              /><small class="help"
+                >Inventario utilizable, no disponibilidad por horario.</small
+              ></label
+            >
+            <label
+              >Clasificación<select
+                formControlName="clasificacion"
+                (change)="classificationChanged()"
+              >
+                <option value="fijo">Fijo</option>
+                <option value="transferible">Transferible</option>
+              </select></label
+            >
+          </div>
+          @if (equipmentForm.controls.clasificacion.value === 'transferible') {
+            <fieldset>
+              <legend>Campus destino permitidos</legend>
+              <p>Seleccione al menos un campus diferente del campus base.</p>
+              <div class="destination-grid">
+                @for (campus of equipment.activeCampuses(); track campus.documentId) {
+                  @if (campus.documentId !== equipmentForm.controls.campusBaseId.value) {
+                    <label
+                      ><input
+                        type="checkbox"
+                        [checked]="isDestinationSelected(campus.documentId)"
+                        (change)="toggleDestination(campus.documentId, $event)"
+                      /><span>{{ campus.clave }} · {{ campus.nombre }}</span></label
+                    >
+                  }
+                }
+              </div>
+            </fieldset>
+          }
+          @if (!selectedEquipment()) {
+            <label class="active-check"
+              ><input type="checkbox" formControlName="activo" /><span
+                >Equipo activo desde el alta</span
+              ></label
+            >
+          }
+          @if (formError(); as error) {
+            <p class="form-error" role="alert">{{ error }}</p>
+          }
+          <div class="dialog-actions">
+            <button class="button button--secondary" type="button" (click)="closeDialog()">
+              Cancelar</button
+            ><button class="button button--primary" type="submit" [disabled]="equipment.mutating()">
+              {{ equipment.mutating() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      } @else if (selectedEquipment(); as record) {
+        <p class="confirmation">
+          @if (mode === 'delete') {
+            Se eliminará <strong>{{ record.nombre }}</strong
+            >. Esta acción solo está disponible porque no tiene uso histórico.
+          } @else if (record.activo) {
+            <strong>{{ record.nombre }}</strong> dejará de estar disponible para nuevas selecciones,
+            sin perder su historial.
+          } @else {
+            <strong>{{ record.nombre }}</strong> volverá a estar disponible en el catálogo.
+          }
+        </p>
+        <div class="dialog-actions">
+          <button class="button button--secondary" type="button" (click)="closeDialog()">
+            Cancelar</button
+          ><button
+            class="button"
+            [class.button--danger]="mode === 'delete' || record.activo"
+            [class.button--primary]="mode === 'status' && !record.activo"
+            type="button"
+            [disabled]="equipment.mutating()"
+            (click)="mode === 'delete' ? confirmDelete() : confirmStatus()"
+          >
+            {{
+              equipment.mutating()
+                ? 'Procesando…'
+                : mode === 'delete'
+                  ? 'Eliminar'
+                  : record.activo
+                    ? 'Suspender'
+                    : 'Activar'
+            }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

@@ -1,0 +1,419 @@
+<section class="campuses-page">
+  <header class="panel page-header">
+    <div>
+      <p class="eyebrow">Configuración institucional</p>
+      <h1>Campus</h1>
+      <p>Administre sedes y horarios operativos del área de Sistemas.</p>
+    </div>
+    <button class="button button--primary" type="button" (click)="openCreate($event)">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Nuevo campus
+    </button>
+  </header>
+
+  @if (campuses.error(); as error) {
+    <div class="alert alert--error" role="alert">
+      <span>{{ error }}</span
+      ><button type="button" aria-label="Cerrar mensaje" (click)="campuses.clearError()">×</button>
+    </div>
+  }
+  @if (campuses.notice(); as notice) {
+    <div class="alert alert--success" role="status">
+      <span>{{ notice }}</span
+      ><button type="button" aria-label="Cerrar mensaje" (click)="campuses.clearNotice()">×</button>
+    </div>
+  }
+
+  <form class="panel search-panel" [formGroup]="searchForm" (submit)="$event.preventDefault()">
+    <label for="campus-search"
+      ><span class="sr-only">Buscar campus</span
+      ><svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+      <input
+        id="campus-search"
+        type="search"
+        formControlName="term"
+        placeholder="Buscar por campus, clave o ubicación"
+        (input)="applySearch($event)"
+      />
+    </label>
+    @if (campuses.searchTerm()) {
+      <button class="button button--secondary" type="button" (click)="clearSearch()">
+        Limpiar
+      </button>
+    }
+  </form>
+
+  <section
+    class="panel list-panel"
+    aria-labelledby="campus-list-title"
+    [attr.aria-busy]="campuses.loading()"
+  >
+    <header class="list-header">
+      <div>
+        <h2 id="campus-list-title">Listado de campus</h2>
+        <p>Domingos permanecen inactivos en esta etapa del sistema.</p>
+      </div>
+      @if (!campuses.loading()) {
+        <span
+          >{{ campuses.resultCount() }}
+          {{ campuses.resultCount() === 1 ? 'registro' : 'registros' }}</span
+        >
+      }
+    </header>
+    @if (campuses.loading()) {
+      <div class="state" role="status">
+        <span class="spinner" aria-hidden="true"></span><strong>Cargando campus…</strong>
+      </div>
+    } @else if (!campuses.records().length && !campuses.error()) {
+      <div class="state">
+        <strong>No hay campus registrados</strong
+        ><span>Agregue TUP y FCS desde “Nuevo campus”.</span>
+      </div>
+    } @else if (!campuses.filteredRecords().length) {
+      <div class="state">
+        <strong>No se encontraron campus</strong
+        ><button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar búsqueda
+        </button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Catálogo administrativo de campus
+          </caption>
+          <thead>
+            <tr>
+              <th>Campus</th>
+              <th>Ubicación</th>
+              <th>Horario de Sistemas</th>
+              <th>Estado</th>
+              <th>Actualización</th>
+              <th class="actions-heading">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              campus of campuses.visibleRecords();
+              track campus.documentId;
+              let index = $index
+            ) {
+              <tr>
+                <td>
+                  <strong>{{ campus.nombre }}</strong
+                  ><small
+                    >{{ campus.clave }}
+                    @if (campus.utilizado) {
+                      · Utilizado
+                    }
+                  </small>
+                </td>
+                <td>
+                  {{ campus.direccion || 'Dirección pendiente' }}
+                  @if (campus.referencia) {
+                    <small>{{ campus.referencia }}</small>
+                  }
+                </td>
+                <td>{{ formatSchedule(campus) }}</td>
+                <td>
+                  <span class="badge" [class.badge--active]="campus.activo">{{
+                    campus.activo ? 'Activo' : 'Suspendido'
+                  }}</span>
+                </td>
+                <td>{{ formatTimestamp(campus.fechaActualizacion) }}</td>
+                <td>
+                  <div class="row-actions">
+                    <span class="tooltip-host"
+                      ><button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="'Editar ' + campus.nombre"
+                        [attr.aria-describedby]="'camp-edit-tip-' + index"
+                        (click)="openEdit(campus, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        </svg></button
+                      ><span class="tooltip" role="tooltip" [id]="'camp-edit-tip-' + index"
+                        >Editar campus</span
+                      ></span
+                    >
+                    <span class="tooltip-host"
+                      ><button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="
+                          (campus.activo ? 'Suspender ' : 'Activar ') + campus.nombre
+                        "
+                        [attr.aria-describedby]="'camp-status-tip-' + index"
+                        (click)="openStatus(campus, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="9" />
+                          <path [attr.d]="campus.activo ? 'M8 12h8' : 'm8 12 2.5 2.5L16 9'" />
+                        </svg></button
+                      ><span class="tooltip" role="tooltip" [id]="'camp-status-tip-' + index">{{
+                        campus.activo ? 'Suspender campus' : 'Activar campus'
+                      }}</span></span
+                    >
+                    <span class="tooltip-host" [attr.tabindex]="campus.utilizado ? 0 : null"
+                      ><button
+                        class="icon-button icon-button--danger"
+                        type="button"
+                        [disabled]="campus.utilizado"
+                        [attr.aria-label]="'Eliminar ' + campus.nombre"
+                        [attr.aria-describedby]="'camp-delete-tip-' + index"
+                        (click)="openDelete(campus, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                        </svg></button
+                      ><span class="tooltip" role="tooltip" [id]="'camp-delete-tip-' + index">{{
+                        campus.utilizado
+                          ? 'No puede eliminarse porque ya fue
+                    utilizado'
+                          : 'Eliminar campus'
+                      }}</span></span
+                    >
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="mobile-list">
+        @for (campus of campuses.visibleRecords(); track campus.documentId) {
+          <article>
+            <header>
+              <div>
+                <strong>{{ campus.nombre }}</strong
+                ><span>{{ campus.clave }}</span>
+              </div>
+              <span class="badge" [class.badge--active]="campus.activo">{{
+                campus.activo ? 'Activo' : 'Suspendido'
+              }}</span>
+            </header>
+            <p>{{ campus.direccion || 'Dirección pendiente' }}</p>
+            <p><strong>Horario:</strong> {{ formatSchedule(campus) }}</p>
+            <div class="card-actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                (click)="openEdit(campus, $event)"
+              >
+                Editar</button
+              ><button
+                class="button button--secondary"
+                type="button"
+                (click)="openStatus(campus, $event)"
+              >
+                {{ campus.activo ? 'Suspender' : 'Activar' }}</button
+              ><button
+                class="button button--danger"
+                type="button"
+                [disabled]="campus.utilizado"
+                (click)="openDelete(campus, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+      <footer class="pagination">
+        <label for="campus-page-size">Mostrar</label
+        ><select
+          id="campus-page-size"
+          [value]="campuses.pageSize()"
+          (change)="changePageSize($event)"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option></select
+        ><span>Página {{ campuses.page() }} de {{ campuses.totalPages() }}</span>
+        <div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página anterior"
+            [disabled]="campuses.page() === 1"
+            (click)="previousPage()"
+          >
+            ‹</button
+          ><button
+            class="icon-button"
+            type="button"
+            aria-label="Página siguiente"
+            [disabled]="campuses.page() === campuses.totalPages()"
+            (click)="nextPage()"
+          >
+            ›
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
+
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop">
+    <section
+      class="campus-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="campus-dialog-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">
+            {{ mode === 'form' ? 'Catálogo institucional' : 'Confirmación' }}
+          </p>
+          <h2 id="campus-dialog-title">
+            {{
+              mode === 'form'
+                ? selectedCampus()
+                  ? 'Editar campus'
+                  : 'Nuevo
+          campus'
+                : mode === 'delete'
+                  ? 'Eliminar campus'
+                  : selectedCampus()?.activo
+                    ? 'Suspender campus'
+                    : 'Activar campus'
+            }}
+          </h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar diálogo"
+          (click)="closeDialog()"
+        >
+          ×
+        </button>
+      </header>
+      @if (mode === 'form') {
+        <form [formGroup]="campusForm" (ngSubmit)="submitForm()">
+          <div class="form-grid">
+            <label
+              >Nombre institucional<input
+                type="text"
+                formControlName="nombre"
+                autocomplete="organization"
+              />
+              @if (campusForm.controls.nombre.touched && campusForm.controls.nombre.invalid) {
+                <small>Capture un nombre de hasta 120 caracteres.</small>
+              }
+            </label>
+            <label
+              >Clave corta<input
+                type="text"
+                formControlName="clave"
+                maxlength="10"
+                placeholder="TUP"
+              />
+              @if (campusForm.controls.clave.touched && campusForm.controls.clave.invalid) {
+                <small>Use de 2 a 10 letras, números o guiones.</small>
+              }
+            </label>
+            <label
+              >Dirección (opcional)<input
+                type="text"
+                formControlName="direccion"
+                autocomplete="street-address"
+            /></label>
+            <label>Referencia (opcional)<input type="text" formControlName="referencia" /></label>
+          </div>
+          <fieldset formGroupName="horariosSistemas">
+            <legend>Horario operativo de Sistemas</legend>
+            <p>Defina disponibilidad de lunes a sábado. El domingo permanece inactivo.</p>
+            <div class="schedule-grid">
+              @for (day of days; track day.key) {
+                <div class="schedule-row" [formGroupName]="day.key">
+                  <label class="day-toggle"
+                    ><input type="checkbox" formControlName="operativo" /><span>{{
+                      day.label
+                    }}</span></label
+                  ><label
+                    >Inicio<input
+                      type="time"
+                      formControlName="inicio"
+                      [disabled]="!scheduleGroup(day.key).value.operativo" /></label
+                  ><label
+                    >Fin<input
+                      type="time"
+                      formControlName="fin"
+                      [disabled]="!scheduleGroup(day.key).value.operativo"
+                  /></label>
+                </div>
+              }
+              <div class="schedule-row schedule-row--disabled">
+                <span>Domingo</span><span>Inactivo</span>
+              </div>
+            </div>
+          </fieldset>
+          @if (!selectedCampus()) {
+            <label class="active-check"
+              ><input type="checkbox" formControlName="activo" /><span
+                >Campus activo desde el alta</span
+              ></label
+            >
+          }
+          @if (formError(); as error) {
+            <p class="form-error" role="alert">{{ error }}</p>
+          }
+          <div class="dialog-actions">
+            <button class="button button--secondary" type="button" (click)="closeDialog()">
+              Cancelar</button
+            ><button class="button button--primary" type="submit" [disabled]="campuses.mutating()">
+              {{ campuses.mutating() ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      } @else if (selectedCampus(); as campus) {
+        <p class="confirmation">
+          @if (mode === 'delete') {
+            Se eliminará <strong>{{ campus.nombre }}</strong
+            >. Esta acción solo está disponible porque no tiene referencias históricas.
+          } @else if (campus.activo) {
+            <strong>{{ campus.nombre }}</strong> dejará de estar disponible para nuevas selecciones,
+            sin perder su historial.
+          } @else {
+            <strong>{{ campus.nombre }}</strong> volverá a estar disponible.
+          }
+        </p>
+        <div class="dialog-actions">
+          <button class="button button--secondary" type="button" (click)="closeDialog()">
+            Cancelar</button
+          ><button
+            class="button"
+            [class.button--danger]="mode === 'delete' || campus.activo"
+            [class.button--primary]="mode === 'status' && !campus.activo"
+            type="button"
+            [disabled]="campuses.mutating()"
+            (click)="mode === 'delete' ? confirmDelete() : confirmStatus()"
+          >
+            {{
+              campuses.mutating()
+                ? 'Procesando…'
+                : mode === 'delete'
+                  ? 'Eliminar'
+                  : campus.activo
+                    ? 'Suspender'
+                    : 'Activar'
+            }}
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}
