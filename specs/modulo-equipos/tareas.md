@@ -50,3 +50,18 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 - [ ] EQP-T23 Obtener aceptación funcional y visual del catálogo.
 - [x] EQP-T24 Autorizar y desplegar por separado Functions, Rules y Hosting de staging.
 - [x] EQP-T25 Confirmar que producción no fue utilizada.
+
+## Normalización visual pendiente
+
+- [x] EQP-T26 Documentar la auditoría de divergencias respecto al sistema de diseño global.
+- [x] EQP-T27 Retirar del SCSS de Equipos las redefiniciones de botones, icon-buttons, colores, tamaños, radios y estados compartidos.
+- [ ] EQP-T28 Comparar Equipos con Usuarios, Coordinaciones y Campus en escritorio, tableta y 320 px, incluido teclado y foco visible.
+- [ ] EQP-T29 Publicar la corrección en staging únicamente después de pruebas, aceptación y autorización expresa.
+- [x] EQP-T30 Ejecutar lint visual, suite completa y build de staging después de normalizar.
+
+## Evidencia de normalización
+
+- `npm run lint:visual` aprobado sin selectores compartidos duplicados ni colores institucionales obsoletos.
+- Suite completa aprobada: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules.
+- Build de staging aprobado con bundle inicial de 468.25 kB y `equipment-page` diferido de 34.77 kB.
+- No se modificaron Eventos, reservaciones, Functions, Rules ni datos; la corrección visual aún no fue desplegada.

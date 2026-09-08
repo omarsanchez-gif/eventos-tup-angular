@@ -79,6 +79,23 @@ Signals representan estado y valores derivados. RxJS representa observadores y c
 
 Angular Material/CDK aporta comportamiento y accesibilidad. El tema institucional y los wrappers propios evitan una apariencia Material genérica. Consultar `ADR-004`.
 
+### Dependencia visual unidireccional
+
+```text
+design-system/spec.md
+        ↓
+tokens y primitivas en src/styles.scss
+        ↓
+templates de Login, shell y módulos
+        ↓
+SCSS encapsulado solo para distribución específica
+```
+
+- Los módulos consumen las primitivas globales; no crean copias locales de botones, icon-buttons, campos, badges, alertas, tooltips o diálogos equivalentes.
+- Una hoja de componente puede ajustar composición responsive, columnas, espacios y posición, pero no sobrescribe color, tipografía, altura, radio, iconografía o estados de una primitiva compartida.
+- Un nuevo requisito visual se resuelve primero en el sistema de diseño y después se consume desde los módulos.
+- La revisión arquitectónica debe rechazar selectores compartidos redefinidos dentro de Campus, Equipos o módulos futuros.
+
 ## Rutas objetivo
 
 ```text
@@ -206,5 +223,6 @@ Cloud Storage de staging utiliza el bucket predeterminado `eventos-tup-angular-s
 ## Calidad
 
 - Pruebas unitarias, integración, Rules, callables y end-to-end.
+- `npm run lint:visual` bloquea redefiniciones encapsuladas de botones/icon-buttons y colores institucionales obsoletos.
 - Presupuestos definidos en `criterios-no-funcionales.md`.
 - Definición de terminado transversal.

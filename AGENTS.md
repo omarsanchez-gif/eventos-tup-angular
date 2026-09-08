@@ -41,6 +41,9 @@ Orden obligatorio:
 - Storage de staging utiliza exclusivamente `eventos-tup-angular-stg.firebasestorage.app` en `US-CENTRAL1`.
 - No ejecutar `firebase deploy` sin `--only` y `--project staging`; cada servicio se valida y despliega por separado.
 - No copiar funcionalidades históricas no presentes en las nuevas specs.
+- Consumir botones, icon-buttons, campos, badges, alertas, tooltips y diálogos compartidos desde `src/styles.scss`; los SCSS encapsulados solo controlan distribución específica.
+- No redefinir localmente color, tipografía, altura, radio, iconografía ni estados de una primitiva visual global. Toda nueva variante se documenta primero en `specs/design-system/spec.md`.
+- Todo cambio de interfaz y todo módulo nuevo debe superar `npm run lint:visual`; no se permite omitir o desactivar esta guardia para aceptar estilos locales duplicados.
 - Ante una contradicción o ambigüedad, detener la implementación y actualizar specs.
 
 ## Alcance autorizado actual

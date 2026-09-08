@@ -44,7 +44,9 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 --color-error-border:      #efb5b0
 --color-success:           #18794e
 --color-success-soft:      #ecfdf3
+--color-success-border:    #a8ddbd
 --color-warning:           #9a6700
+--color-warning-soft:      #fff7d6
 --color-info:              #175cd3
 ```
 
@@ -123,6 +125,66 @@ Todos los módulos reutilizan las clases globales `.button` e `.icon-button`; un
 
 Las variantes se definen en `src/styles.scss`; los estilos encapsulados de una pantalla solo pueden controlar distribución, no redefinir la identidad visual de los controles compartidos.
 
+### Contrato visual canónico
+
+`src/styles.scss` es la única fuente de verdad ejecutable para controles compartidos. Todos los módulos existentes y futuros deben consumir exactamente estas variantes:
+
+| Variante               | Uso                                                        | Color y superficie canónicos                                                                                 |
+| ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `.button--primary`     | Alta, guardar o confirmar una acción positiva principal    | `--color-primary-700` con texto blanco; hover `--color-primary-800`                                          |
+| `.button--secondary`   | Cancelar, limpiar, volver o acción auxiliar                | `--color-surface`, borde `--color-control-border`, texto `--color-primary-700`; hover `--color-primary-soft` |
+| `.button--danger`      | Confirmar eliminación, suspensión o reducción destructiva  | Fondo y borde `--color-error`, texto blanco; hover `--color-error-hover`                                     |
+| `.icon-button`         | Editar, consultar, paginar o cambiar estado no destructivo | `--color-surface`, borde `--color-border`, icono `--color-primary-700`; hover `--color-primary-soft`         |
+| `.icon-button--danger` | Eliminar desde una fila o tarjeta                          | `--color-error-soft`, borde `--color-error-border`, icono `--color-error`                                    |
+
+Reglas normativas:
+
+- Altura y ancho táctil mínimo: `--control-height`, actualmente 44 px.
+- Radio: `--radius-small`, actualmente 8 px. Un módulo no convierte localmente las acciones equivalentes en círculos.
+- Tipografía: `--font-family-ui`, `--font-size-body-small` y `--font-weight-semibold`.
+- Foco visible: contorno global basado en `--color-info`; no se sustituye por un morado local.
+- Disabled: opacidad global de 0.52 y sin sombra; conserva `aria-label` y explicación cuando existe una restricción.
+- Los colores de marca, estados, bordes, texto, superficies, controles y foco se consumen mediante Custom Properties. No se agregan valores hexadecimales locales cuando ya existe un token semántico.
+- Las hojas encapsuladas pueden definir distribución como `gap`, alineación, ancho responsive o posición del tooltip, pero no pueden declarar `.button`, `.button--primary`, `.button--secondary`, `.button--danger`, `.icon-button`, `.icon-button--danger` ni sus estados visuales.
+
+### Primitivas administrativas compartidas
+
+La misma regla de fuente única aplica a:
+
+- encabezados de página, `eyebrow`, títulos y texto auxiliar;
+- paneles, bordes, radios y elevación;
+- campos, selects, checkboxes y foco;
+- tablas, encabezados, paginación y tarjetas móviles;
+- badges de estado;
+- alertas de error y éxito;
+- diálogos, overlays, tooltips, spinners y estados vacíos.
+
+Una diferencia de contenido o distribución entre módulos no autoriza una variante nueva de color, tamaño, tipografía, radio o interacción. Toda variante nueva debe incorporarse primero a este documento y a los tokens/primitivas globales.
+
+### Auditoría de conformidad — 21 de agosto de 2026
+
+| Superficie        | Estado verificado               | Hallazgo                                                                                  |
+| ----------------- | ------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/styles.scss` | Canónica                        | Contiene tokens y primitivas globales aprobadas.                                          |
+| Usuarios          | Conforme en botones compartidos | Consume las clases globales y conserva estilos encapsulados de distribución.              |
+| Coordinaciones    | Conforme en botones compartidos | Consume las clases globales y conserva estilos encapsulados de distribución.              |
+| Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
+| Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
+
+La corrección local retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. La aceptación visual continúa pendiente hasta completar la comparación autenticada; staging conserva la versión anterior mientras no exista autorización de despliegue.
+
+### Verificación obligatoria de normalización
+
+Una corrección visual transversal debe demostrar:
+
+1. Ausencia de redefiniciones locales de los selectores compartidos prohibidos.
+2. Uso de tokens semánticos para marca, estados, superficies, bordes y foco.
+3. Igualdad de altura, radio, tipografía, iconografía y estados para acciones equivalentes.
+4. Comparación autenticada de Usuarios, Coordinaciones, Campus y Equipos en escritorio, tableta y 320 px.
+5. Recorrido por teclado de hover/focus, disabled, loading, error, éxito y diálogos.
+6. Pruebas Angular, lint, formato y build aprobados antes de cualquier despliegue de la corrección.
+7. `npm run lint:visual` aprobado como guardia obligatoria de todos los módulos.
+
 ## Estados de controles
 
 Cada control interactivo debe definir:
@@ -198,13 +260,14 @@ Cada control interactivo debe definir:
 │ [ ] Eventos      │  Superficie institucional                        │
 │     Próximamente │                                                  │
 │ [ ] Coordinac.*  │                                                  │
-│     Próximamente │                                                  │
+│ [ ] Campus*       │                                                  │
+│ [ ] Equipos*      │                                                  │
 │ [ ] Usuarios*    │                                                  │
 │                  │                                                  │
 │ Cerrar sesión    │                                                  │
 │ [Avatar] Perfil  │                                                  │
 └──────────────────┴──────────────────────────────────────────────────┘
-* Solo admin. Usuarios y Coordinaciones están habilitados en código; Eventos permanece documentado y deshabilitado hasta autorizarlo.
+* Solo admin. Usuarios, Coordinaciones, Campus y Equipos están habilitados; Eventos permanece documentado y deshabilitado hasta autorizarlo.
 ```
 
 ## Wireframe del shell administrativo — móvil
@@ -225,7 +288,8 @@ Menú abierto:
 │ Dashboard            │          │
 │ Eventos Próximamente │          │
 │ Coordinaciones*      │          │
-│   Próximamente       │          │
+│ Campus*              │          │
+│ Equipos*             │          │
 │ Usuarios*             │         │
 │ Cerrar sesión        │          │
 │ Perfil               │          │

@@ -44,6 +44,8 @@
 - EQP-031: acciones usan iconos SVG, `aria-label`, foco visible y tooltip descriptivo.
 - EQP-032: tabla y tarjetas conservan datos y acciones desde 320 px.
 - EQP-033: cerrar diálogos devuelve el foco al control que los abrió.
+- EQP-034: `npm run lint:visual` confirma que Equipos no redefine botones/icon-buttons ni usa la paleta institucional anterior.
+- EQP-035: comparación autenticada confirma igualdad de color, altura, radio, tipografía, iconos, foco y estados con los demás catálogos.
 
 ## Contrato futuro de reservaciones
 
@@ -78,3 +80,4 @@ Estos casos se ejecutarán solo cuando `reservaciones.md` sea autorizado:
 - Security Rules con roles anónimo, sin claim, `usuario` y `admin`.
 - Revisión accesible y responsive autenticada.
 - Lint, formato, build y suite completa aprobados.
+- Guardia automática de normalización visual.

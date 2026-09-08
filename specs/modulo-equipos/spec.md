@@ -141,6 +141,12 @@ El catálogo sanitizado contiene solo `equipoId`, nombre, campus base, clasifica
 - La eliminación utilizada permanece deshabilitada y explica que debe suspenderse.
 - Estados de carga, vacío, sin coincidencias, error, éxito y mutación en curso.
 
+## Conformidad visual
+
+La normalización local del 21 de agosto de 2026 eliminó de Equipos las declaraciones privadas de `.button`, sus variantes, `.icon-button` y sus estados. Encabezados, paneles, campos, badges, alertas, tooltips, diálogos y spinners consumen tokens globales cuando comparten semántica con los demás catálogos.
+
+La hoja encapsulada conserva únicamente distribución del listado y formulario de Equipos. `npm run lint:visual` impide reintroducir selectores compartidos o los colores `#3c108e`, `#2e0a70` y `#321070`. La comparación visual autenticada y la publicación de la corrección en staging continúan pendientes.
+
 ## Reglas de edición e históricos
 
 - Renombrar no altera fotografías históricas guardadas en reservaciones o eventos.
@@ -180,7 +186,8 @@ service-unavailable
 - Un equipo utilizado no se elimina y su campus base no cambia.
 - El catálogo sanitizado no expone cantidades ni afirma disponibilidad.
 - La búsqueda filtra mientras se escribe y nunca recarga la página.
-- Pasan pruebas Angular, Functions, Rules y Firestore Emulator antes de solicitar staging.
+- Pasan pruebas Angular, Functions, Rules y Firestore Emulator antes de cualquier publicación o corrección posterior en staging.
+- Botones, iconos, controles, tipografía, foco y estados compartidos cumplen el sistema de diseño global sin redefiniciones encapsuladas.
 
 ## Fuera del incremento A
 
@@ -209,4 +216,4 @@ service-unavailable
 - Capturar y aceptar manualmente TUP y FCS en staging.
 - Confirmar el inventario utilizable inicial por campus para pruebas sintéticas o institucionales controladas.
 - Ejecutar el recorrido funcional y visual con sesión `admin` después de implementar.
-- Autorizar por separado cualquier despliegue de Functions, Rules o Hosting.
+- Autorizar por separado cualquier despliegue posterior de Functions, Rules o Hosting, incluida la futura corrección visual.

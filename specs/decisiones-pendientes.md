@@ -58,6 +58,7 @@
 - Ejecutar el recorrido funcional con datos sintéticos como `admin`: alta, edición, suspensión, activación y eliminación condicionada.
 - Revisar accesibilidad y responsive en 320 px, tableta y escritorio.
 - Completar la aceptación funcional y visual en el Hosting de staging antes de considerar producción.
+- Validar manualmente la versión normalizada de Campus contra el estándar global y autorizar su publicación posterior.
 
 ## Pendientes para aceptar el catálogo de Equipos
 
@@ -66,6 +67,14 @@
 - Ejecutar el recorrido manual como `admin`: alta fija y transferible, edición, suspensión, activación y eliminación condicionada.
 - Revisar accesibilidad y responsive en 320 px, tableta y escritorio.
 - Obtener aceptación funcional y visual antes de considerar producción o autorizar reservaciones.
+- Validar manualmente la versión normalizada de Equipos contra el estándar global y autorizar su publicación posterior.
+
+## Pendiente transversal de normalización visual
+
+- La auditoría del 21 de agosto de 2026 confirma que `src/styles.scss` es la fuente canónica y que Usuarios y Coordinaciones consumen sus botones compartidos.
+- Campus y Equipos ya retiraron localmente las copias encapsuladas, adoptaron tokens globales y conservan solo distribución propia.
+- `npm run lint:visual`, integrado en el lint general, bloquea redefiniciones de botones/icon-buttons y la paleta institucional anterior en cualquier módulo.
+- Falta comprobar las cuatro pantallas juntas en escritorio, tableta y 320 px con una sesión autenticada y autorizar el despliegue de la corrección visual a staging.
 
 ## Pendientes antes de reservaciones de Equipos
 

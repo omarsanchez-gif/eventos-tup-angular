@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación local completada y validada el 21 de agosto de 2026. Despliegue no autorizado.
+Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La validación manual, normalización visual y aceptación permanecen pendientes; producción no está autorizada.
 
 ## Documentación
 
@@ -47,6 +47,13 @@ Implementación local completada y validada el 21 de agosto de 2026. Despliegue 
 - [x] CAM-T27 Autorizar y completar despliegue separado en staging.
 - [x] CAM-T28 Confirmar que producción no fue utilizada.
 
+## Normalización visual pendiente
+
+- [x] CAM-T29 Documentar la auditoría de divergencias respecto al sistema de diseño global.
+- [x] CAM-T30 Retirar del SCSS de Campus las redefiniciones de botones, icon-buttons, colores, tamaños, radios y estados compartidos.
+- [ ] CAM-T31 Comparar Campus con Usuarios, Coordinaciones y Equipos en escritorio, tableta y 320 px, incluido teclado y foco visible.
+- [x] CAM-T32 Ejecutar lint visual, suite completa y build de staging después de normalizar.
+
 ## Evidencia del incremento local
 
 - Suite Angular: 46 pruebas aprobadas; incluye pantalla, búsqueda en vivo, navegación y facade de Campus.
@@ -58,4 +65,7 @@ Implementación local completada y validada el 21 de agosto de 2026. Despliegue 
 - Bundle medido: 467.09 kB iniciales y `campuses-page` diferido de 33.06 kB.
 - Staging: seis Functions en `us-central1`, Firestore Rules y Hosting publicados el 21 de agosto de 2026.
 - Verificación remota: Hosting `200`, seis Functions listadas y callable anónima rechazada con `401`.
-- Pendientes reales: CAM-T25 validación manual autenticada con datos sintéticos y CAM-T26 aceptación funcional/visual.
+- Guardia automática: `npm run lint:visual` aprobada sin selectores compartidos duplicados ni colores institucionales obsoletos.
+- Verificación posterior: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules aprobadas.
+- Build de staging aprobado con `campuses-page` diferido de 34.17 kB.
+- Pendientes reales: CAM-T25 validación manual autenticada, CAM-T26 aceptación funcional/visual y CAM-T31 verificación transversal.

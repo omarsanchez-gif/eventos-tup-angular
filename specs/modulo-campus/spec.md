@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación autorizada el 21 de agosto de 2026. El despliegue requiere autorización separada.
+Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La validación manual, la normalización visual y la aceptación permanecen pendientes. Producción no está autorizada.
 
 ## Objetivo
 
@@ -113,7 +113,7 @@ fechaActualizacion: Timestamp
 - Paginación visual con 5, 10, 15 o 20 registros.
 - Formulario en diálogo accesible con nombre, clave, dirección, referencia, estado inicial y horarios de lunes a sábado; domingo se informa como inactivo.
 - Direcciones vacías muestran “Dirección pendiente”.
-- Acciones usan las primitivas globales y ayudas contextuales.
+- Acciones deben consumir sin redefinir las primitivas globales `.button` e `.icon-button`, sus variantes y tokens conforme a `../design-system/spec.md`.
 - Eliminar aparece deshabilitado y explicado cuando `utilizado: true`.
 - Estados de carga, vacío, sin coincidencias, error y éxito.
 - Responsive desde 320 px mediante tarjetas equivalentes.
@@ -125,6 +125,12 @@ La aplicación no crea semillas automáticas. El administrador podrá capturar:
 - `Tecnológico Universitario Playacar`, clave `TUP`, dirección pendiente, lunes a viernes 08:00–20:00, sábado 08:00–18:00 y domingo inactivo.
 - `Facultad de Ciencias de la Salud`, clave `FCS`, dirección pendiente, lunes a viernes 09:00–18:00, sábado 09:00–14:00 y domingo inactivo.
 
+## Conformidad visual
+
+La normalización local del 21 de agosto de 2026 retiró de Campus las redefiniciones de botones e icon-buttons y sustituyó colores, alturas, radios, tipografía, foco, estados y superficies compartidos por tokens globales. La hoja encapsulada conserva únicamente composición y distribución propias de Campus.
+
+`npm run lint:visual` impide reintroducir selectores compartidos o la paleta anterior. Permanecen pendientes la comparación visual autenticada con los demás catálogos y la autorización de publicación de esta corrección en staging.
+
 ## Fuera de alcance
 
 - Equipos, inventarios y reservaciones.
@@ -133,7 +139,7 @@ La aplicación no crea semillas automáticas. El administrador podrá capturar:
 - Festivos.
 - Espacios físicos dentro de un campus.
 - Integración con Eventos, correo o Calendar.
-- Despliegue a staging o producción.
+- Nuevos despliegues sin autorización expresa y cualquier despliegue a producción.
 
 ## Criterio de terminado
 
@@ -142,4 +148,5 @@ La aplicación no crea semillas automáticas. El administrador podrá capturar:
 - Concurrencia de nombre y clave probada.
 - Escrituras directas bloqueadas.
 - Lint, formato, pruebas y build en verde.
+- Primitivas visuales compartidas consumidas desde `src/styles.scss`, sin redefiniciones locales.
 - Producción no utilizada.

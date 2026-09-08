@@ -2,7 +2,7 @@
 
 ## Estado
 
-Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. El incremento A del catálogo de Equipos fue implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026; su prueba manual y aceptación continúan pendientes. Reservaciones, logística y la ampliación de Eventos permanecen solo documentadas y sin código.
+Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. El incremento A del catálogo de Equipos fue implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026; su prueba manual y aceptación continúan pendientes. Campus y Equipos fueron normalizados visualmente en código local para consumir las primitivas globales; la revisión autenticada y el despliegue de esa corrección siguen pendientes. Reservaciones, logística y la ampliación de Eventos permanecen solo documentadas y sin código.
 
 ## Propósito
 

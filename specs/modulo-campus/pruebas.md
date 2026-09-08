@@ -45,6 +45,8 @@
 - CAM-029: diálogo contiene foco y lo devuelve al iniciador.
 - CAM-030: acciones tienen SVG, nombre accesible y ayuda contextual.
 - CAM-031: formulario y tarjetas funcionan a 320 px sin desplazamiento global.
+- CAM-032: `npm run lint:visual` confirma que Campus no redefine botones/icon-buttons ni usa la paleta institucional anterior.
+- CAM-033: comparación autenticada confirma igualdad de color, altura, radio, tipografía, iconos, foco y estados con los demás catálogos.
 
 ## Evidencia requerida
 
@@ -52,4 +54,5 @@
 - Firestore Emulator para unicidad, estado y eliminación.
 - Security Rules para admin, usuario y anónimo.
 - Lint, formato y build de staging.
+- Guardia automática de normalización visual.
 - Recorrido manual autenticado con TUP y FCS en staging antes de desplegar.
