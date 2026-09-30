@@ -395,6 +395,41 @@ Menú abierto:
 - Una coordinación histórica suspendida se muestra con texto “Suspendida”; el estado no depende solo del color.
 - Calendar pendiente y notificaciones pendientes se muestran como estados separados.
 
+## Wireframe futuro de Eventos — listado y calendario
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│ GESTIÓN INSTITUCIONAL  Eventos                         [Nuevo evento]   │
+│ Los eventos requieren cinco fechas naturales de anticipación.           │
+├──────────────────────────────────────────────────────────────────────────┤
+│ [Listado] [Calendario]   Campus [Todos ▾]   Estado [Todos ▾]            │
+├──────────────────────────────────────────────────────────────────────────┤
+│ [‹] [Hoy] [›]          SEPTIEMBRE 2026        [Mes] [Semana] [Día] [Lista]│
+│ lun        mar        mié        jue        vie        sáb        dom    │
+│ 14         15         16         17         18         19         20     │
+│            Congreso TUP · Programado                                    │
+│            ───────────────────────────                                   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+- FullCalendar Standard vive dentro del módulo y la ruta lazy de Eventos; no crea un módulo administrativo separado.
+- Escritorio inicia en mes. En 320 px se prioriza lista y se conserva un control explícito para cambiar de vista.
+- Seleccionar un evento abre el detalle. El calendario no crea por selección, no arrastra, no redimensiona y no cambia campus.
+- `Programado`, `En ejecución`, `Finalizado` y `Cancelado` usan texto visible y tokens semánticos; nunca dependen solo del color.
+- El nombre accesible incluye evento, intervalo, campus y estado. Todos los eventos interactivos se recorren por teclado.
+- Navegación de rango conserva foco predecible y anuncia carga, vacío, error y periodo mostrado.
+- Un evento de varios días se muestra como un bloque continuo, incluidas noches; la información de equipo permanece separada.
+- La vista consume Firestore por intervalo visible y no representa Google Calendar como fuente de verdad.
+
+## Reglas visuales del formulario de Eventos
+
+- Fecha y hora muestran ayuda persistente sobre cinco fechas naturales, máximo seis fechas operativas y prohibición de domingo.
+- El estado temporal es de solo lectura; no se presenta como select editable.
+- Después del límite, campos y cantidades restringidos se deshabilitan con explicación accesible, pero backend conserva la autoridad.
+- Correcciones permitidas, reducción de equipos y cancelación continúan disponibles conforme a la spec.
+- El detalle separa claramente estado del evento, integración Calendar, correo, cobertura de Sistemas y logística de equipos.
+- La acción destructiva se denomina “Cancelar evento”, explica que conserva un registro histórico y requiere confirmación; no usa “Eliminar” para el flujo nuevo.
+
 ## Restricciones
 
 - No glassmorphism excesivo.

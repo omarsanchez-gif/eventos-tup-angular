@@ -2,12 +2,18 @@ import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
+import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 import { environment } from '../../../environments/environment';
 import { FirebaseAuthGateway } from '../auth/firebase-auth.gateway';
 import { FirebaseAuthorizationGateway } from '../auth/firebase-authorization.gateway';
 import { AUTH_GATEWAY, AUTHORIZATION_GATEWAY } from '../auth/gateways';
-import { FIREBASE_APP, FIREBASE_AUTH, FIREBASE_FUNCTIONS } from './firebase.tokens';
+import {
+  FIREBASE_APP,
+  FIREBASE_AUTH,
+  FIREBASE_FUNCTIONS,
+  FIREBASE_STORAGE,
+} from './firebase.tokens';
 
 export function provideFirebase(): EnvironmentProviders {
   return makeEnvironmentProviders([
@@ -47,6 +53,21 @@ export function provideFirebase(): EnvironmentProviders {
         }
 
         return functions;
+      },
+    },
+    {
+      provide: FIREBASE_STORAGE,
+      deps: [FIREBASE_APP],
+      useFactory: () => {
+        const storage = getStorage();
+        if (environment.useEmulators) {
+          connectStorageEmulator(
+            storage,
+            environment.emulators.storage.host,
+            environment.emulators.storage.port,
+          );
+        }
+        return storage;
       },
     },
     FirebaseAuthGateway,

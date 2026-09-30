@@ -67,20 +67,20 @@ Implementar únicamente cuando el usuario lo solicite explícitamente:
 - `modulo-equipos`, incremento A autorizado expresamente el 21 de agosto de 2026, limitado al catálogo administrativo de `/specs/modulo-equipos/spec.md`.
 - Ruta privada `/equipos`, guard `admin`, seis callables, catálogo completo administrativo y catálogo activo sanitizado sin disponibilidad.
 - Equipos desplegado únicamente a staging el 21 de agosto de 2026: seis Functions, Firestore Rules y Hosting; producción no fue utilizada.
+- `modulo-eventos` y reservaciones de Equipos, autorizados expresamente el 29 de septiembre de 2026, limitados a los contratos, reglas, tareas y pruebas vigentes de `/specs/modulo-eventos`, `/specs/modulo-equipos/reservaciones.md` y `ADR-009`.
+- Rutas privadas `/eventos` y `/eventos/calendario`, máximo 20 tipos de equipo por evento, transacción de todo o nada, documentos protegidos de control por equipo, índices declarativos, cancelación histórica y FullCalendar Standard.
+- Calendar y SMTP pueden implementarse con dobles y configuración segura, pero no desplegarse funcionalmente a staging hasta cargar Secret Manager, aplicar la lista permitida y aprobar las pruebas controladas. Producción continúa fuera de alcance.
 
 Documentación autorizada, sin autorización de implementación:
 
 - Ampliación de `modulo-eventos` para coordinaciones involucradas y notificaciones por creación, actualización, retiro y cancelación.
 - Arquitectura de notificaciones idempotentes y separación entre correo y asistentes de Google Calendar conforme a `ADR-006`.
-- Reservaciones, disponibilidad y logística de Equipos conforme a `ADR-007`; permanecen sin autorización de implementación.
-- `modulo-equipos/reservaciones.md` permanece exclusivamente documental. No están autorizadas reservaciones, disponibilidad por intervalo, logística operativa ni integración con Eventos.
+- La fase previa de documentación de reservaciones, ciclo temporal y calendario concluyó con la aprobación de `ADR-009`; cualquier ampliación posterior permanece sujeta a specs.
 
 No implementar todavía:
 
 - Dashboard funcional, KPIs, actividad o próximos eventos.
-- Eventos.
-- Workers, triggers, callables o colecciones de notificaciones de Eventos.
-- Nuevas integraciones distintas del bootstrap de autorización y las callables autorizadas de Usuarios, Coordinaciones, Campus y el catálogo de Equipos.
+- Integraciones productivas o de staging real antes de configurar secretos, allowlist y aceptación correspondiente.
 - Migraciones de datos.
 
 ## Seguridad autorizada

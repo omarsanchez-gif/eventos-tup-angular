@@ -6,6 +6,7 @@ import {
   type DocumentData,
   type DocumentReference,
 } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineString } from 'firebase-functions/params';
@@ -61,10 +62,21 @@ import {
   type AdminRequestIdentity,
   type AdminUsersDependencies,
 } from './admin-users.js';
+import {
+  checkEventAvailability as checkAvailability,
+  createEventRecord,
+  EventsError,
+  listCalendarEventRecords,
+  listEventRecords,
+  type EventRequestIdentity,
+  type EventsDependencies,
+} from './events.js';
 import { createFirestoreAdminCampusesRepository } from './firestore-admin-campuses.repository.js';
 import { createFirestoreAdminCoordinationsRepository } from './firestore-admin-coordinations.repository.js';
 import { createFirestoreAdminEquipmentRepository } from './firestore-admin-equipment.repository.js';
 import { createFirestoreAdminUsersRepository } from './firestore-admin-users.repository.js';
+import { createFirestoreEventsRepository } from './firestore-events.repository.js';
+import { createProtocolValidator } from './protocol-validator.js';
 
 if (getApps().length === 0) {
   initializeApp();
@@ -77,6 +89,8 @@ const adminCampusesRepository = createFirestoreAdminCampusesRepository(firestore
 const adminCoordinationsRepository = createFirestoreAdminCoordinationsRepository(firestore);
 const adminEquipmentRepository = createFirestoreAdminEquipmentRepository(firestore);
 const adminUsersRepository = createFirestoreAdminUsersRepository(firestore);
+const eventsRepository = createFirestoreEventsRepository(firestore);
+const protocolValidator = createProtocolValidator(getStorage().bucket());
 
 function dataToUserRecord(
   reference: DocumentReference<DocumentData>,
@@ -282,6 +296,27 @@ function adminEquipmentDependencies(): AdminEquipmentDependencies {
   };
 }
 
+function toEventIdentity(
+  auth: Readonly<{ uid: string; token: Readonly<Record<string, unknown>> }> | undefined,
+): EventRequestIdentity | null {
+  return auth
+    ? {
+        uid: auth.uid,
+        authorized: auth.token['authorized'] === true,
+        role: auth.token['role'],
+      }
+    : null;
+}
+
+function eventsDependencies(): EventsDependencies {
+  return {
+    repository: eventsRepository,
+    clock: { now: () => new Date() },
+    logger,
+    protocols: protocolValidator,
+  };
+}
+
 async function executeAdminOperation<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
@@ -350,6 +385,25 @@ async function executeEquipmentOperation<T>(operation: () => Promise<T>): Promis
     }
 
     logger.error('Error no controlado en una operación de Equipos.', {
+      cause: error instanceof Error ? error.name : 'unknown',
+    });
+    throw new HttpsError('unavailable', 'El servicio no está disponible.', {
+      functionalCode: 'service-unavailable',
+    });
+  }
+}
+
+async function executeEventOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof EventsError) {
+      throw new HttpsError(error.functionsCode, error.message, {
+        functionalCode: error.functionalCode,
+      });
+    }
+
+    logger.error('Error no controlado en una operación de Eventos.', {
       cause: error instanceof Error ? error.name : 'unknown',
     });
     throw new HttpsError('unavailable', 'El servicio no está disponible.', {
@@ -535,5 +589,29 @@ export const deleteEquipment = onCall(adminCallableOptions, async (request) =>
       request.data,
       adminEquipmentDependencies(),
     ),
+  ),
+);
+
+export const checkEventAvailability = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    checkAvailability(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const createEvent = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    createEventRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const listEvents = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    listEventRecords(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const listCalendarEvents = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    listCalendarEventRecords(toEventIdentity(request.auth), request.data, eventsDependencies()),
   ),
 );

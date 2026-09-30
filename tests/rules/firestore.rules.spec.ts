@@ -190,7 +190,7 @@ describe('Firestore authorization rules', () => {
     await assertFails(adminDocument.delete());
   });
 
-  it('allows event updates only to the creator and blocks direct deletion', async () => {
+  it('blocks every direct event mutation, including the creator and admin', async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await context.firestore().doc('eventos/event-1').set({
         nombreEvento: 'Evento de prueba',
@@ -205,13 +205,37 @@ describe('Firestore authorization rules', () => {
       })
       .firestore()
       .doc('eventos/event-1');
-    const otherDocument = environment
-      .authenticatedContext('other-uid', { authorized: true, role: 'usuario' })
+    const adminDocument = environment
+      .authenticatedContext('admin-uid', { authorized: true, role: 'admin' })
       .firestore()
       .doc('eventos/event-1');
 
-    await assertSucceeds(ownerDocument.update({ nombreEvento: 'Actualizado' }));
-    await assertFails(otherDocument.update({ nombreEvento: 'Sin permiso' }));
+    await assertFails(ownerDocument.set({ nombreEvento: 'Nuevo', creadoPorUid: 'creator-uid' }));
+    await assertFails(ownerDocument.update({ nombreEvento: 'Actualizado' }));
+    await assertFails(adminDocument.update({ nombreEvento: 'Cambio administrativo' }));
     await assertFails(ownerDocument.delete());
+  });
+
+  it('protects reservations, controls, notifications and configuration from every client', async () => {
+    const userFirestore = environment
+      .authenticatedContext('regular-user', { authorized: true, role: 'usuario' })
+      .firestore();
+    const adminFirestore = environment
+      .authenticatedContext('admin-user', { authorized: true, role: 'admin' })
+      .firestore();
+    const paths = [
+      'reservasEquipo/reservation-1',
+      'controlReservasEquipo/speaker',
+      'notificacionesEventos/notification-1',
+      'configuracion/logisticaEquipos',
+    ];
+
+    for (const path of paths) {
+      await assertFails(userFirestore.doc(path).get());
+      await assertFails(adminFirestore.doc(path).get());
+      await assertFails(adminFirestore.doc(path).set({ test: true }));
+      await assertFails(adminFirestore.doc(path).update({ test: false }));
+      await assertFails(adminFirestore.doc(path).delete());
+    }
   });
 });

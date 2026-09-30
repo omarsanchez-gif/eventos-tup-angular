@@ -1,0 +1,505 @@
+<section class="events-page">
+  <header class="events-panel page-header">
+    <div>
+      <p class="eyebrow">Gestión institucional</p>
+      <h1>Eventos</h1>
+      <p>Registre eventos con cinco fechas naturales de anticipación.</p>
+    </div>
+    <button class="button button--primary" type="button" (click)="openCreate()">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1ZM12 12v5M9.5 14.5h5"
+        />
+      </svg>
+      Nuevo evento
+    </button>
+  </header>
+
+  @if (events.error(); as error) {
+    <div class="event-alert event-alert--error" role="alert">
+      <span>{{ error }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="events.clearError()">×</button>
+    </div>
+  }
+  @if (events.notice(); as notice) {
+    <div class="event-alert event-alert--success" role="status">
+      <span>{{ notice }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="events.clearNotice()">×</button>
+    </div>
+  }
+
+  <section class="events-panel toolbar" aria-label="Vista y búsqueda de eventos">
+    <nav class="view-switch" aria-label="Vista de eventos">
+      <a
+        class="view-switch__item view-switch__item--active"
+        routerLink="/eventos"
+        aria-current="page"
+        >Listado</a
+      >
+      <a class="view-switch__item" routerLink="/eventos/calendario">Calendario</a>
+    </nav>
+    <form [formGroup]="searchForm" (submit)="$event.preventDefault()">
+      <label for="event-search" class="search-field">
+        <span class="sr-only">Buscar en esta página por evento, responsable o campus</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-4-4" />
+        </svg>
+        <input
+          id="event-search"
+          type="search"
+          formControlName="term"
+          placeholder="Buscar en esta página"
+          (input)="applySearch($event)"
+        />
+      </label>
+      @if (events.searchTerm()) {
+        <button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar
+        </button>
+      }
+    </form>
+  </section>
+
+  <section
+    class="events-panel list-panel"
+    aria-labelledby="events-list-title"
+    [attr.aria-busy]="events.loading()"
+  >
+    <header class="list-header">
+      <div>
+        <h2 id="events-list-title">Listado de eventos</h2>
+        <p>Página {{ events.page() }} · hasta 25 registros por página.</p>
+      </div>
+    </header>
+    @if (events.loading()) {
+      <div class="state" role="status">
+        <span class="spinner" aria-hidden="true"></span><strong>Cargando eventos…</strong>
+      </div>
+    } @else if (!events.records().length && !events.error()) {
+      <div class="state">
+        <strong>No hay eventos registrados</strong
+        ><span>Cree el primer evento desde “Nuevo evento”.</span>
+      </div>
+    } @else if (!events.filteredRecords().length) {
+      <div class="state">
+        <strong>No hay coincidencias en esta página</strong
+        ><button class="button button--secondary" type="button" (click)="clearSearch()">
+          Limpiar búsqueda
+        </button>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">
+            Eventos institucionales
+          </caption>
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Fecha y horario</th>
+              <th>Campus</th>
+              <th>Responsable</th>
+              <th>Estado</th>
+              <th>Integración</th>
+              <th class="actions-heading">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of events.filteredRecords(); track record.eventId; let index = $index) {
+              <tr>
+                <td>
+                  <strong>{{ record.name }}</strong
+                  ><small
+                    >{{ record.equipmentCount }}
+                    {{ record.equipmentCount === 1 ? 'tipo de equipo' : 'tipos de equipo' }}</small
+                  >
+                </td>
+                <td>{{ formatInterval(record) }}</td>
+                <td>{{ record.campusName || 'Sin campus histórico' }}</td>
+                <td>{{ record.responsible || 'Sin responsable' }}</td>
+                <td>
+                  <span class="event-status" [attr.data-status]="record.status">{{
+                    statusLabel(record.status)
+                  }}</span>
+                </td>
+                <td>
+                  <span
+                    class="integration-status"
+                    [class.integration-status--pending]="record.calendarStatus === 'pending'"
+                    >{{
+                      record.calendarStatus === 'synced'
+                        ? 'Calendar sincronizado'
+                        : 'Calendar pendiente'
+                    }}</span
+                  >
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <span class="tooltip-host">
+                      <button
+                        class="icon-button"
+                        type="button"
+                        [attr.aria-label]="'Ver detalle de ' + record.name"
+                        [attr.aria-describedby]="'event-detail-tip-' + index"
+                        (click)="openDetail(record)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                          <circle cx="12" cy="12" r="2.5" />
+                        </svg>
+                      </button>
+                      <span class="tooltip" role="tooltip" [id]="'event-detail-tip-' + index"
+                        >Ver detalle</span
+                      >
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="mobile-list">
+        @for (record of events.filteredRecords(); track record.eventId) {
+          <article>
+            <header>
+              <div>
+                <strong>{{ record.name }}</strong
+                ><span>{{ record.campusName || 'Sin campus histórico' }}</span>
+              </div>
+              <span class="event-status" [attr.data-status]="record.status">{{
+                statusLabel(record.status)
+              }}</span>
+            </header>
+            <p>{{ formatInterval(record) }}</p>
+            <p><strong>Responsable:</strong> {{ record.responsible }}</p>
+            <button class="button button--secondary" type="button" (click)="openDetail(record)">
+              Ver detalle
+            </button>
+          </article>
+        }
+      </div>
+      <footer class="pagination">
+        <span>Página {{ events.page() }}</span>
+        <div>
+          <button
+            class="button button--secondary"
+            type="button"
+            [disabled]="!events.hasPreviousPage() || events.loading()"
+            (click)="events.previousPage()"
+          >
+            Anterior</button
+          ><button
+            class="button button--secondary"
+            type="button"
+            [disabled]="!events.hasNextPage() || events.loading()"
+            (click)="events.nextPage()"
+          >
+            Siguiente
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
+
+@if (dialogMode(); as mode) {
+  <div class="dialog-backdrop">
+    <section
+      class="event-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="event-dialog-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">{{ mode === 'form' ? 'Captura institucional' : 'Consulta' }}</p>
+          <h2 id="event-dialog-title">
+            {{ mode === 'form' ? 'Nuevo evento' : selectedEvent()?.name }}
+          </h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar diálogo"
+          (click)="closeDialog()"
+        >
+          ×
+        </button>
+      </header>
+      @if (mode === 'form') {
+        <form [formGroup]="eventForm" (ngSubmit)="submit()">
+          <fieldset>
+            <legend>Información general</legend>
+            <div class="form-grid">
+              <label class="form-field form-field--wide"
+                >Nombre del evento<input
+                  type="text"
+                  formControlName="nombreEvento"
+                  autocomplete="off"
+                />
+                @if (
+                  eventForm.controls.nombreEvento.touched && eventForm.controls.nombreEvento.invalid
+                ) {
+                  <small>Capture un nombre de hasta 160 caracteres.</small>
+                }
+              </label>
+              <label class="form-field"
+                >Campus<select formControlName="campusId" (change)="campusChanged($event)">
+                  <option value="">Seleccione un campus</option>
+                  @for (campus of events.campuses(); track campus.campusId) {
+                    <option [value]="campus.campusId">
+                      {{ campus.clave }} · {{ campus.nombre }}
+                    </option>
+                  }
+                </select></label
+              >
+              <label class="form-field"
+                >Estado<input type="text" value="Programado" readonly
+              /></label>
+              <label class="form-field"
+                >Fecha de inicio<input
+                  type="date"
+                  formControlName="fechaInicio"
+                  [min]="minimumDate"
+                  (change)="formContextChanged()"
+              /></label>
+              <label class="form-field"
+                >Hora de inicio<input
+                  type="time"
+                  formControlName="horaInicio"
+                  (change)="formContextChanged()"
+              /></label>
+              <label class="form-field"
+                >Fecha de término<input
+                  type="date"
+                  formControlName="fechaFin"
+                  [min]="minimumDate"
+                  (change)="formContextChanged()"
+              /></label>
+              <label class="form-field"
+                >Hora de término<input
+                  type="time"
+                  formControlName="horaFin"
+                  (change)="formContextChanged()"
+              /></label>
+              <label class="form-field"
+                >Responsable<input type="text" [value]="auth.user()?.nombre ?? ''" readonly
+              /></label>
+              <label class="form-field"
+                >Correo<input type="email" [value]="auth.user()?.correo ?? ''" readonly
+              /></label>
+              <label class="form-field form-field--wide"
+                >Observaciones<textarea rows="3" formControlName="observaciones"></textarea>
+              </label>
+            </div>
+            <p class="field-help">
+              Un evento requiere cinco fechas naturales de anticipación, máximo seis fechas
+              operativas y no puede tocar domingo.
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Coordinaciones involucradas <span>(opcional)</span></legend>
+            <p class="field-help">
+              Se notificará al creador y a los contactos institucionales de las coordinaciones
+              seleccionadas.
+            </p>
+            <div class="choice-grid">
+              @for (coordination of events.coordinations(); track coordination.coordinacionId) {
+                <label
+                  ><input
+                    type="checkbox"
+                    [checked]="coordinationSelected(coordination.coordinacionId)"
+                    (change)="toggleCoordination(coordination.coordinacionId, $event)"
+                  /><span>{{ coordination.nombre }}</span></label
+                >
+              }
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Equipamiento <span>(opcional, máximo 20 tipos)</span></legend>
+            @if (!selectedCampusId()) {
+              <p class="field-help">
+                Seleccione campus, fechas y horarios para consultar disponibilidad.
+              </p>
+            } @else {
+              <div class="equipment-picker">
+                <label for="equipment-add" class="sr-only">Equipo para agregar</label
+                ><select
+                  id="equipment-add"
+                  [value]="equipmentToAdd()"
+                  (change)="selectEquipment($event)"
+                >
+                  <option value="">Seleccione un equipo</option>
+                  @for (item of equipmentChoices(); track item.equipoId) {
+                    <option [value]="item.equipoId">
+                      {{ item.nombre }} ·
+                      {{ item.clasificacion === 'fijo' ? 'Fijo' : 'Transferible' }}
+                    </option>
+                  }</select
+                ><button
+                  class="button button--secondary"
+                  type="button"
+                  [disabled]="!equipmentToAdd() || requestedEquipment().length >= 20"
+                  (click)="addEquipment()"
+                >
+                  Agregar
+                </button>
+              </div>
+              @if (requestedEquipment().length) {
+                <div class="equipment-list">
+                  @for (item of requestedEquipment(); track item.equipoId) {
+                    <article>
+                      <div>
+                        <strong>{{ equipmentName(item.equipoId) }}</strong
+                        ><span>{{ equipmentCampus(item.equipoId) }}</span>
+                      </div>
+                      <label
+                        >Cantidad<input
+                          type="number"
+                          min="1"
+                          step="1"
+                          [value]="item.cantidad"
+                          (input)="updateQuantity(item.equipoId, $event)"
+                      /></label>
+                      <div
+                        class="availability"
+                        [class.availability--error]="
+                          availabilityFor(item.equipoId)?.confirmable === false
+                        "
+                      >
+                        @if (events.availabilityLoading()) {
+                          Verificando…
+                        } @else if (availabilityFor(item.equipoId); as availability) {
+                          Disponibles: {{ availability.available }} ·
+                          {{ availability.requiresTransfer ? 'Requiere traslado' : 'Equipo local' }}
+                        } @else {
+                          Pendiente de verificar
+                        }
+                      </div>
+                      <button
+                        class="icon-button icon-button--danger"
+                        type="button"
+                        [attr.aria-label]="'Retirar ' + equipmentName(item.equipoId)"
+                        (click)="removeEquipment(item.equipoId)"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                        </svg>
+                      </button>
+                    </article>
+                  }
+                </div>
+              }
+              @if (events.availability(); as availability) {
+                <p
+                  class="availability-summary"
+                  [class.availability-summary--error]="!availability.confirmable"
+                  role="status"
+                >
+                  {{
+                    availability.confirmable
+                      ? 'Disponibilidad confirmable al momento de la consulta.'
+                      : 'Una o más cantidades no están disponibles.'
+                  }}
+                  La confirmación volverá a validar todo.
+                </p>
+              }
+            }
+          </fieldset>
+
+          <fieldset>
+            <legend>Protocolo PDF</legend>
+            <label class="form-field"
+              >Archivo obligatorio<input
+                type="file"
+                accept="application/pdf,.pdf"
+                (change)="fileChanged($event)"
+              /><small class="field-help"
+                >PDF menor a 10 MiB. Si la creación falla, el archivo se considera huérfano para
+                limpieza posterior.</small
+              ></label
+            >
+          </fieldset>
+          @if (formError(); as error) {
+            <p class="form-error" role="alert">{{ error }}</p>
+          }
+          <div class="dialog-actions">
+            <button class="button button--secondary" type="button" (click)="closeDialog()">
+              Cancelar</button
+            ><button
+              class="button button--primary"
+              type="submit"
+              [disabled]="events.mutating() || events.availabilityLoading()"
+            >
+              {{ events.mutating() ? 'Guardando…' : 'Guardar evento' }}
+            </button>
+          </div>
+        </form>
+      } @else if (selectedEvent(); as event) {
+        <div class="event-detail">
+          <dl>
+            <div>
+              <dt>Estado</dt>
+              <dd>
+                <span class="event-status" [attr.data-status]="event.status">{{
+                  statusLabel(event.status)
+                }}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Fecha y horario</dt>
+              <dd>{{ formatInterval(event) }}</dd>
+            </div>
+            <div>
+              <dt>Campus</dt>
+              <dd>{{ event.campusName || 'Sin campus histórico' }}</dd>
+            </div>
+            <div>
+              <dt>Responsable</dt>
+              <dd>{{ event.responsible }}</dd>
+            </div>
+            <div>
+              <dt>Coordinaciones</dt>
+              <dd>
+                {{
+                  event.coordinationNames.length ? event.coordinationNames.join(', ') : 'Ninguna'
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Equipamiento</dt>
+              <dd>
+                {{ event.equipmentCount }}
+                {{ event.equipmentCount === 1 ? 'tipo solicitado' : 'tipos solicitados' }}
+              </dd>
+            </div>
+            <div>
+              <dt>Calendar</dt>
+              <dd>{{ event.calendarStatus === 'synced' ? 'Sincronizado' : 'Pendiente' }}</dd>
+            </div>
+          </dl>
+          @if (event.protocolUrl) {
+            <a
+              class="button button--secondary"
+              [href]="event.protocolUrl"
+              target="_blank"
+              rel="noopener"
+              >Abrir protocolo PDF</a
+            >
+          }
+        </div>
+        <div class="dialog-actions">
+          <button class="button button--primary" type="button" (click)="closeDialog()">
+            Cerrar
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

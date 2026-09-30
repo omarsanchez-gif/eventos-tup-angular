@@ -13,5 +13,6 @@ export const environment = {
   emulators: {
     auth: { host: '127.0.0.1', port: 9099 },
     functions: { host: '127.0.0.1', port: 5001 },
+    storage: { host: '127.0.0.1', port: 9199 },
   },
 } as const;

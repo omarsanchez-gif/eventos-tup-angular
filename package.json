@@ -15,8 +15,9 @@
     "test:coordinations:emulators": "firebase emulators:exec --only firestore \"vitest run --config vitest.coordinations-emulators.config.ts\" --project demo-eventos-tup",
     "test:campuses:emulators": "firebase emulators:exec --only firestore \"vitest run --config vitest.campuses-emulators.config.ts\" --project demo-eventos-tup",
     "test:equipment:emulators": "firebase emulators:exec --only firestore \"vitest run --config vitest.equipment-emulators.config.ts\" --project demo-eventos-tup",
+    "test:events:emulators": "firebase emulators:exec --only firestore \"vitest run --config vitest.events-emulators.config.ts\" --project demo-eventos-tup",
     "test:rules": "firebase emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\" --project demo-eventos-tup",
-    "test:all": "npm run test && npm run test:functions && npm run test:users:emulators && npm run test:coordinations:emulators && npm run test:campuses:emulators && npm run test:equipment:emulators && npm run test:rules",
+    "test:all": "npm run test && npm run test:functions && npm run test:users:emulators && npm run test:coordinations:emulators && npm run test:campuses:emulators && npm run test:equipment:emulators && npm run test:events:emulators && npm run test:rules",
     "lint": "ng lint && npm run lint:functions && npm run lint:visual",
     "lint:functions": "eslint functions/src --max-warnings=0",
     "lint:visual": "node scripts/check-visual-primitives.mjs",
@@ -42,8 +43,11 @@
     "@angular/material": "^22.1.2",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@fullcalendar/angular": "^7.1.0",
     "firebase": "^12.17.1",
+    "fullcalendar": "^7.1.0",
     "rxjs": "~7.8.0",
+    "temporal-polyfill": "^1.0.5",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

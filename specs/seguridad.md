@@ -23,6 +23,9 @@ La sincronización se realizará exclusivamente mediante Admin SDK conforme a `d
 - SEC-008: Rules se prueban con Emulator Suite.
 - SEC-009: No se almacenan secretos o tokens manualmente en Local Storage.
 - SEC-010: Errores técnicos no se muestran al usuario.
+- SEC-011: Credenciales de Calendar, contraseñas SMTP y refresh tokens no se incluyen en Angular, archivos versionados, Firestore, Storage, documentación o logs.
+- SEC-012: Local puede usar `functions/.secret.local` únicamente ignorado por Git; staging y producción usan Secret Manager y cada Function enlaza solo los secretos que consume.
+- SEC-013: La lista permitida de SMTP se valida en backend después de resolver destinatarios canónicos y antes de abrir la conexión de envío; Angular no puede ampliarla.
 
 ## Autenticación
 
@@ -50,12 +53,21 @@ La sincronización se realizará exclusivamente mediante Admin SDK conforme a `d
 ## Eventos
 
 - SEC-EVT-001: Solo usuarios autorizados pueden leer y crear eventos.
-- SEC-EVT-002: Solo el creador puede editar o eliminar su evento.
-- SEC-EVT-003: La eliminación directa desde cliente permanece bloqueada.
-- SEC-EVT-004: Functions de integración y eliminación validan claim autorizado y propiedad.
+- SEC-EVT-002: Solo el creador puede editar o cancelar su evento.
+- SEC-EVT-003: La cancelación y toda escritura directa desde cliente permanecen bloqueadas; el documento cancelado se conserva como histórico de solo lectura.
+- SEC-EVT-004: Functions de integración, reservación y cancelación validan claim autorizado, perfil canónico y propiedad.
 - SEC-EVT-005: El cliente solo puede proponer IDs de coordinación; el backend lee nombres, estado y correos canónicos.
 - SEC-EVT-006: Crear exige que cada coordinación seleccionada exista y esté activa. Editar permite conservar referencias históricas suspendidas, pero no agregarlas de nuevo.
 - SEC-EVT-007: Los documentos de evento no exponen correos de coordinaciones ni estados internos de entrega.
+- SEC-EVT-008: Backend calcula `inicioAt` y `finAt`, la fecha local de servidor y el estado derivado; rechaza instantes, estados temporales o excepciones de anticipación enviados por cliente.
+- SEC-EVT-009: La creación exige cinco fechas naturales de anticipación, máximo seis fechas operativas consecutivas, un solo campus y ausencia total de domingo; `admin` no omite estas restricciones.
+- SEC-EVT-010: Dentro de la ventana restringida, backend distingue campos permitidos y rechaza agregar capacidad, aumentar cantidades, cambiar campus o adelantar el evento aunque el cliente oculte esa condición.
+- SEC-EVT-011: La consulta para FullCalendar exige usuario autorizado, limita y valida el intervalo solicitado y devuelve únicamente datos de evento que el mismo actor puede leer; no expone contactos, entregas, configuración ni inventario administrativo.
+- SEC-EVT-012: FullCalendar no recibe secretos ni credenciales de Google Calendar y no consulta ese servicio como fuente del calendario administrativo.
+- SEC-EVT-013: `terminosBusqueda`, `protocoloRuta`, `calendarEstado` y `notificacionesEstado` son calculados o validados por backend; el cliente no los escribe directamente.
+- SEC-EVT-014: El cursor de búsqueda queda ligado al término normalizado y se rechaza si se reutiliza con otro modo o búsqueda.
+- SEC-EVT-015: `getEventDetail` omite correos, secretos, documentos de notificación, leases y controles; edición, cancelación y reconciliación revalidan propiedad o rol en backend.
+- SEC-EVT-016: El comando de backfill exige credenciales administrativas, inicia en modo seco y no se ejecuta contra producción sin autorización separada.
 
 ## Coordinaciones
 
@@ -75,7 +87,7 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-COO-005: `utilizada`, `nombreNormalizado` y timestamps son campos administrados por servidor.
 - SEC-COO-006: La eliminación revalida `utilizada`; ocultar o deshabilitar el botón no sustituye la validación backend.
 
-## Equipos — objetivo no autorizado
+## Equipos
 
 - SEC-EQP-001: Solo `admin` lee documentos completos y ejecuta mutaciones del catálogo.
 - SEC-EQP-002: Usuarios autorizados reciben únicamente catálogo activo sanitizado mediante backend; no leen `equipos` directamente.
@@ -85,7 +97,7 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-EQP-006: Ocultar acciones en Angular no sustituye revalidar uso, campus y compromisos antes de mutar.
 - SEC-EQP-007: El catálogo sanitizado no expone cantidades operativas, uso, timestamps ni disponibilidad aparente.
 
-## Reservaciones de Equipos — objetivo no autorizado
+## Reservaciones de Equipos — creación implementada localmente
 
 - SEC-RES-001: `reservasEquipo` no admite escritura directa de clientes; las operaciones atómicas usan Admin SDK.
 - SEC-RES-002: El backend obtiene equipo, cantidad operativa, campus, horarios, clasificación y destinos desde fuentes canónicas.
@@ -94,6 +106,16 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-RES-005: La configuración logística y el ID de Coordinación de Sistemas son protegidos y no aceptan correos enviados por el navegador.
 - SEC-RES-006: Logs y errores no incluyen listas de destinatarios, contenido de correo ni detalles innecesarios del inventario.
 - SEC-RES-007: Una operación concurrente falla de forma cerrada y no deja reservas parciales.
+- SEC-RES-008: La transacción usa `inicioAt`, `finAt` y configuración canónica de servidor; el navegador no puede reducir intervalos, omitir noches de eventos multidiarios ni alterar márgenes logísticos.
+- SEC-RES-009: Después del límite de anticipación, solo se aceptan reducciones o retiros de equipo; agregar o aumentar capacidad se rechaza en backend.
+- SEC-RES-010: `controlReservasEquipo` no admite lectura ni escritura desde clientes, incluidos administradores; solo Admin SDK lo modifica dentro de la transacción autorizada.
+- SEC-RES-011: El backend admite como máximo 20 IDs de equipo únicos por evento, ordena la unión de equipos anteriores y nuevos y vuelve a leer inventario y reservas en cada reintento.
+- SEC-RES-012: Ningún efecto externo, carga de archivo, correo, Calendar o mutación de estado de aplicación se ejecuta dentro de la función transaccional reintentable.
+- SEC-RES-013: Firestore Rules bloquean toda escritura directa a `eventos`, `reservasEquipo`, `controlReservasEquipo`, `notificacionesEventos` y configuración logística; las mutaciones usan callables autorizadas y Admin SDK.
+- SEC-RES-014: Confirmar cobertura, confirmar recepción o reportar demora exige perfil canónico `admin`; la operación actualiza reserva y control en una sola transacción.
+- SEC-RES-015: Confirmar cobertura retira solo su motivo y no puede limpiar revisiones de inventario o coordinación. Recepción y demora usan hora de servidor y un estado objetivo idempotente.
+
+La evidencia local del 30 de septiembre cubre creación y consulta de disponibilidad: revalidación de perfil, cálculo canónico, transacción todos-o-ninguno, control de concurrencia y Rules. No cubre todavía edición, cancelación, confirmaciones administrativas, integraciones ni despliegue a staging.
 
 ## Notificaciones de Eventos
 
@@ -103,6 +125,10 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-NOT-004: Las claves idempotentes y transiciones de estado se validan en backend para impedir duplicados.
 - SEC-NOT-005: El worker procesa exclusivamente registros creados por operaciones de Eventos autorizadas.
 - SEC-NOT-006: Calendar no recibe los correos de coordinaciones como asistentes.
+- SEC-NOT-007: En staging, cualquier destinatario distinto de `omar.sanchez@tecplayacar.edu.mx` se bloquea antes de SMTP, queda identificado mediante un código sanitizado y no se redirige ni se considera enviado.
+- SEC-NOT-008: Las Functions de Calendar y SMTP fallan de forma cerrada cuando su secreto no está enlazado, incompleto o inválido; no recurren a valores embebidos ni a configuración del navegador.
+- SEC-NOT-009: El worker reclama cada trabajo mediante un lease transaccional de 10 minutos, verifica propiedad antes de enviar y procesa como máximo 50 trabajos por ejecución.
+- SEC-NOT-010: Los procesos de purga y limpieza usan hora de servidor, lotes acotados y estado terminal; no aceptan rutas o fechas autoritativas del cliente.
 
 ## Storage
 

@@ -19,14 +19,16 @@ Objetivo: validar integración real y aceptación antes de producción.
 - Firestore `(default)` creado en `nam5`, modo nativo y edición Standard; contiene únicamente la autorización admin inicial y datos de staging aprobados.
 - Firebase Hosting aprovisionado para el proyecto de staging.
 - Plan Blaze habilitado mediante una cuenta de facturación activa; el consumo es pago por uso.
+- Presupuesto informativo mensual de `100 MXN` configurado con avisos al primer gasto y al alcanzar `50 MXN`, `80 MXN` y `100 MXN`. Las alertas no suspenden automáticamente los servicios ni constituyen un límite duro de gasto.
 - Google Sign-In habilitado con `omar.sanchez@tecplayacar.edu.mx` como correo público de soporte OAuth.
 - Dominios autorizados: los dominios Firebase predeterminados, `localhost` y `127.0.0.1`.
 - Callable `bootstrapAuthorization` desplegada en `us-central1`.
 - Política de Artifact Registry: eliminar imágenes de Functions con más de un día.
 - Bucket de Storage: `eventos-tup-angular-stg.firebasestorage.app`.
 - Ubicación y clase de Storage: `US-CENTRAL1`, regional, `STANDARD`.
-- Calendario de pruebas.
-- Cuenta o buzón SMTP de pruebas.
+- Calendario de pruebas `CALENDARIO - STAGING`, creado bajo `eventos@tecplayacar.edu.mx`; Google Calendar API está habilitada en `eventos-tup-angular-stg` y los datos OAuth necesarios ya fueron obtenidos, sin registrar sus valores en documentación.
+- Buzón SMTP de staging `eventos@tecplayacar.edu.mx`; el envío manual hacia `omar.sanchez@tecplayacar.edu.mx` fue comprobado y existe una contraseña de aplicación pendiente de cargarse de forma segura en backend.
+- Lista permitida de correo de staging: únicamente `omar.sanchez@tecplayacar.edu.mx`. La restricción debe aplicarse en backend antes del primer envío automatizado.
 - Usuarios de prueba para todos los roles y estados.
 - Hosting de staging o Preview Channel conectado únicamente a recursos aprobados.
 - No se copiarán datos, usuarios ni archivos de producción para habilitar este ambiente.
@@ -71,12 +73,25 @@ Estos valores son configuración pública, pero no deben mezclarse entre ambient
 
 ## Secretos backend
 
-- Google OAuth client ID y client secret.
-- Refresh token de Calendar.
-- SMTP host, usuario y contraseña.
-- Remitente autorizado.
+- `GOOGLE_CALENDAR_CONFIG`: JSON protegido con `clientId`, `clientSecret`, `refreshToken` y `calendarId`.
+- `SMTP_CONFIG`: JSON protegido con `host`, `port`, `secure`, `user`, `from`, `password` y `allowedRecipients`.
 
-Los secretos se administrarán fuera del repositorio y nunca se incluirán en environments Angular.
+En local, los emuladores pueden sustituir secretos mediante `functions/.secret.local`; la configuración no sensible puede vivir en `functions/.env.local`. Ambos archivos deben permanecer ignorados por Git. En staging y producción los valores reales se almacenan en Firebase/Google Cloud Secret Manager y se enlazan solamente a las Functions que los consumen. Nunca se incluyen en environments Angular, bundles, documentación, logs o archivos versionados.
+
+La obtención de credenciales no equivale a su configuración: al 29 de septiembre de 2026 los datos de Calendar y la contraseña de aplicación SMTP existen y están bajo custodia del usuario, pero todavía no están cargados en Secret Manager. Esto no bloquea el desarrollo local con dobles o emuladores; sí bloquea el primer despliegue funcional de Calendar y SMTP en staging.
+
+## Precondiciones exactas para Eventos en staging
+
+1. Suite EVT-001 a EVT-102, Rules, emuladores, lint, formato y build en verde.
+2. Dependencias de ejecución sin vulnerabilidades altas o críticas conocidas.
+3. `configuracion/logisticaEquipos` creado con el ID documental real de Sistemas y los valores de ADR-010.
+4. `GOOGLE_CALENDAR_CONFIG` y `SMTP_CONFIG` cargados y enlazados únicamente a sus Functions.
+5. `allowedRecipients` limitado a `omar.sanchez@tecplayacar.edu.mx`.
+6. Índice de búsqueda, índices de reservas y calendario, además de TTL sobre `notificacionesEventos.fechaExpiracion`, creados antes de Functions dependientes.
+7. Despliegue separado y verificable: índices, Firestore Rules, Storage Rules, Functions y Hosting.
+8. Creación, edición, cancelación, reconciliación, correo permitido y bloqueo fuera de lista probados con datos sintéticos.
+9. Workers y limpieza observados sin bucles o crecimiento inesperado; presupuesto y alertas continúan activos.
+10. Aceptación funcional, visual, accesible y responsive. Ningún paso autoriza producción.
 
 ## Reglas de despliegue
 

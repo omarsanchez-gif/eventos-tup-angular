@@ -2,7 +2,7 @@
 
 ## Estado
 
-Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones y Campus cuentan con implementación local parcial o completa. Coordinaciones fue implementada, validada con pruebas automatizadas y desplegada a staging el 19 de agosto de 2026; su aceptación funcional y visual manual continúa pendiente. Campus fue implementado, validado y desplegado a staging como catálogo administrativo y prerrequisito de Equipos el 21 de agosto de 2026. El incremento A del catálogo de Equipos fue implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026; su prueba manual y aceptación continúan pendientes. Campus y Equipos fueron normalizados visualmente en código local para consumir las primitivas globales; la revisión autenticada y el despliegue de esa corrección siguen pendientes. Reservaciones, logística y la ampliación de Eventos permanecen solo documentadas y sin código.
+Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones, Campus y el catálogo de Equipos cuentan con implementación local parcial o completa; Coordinaciones, Campus y el catálogo de Equipos tienen incrementos previos desplegados únicamente a staging, con aceptación manual todavía pendiente. Campus y Equipos fueron normalizados visualmente en código local para consumir las primitivas globales; la revisión autenticada y el despliegue de esa corrección siguen pendientes. El incremento local de Eventos ya implementa creación, disponibilidad y reserva atómica, listado paginado, detalle inicial, carga de PDF, calendario administrativo y estados temporales. Edición, cancelación, logística administrativa, integraciones, limpieza, búsqueda global, aceptación y despliegue de Eventos continúan pendientes. ADR-010 cierra los contratos recomendados para implementar ese alcance sin decisiones adicionales.
 
 ## Propósito
 
@@ -61,9 +61,11 @@ No se crearán módulos adicionales sin una especificación aprobada.
 - El catálogo de Campus se administra antes de Equipos y Eventos; TUP y FCS son registros capturables, no constantes del frontend.
 - El catálogo de Equipos se administra por nombre, campus, cantidad operativa y clasificación antes de integrar reservaciones con Eventos.
 - La disponibilidad se calcula por intervalo y nunca se guarda como contador mutable.
-- Las reservaciones confirman todos los equipos solicitados o ninguno y permanecen como incremento separado sin autorización de código.
+- Las reservaciones confirman todos los equipos solicitados o ninguno. La creación atómica está implementada localmente; edición, cancelación y acciones logísticas administrativas permanecen pendientes.
 - Equipos locales usan márgenes de montaje de 60 minutos y desmontaje de 30; los transferidos permanecen bloqueados hasta regresar al campus base.
-- No existen eventos en domingo. La posibilidad de eventos de varios días continúa pendiente y bloquea reservaciones, no el catálogo.
+- No existen eventos en domingo. Se permiten eventos continuos de hasta seis fechas operativas consecutivas, en un solo campus; los equipos permanecen montados y bloqueados durante las noches.
+- Todo evento nuevo exige cinco fechas naturales de anticipación en `America/Cancun`; el día límite completo es válido y no existe excepción administrativa.
+- `Programado`, `En ejecución` y `Finalizado` se derivan de instantes canónicos y hora de servidor. `Cancelado` se persiste, prevalece y conserva un registro histórico de solo lectura.
 - Una coordinación contiene un nombre, varios correos institucionales y un estado activo o suspendido.
 - Seleccionar coordinaciones en un evento es opcional.
 - El creador siempre recibe correo; las coordinaciones seleccionadas se agregan como destinatarias sin reemplazarlo.
@@ -77,6 +79,8 @@ No se crearán módulos adicionales sin una especificación aprobada.
 - El historial técnico de notificaciones se conserva 90 días después de llegar a un estado terminal.
 - Los PDFs sustituidos se eliminan después de confirmar la nueva referencia; los archivos huérfanos se purgan después de 24 horas.
 - Eventos se consulta en páginas de 25 registros mediante cursores de Firestore.
+- Eventos tendrá una vista FullCalendar Standard dentro del mismo módulo, con mes, semana, día y lista, consulta Firestore por intervalo visible y sin edición por arrastre.
+- Google Calendar continúa como integración de salida y no alimenta el calendario administrativo.
 - Calendar y SMTP se verifican en staging con recursos sintéticos y una lista controlada de destinatarios.
 
 ## Infraestructura que permanece

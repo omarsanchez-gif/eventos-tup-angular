@@ -14,7 +14,7 @@
 
 - RN-008: Los roles válidos son `admin` y `usuario`.
 - RN-009: Solo `admin` puede gestionar usuarios.
-- RN-010: `usuario` puede consultar y crear eventos, y modificar o eliminar únicamente los que creó.
+- RN-010: `usuario` puede consultar y crear eventos, y modificar o cancelar únicamente los que creó.
 
 ## Usuarios
 
@@ -37,13 +37,13 @@
 - RN-018: El PDF debe ser `application/pdf` y medir menos de 10 MiB.
 - RN-019: La fecha y hora de término no pueden ser anteriores al inicio.
 - RN-020: Responsable y correo del creador proceden de la sesión autorizada.
-- RN-021: Los eventos nuevos usan `programado` por defecto.
-- RN-022: `registrado` es un valor histórico equivalente visualmente a `programado`.
-- RN-023: Solo el creador puede editar o eliminar un evento.
+- RN-021: Los eventos nuevos usan `programado` como valor persistido inicial; su estado temporal visible se deriva de los instantes canónicos de inicio y fin.
+- RN-022: `registrado` es un valor histórico equivalente visualmente a `programado`; `en_proceso` y `finalizado` históricos no obligan a realizar escrituras programadas y se recalculan cuando existan fechas válidas.
+- RN-023: Solo el creador puede editar o cancelar un evento.
 - RN-024: Un evento se guarda en Firestore antes de ejecutar Calendar y correo.
 - RN-025: La creación debe procesar Calendar y correo mediante operaciones backend independientes e idempotentes.
 - RN-026: La edición debe sincronizar Google Calendar y generar correo cuando cambien nombre, fecha, horario o coordinaciones.
-- RN-027: La eliminación debe retirar Calendar y PDF antes de eliminar Firestore, y crear notificaciones de cancelación antes de perder la fotografía necesaria para enviarlas.
+- RN-027: La cancelación debe retirar Calendar y PDF de forma idempotente, cancelar o conservar la logística de reservas según su etapa, crear las notificaciones correspondientes y preservar en Firestore un registro histórico de solo lectura con `estatus: cancelado`.
 
 ## Coordinaciones
 
@@ -74,8 +74,8 @@
 - RN-049: Al crear un evento se notifica individualmente al creador y a cada correo institucional de las coordinaciones seleccionadas, eliminando duplicados globales.
 - RN-050: Cambiar nombre, fecha, horario o coordinaciones notifica al creador y a los contactos vigentes de las coordinaciones que continúan o se agregan.
 - RN-051: Retirar una coordinación durante la edición genera un aviso específico para sus destinatarios previamente notificados y sus contactos vigentes, sin duplicados.
-- RN-052: Eliminar un evento genera aviso de cancelación para el creador y para la unión de destinatarios previamente notificados y contactos vigentes de las coordinaciones involucradas.
-- RN-053: Modificar únicamente estatus, observaciones, equipamiento o protocolo no genera correo, salvo que la misma operación cambie un dato definido en RN-050.
+- RN-052: Cancelar un evento genera aviso para el creador y para la unión de destinatarios previamente notificados y contactos vigentes de las coordinaciones involucradas.
+- RN-053: Modificar únicamente observaciones, equipamiento permitido o protocolo no genera correo, salvo que la misma operación cambie un dato definido en RN-050. El estado temporal no es editable.
 - RN-054: Los cambios en los correos de una coordinación no notifican retrospectivamente; se usan en la siguiente actualización o cancelación del evento.
 - RN-055: Cada envío utiliza una clave idempotente por evento, revisión, tipo y destinatario; un reintento no duplica correos confirmados como enviados.
 - RN-056: Un fallo de correo no revierte el evento ni Calendar. Se comunica integración parcial y el registro queda disponible para reintento.
@@ -88,6 +88,21 @@
 - RN-063: Al reemplazar un PDF, primero se confirma la nueva referencia y después se elimina el archivo anterior. Un archivo cargado que no quede referenciado se considera huérfano y se purga después de 24 horas.
 - RN-064: El listado de Eventos usa páginas de 25 registros y cursores de Firestore; no descarga la colección completa para simular páginas.
 - RN-065: El catálogo administrativo admite como máximo 500 coordinaciones en esta versión. Las listas nunca devuelven resultados parciales; al excederlo se exige una nueva estrategia de consulta aprobada.
+- RN-066: Un evento nuevo debe registrarse a más tardar cinco fechas naturales antes de su fecha local de inicio en `America/Cancun`; el día límite se acepta completo hasta las 23:59:59 y no existe excepción administrativa en esta versión.
+- RN-067: Un evento puede durar como máximo seis fechas operativas consecutivas, pertenece a un solo campus y se representa como un intervalo continuo; no puede iniciar, terminar ni transcurrir en domingo.
+- RN-068: En un evento de varios días los equipos permanecen montados, reservados y no reutilizables durante las noches; montaje se calcula antes del primer inicio y desmontaje y regreso después del último fin.
+- RN-069: El estado temporal visible se deriva en `America/Cancun`: antes del inicio es `programado`, desde el inicio y antes del fin es `en_ejecucion`, y desde el fin es `finalizado`; `cancelado` es persistido y prevalece sobre el cálculo temporal.
+- RN-070: El estado temporal no puede editarse manualmente ni requiere una escritura al cruzar sus límites. Backend usa hora de servidor; las respuestas de consulta entregan una referencia `serverNow` y la interfaz vuelve a calcular desde esa referencia al cargar, navegar y alcanzar la siguiente transición.
+- RN-071: Después del día límite de cinco días se permiten correcciones de nombre u observaciones, cambios de coordinaciones, retirar equipos, reducir cantidades y cancelar; se prohíbe agregar equipos, aumentar cantidades, cambiar campus o adelantar el inicio a una fecha que incumpla la anticipación.
+- RN-072: Posponer un evento después del día límite solo es válido cuando la nueva fecha de inicio vuelve a cumplir cinco días naturales desde la fecha de servidor en `America/Cancun`.
+- RN-073: La vista calendario de Eventos usa Firestore como fuente canónica mediante un contrato autorizado por intervalo visible; Google Calendar no es su fuente de lectura.
+- RN-074: La primera versión del calendario es de solo lectura para fechas y duración: no permite crear por selección, arrastrar, redimensionar ni cambiar campus. Seleccionar un evento abre el detalle y conserva las reglas de propiedad para editar o cancelar.
+- RN-075: El calendario ofrece mes, semana, día y lista, consulta únicamente el rango visible, representa eventos que atraviesan el rango y proporciona texto accesible de fecha, horario, campus y estado sin depender solo del color.
+- RN-076: La búsqueda global de Eventos consulta Firestore en páginas de 25 mediante `terminosBusqueda` calculados por backend; admite prefijos normalizados de evento o responsable y nunca descarga el historial completo.
+- RN-077: El detalle editable procede de una proyección backend sanitizada. Solo el propietario ve y ejecuta edición o cancelación; un evento cancelado permanece de solo lectura.
+- RN-078: `calendarEstado` y `notificacionesEstado` comunican únicamente estados funcionales. No exponen errores técnicos, secretos, contactos ni claves idempotentes.
+- RN-079: Eventos históricos solo reciben `inicioAt`, `finAt` y `terminosBusqueda` mediante un backfill explícito, reanudable y probado primero en modo seco; no se crean reservas, Calendar o correos durante ese proceso.
+- RN-080: La limpieza de protocolos comprueba `protocoloRuta` canónica antes de borrar; antigüedad por sí sola nunca autoriza eliminación.
 
 ## Equipos
 
@@ -103,7 +118,7 @@
 - RN-EQP-010: El catálogo administrativo admite un máximo técnico de 500 registros y nunca devuelve resultados parciales.
 - RN-EQP-011: El catálogo sanitizado no expone cantidades administrativas, uso ni timestamps y no constituye confirmación de disponibilidad.
 
-## Reservaciones y logística de Equipos — objetivo no autorizado
+## Reservaciones y logística de Equipos — implementación autorizada
 
 - RN-RES-001: Una solicitud confirma todos los equipos y cantidades o ninguno; no existen asignaciones parciales.
 - RN-RES-002: La disponibilidad resta las cantidades de reservas coincidentes en estado `confirmada` o `requiere_revision`.
@@ -120,6 +135,13 @@
 - RN-RES-013: Reducir inventario por debajo de compromisos marca reservas afectadas `requiere_revision`, notifica a Sistemas y no cancela ni reasigna silenciosamente.
 - RN-RES-014: Cambiar fecha, horario, campus, equipos o cantidades recalcula la solicitud completa; si el nuevo estado falla, se conserva el anterior.
 - RN-RES-015: No se aceptan eventos que inicien, terminen o transcurran en domingo.
+- RN-RES-016: Un evento admite como máximo 20 tipos distintos de equipo; cada ID es único y cada cantidad es un entero positivo.
+- RN-RES-017: Crear, sustituir, reducir, cancelar o finalizar reservaciones actualiza en una sola transacción el evento, todas sus reservas, las marcas de uso y un documento de control por equipo; si cualquier validación falla, no se aplica ninguna escritura.
+- RN-RES-018: El documento `controlReservasEquipo/{equipoId}` solo fuerza concurrencia mediante una versión monotónica; nunca almacena ni representa cantidad disponible.
+- RN-RES-019: Una transacción concurrente reintenta con estado canónico actualizado. Si agota reintentos, falla de forma recuperable y conserva íntegro el estado anterior.
+- RN-RES-020: `motivosRevision` conserva causas independientes. Confirmar cobertura retira únicamente `cobertura_sistemas` y no oculta revisiones por inventario o coordinación.
+- RN-RES-021: Solo `admin` confirma cobertura o recepción y reporta demora. Recepción anticipada finaliza y libera la reserva; demora extiende `bloqueoFin` y `liberacionProgramada`; ambas operaciones incrementan el control del equipo.
+- RN-RES-022: Las acciones logísticas son idempotentes, usan hora de servidor y registran auditoría estructurada sin correos ni secretos.
 
 ## Consultas
 

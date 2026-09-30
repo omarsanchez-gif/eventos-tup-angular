@@ -2,7 +2,7 @@
 
 ## Estado
 
-Incremento A del catálogo implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026. La prueba manual y aceptación continúan pendientes; reservaciones, Eventos y producción no están autorizados.
+Incremento A del catálogo implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026. El 30 de septiembre se implementó localmente la creación de reservaciones desde Eventos; prueba manual, operaciones logísticas posteriores, despliegue de Eventos y producción continúan pendientes.
 
 ## Documentación
 
@@ -17,8 +17,8 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 
 ## Pendientes antes del código
 
-- [ ] EQP-T09 Capturar y aceptar TUP/FCS en staging.
-- [ ] EQP-T10 Confirmar inventario utilizable inicial por campus.
+- [x] EQP-T09 Capturar TUP/FCS con horarios canónicos en staging; aceptación visual integral continúa en EQP-T23.
+- [x] EQP-T10 Confirmar el inventario utilizable inicial: equipo transferible parte de TUP hacia FCS conforme a los registros aprobados.
 - [x] EQP-T11 Aprobar funcional y visualmente el wireframe.
 - [x] EQP-T12 Autorizar expresamente el incremento A del catálogo.
 
@@ -35,15 +35,17 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 - [x] EQP-T21 Ejecutar lint, formato y builds.
 - [ ] EQP-T22 Validar manualmente en local con datos sintéticos.
 
-## Reservaciones futuras — no autorizadas
+## Reservaciones autorizadas
 
-- [ ] RES-T01 Resolver eventos de varios días.
-- [ ] RES-T02 Aprobar estrategia transaccional e índices Firestore.
-- [ ] RES-T03 Aprobar configuración logística protegida.
-- [ ] RES-T04 Implementar disponibilidad y reserva atómica.
+- [x] RES-T01 Resolver eventos de varios días: máximo seis fechas operativas, un campus y bloqueo nocturno continuo.
+- [x] RES-T02 Aprobar estrategia transaccional e índices Firestore mediante ADR-009.
+- [x] RES-T03 Aprobar configuración logística protegida; resolver el ID real de Sistemas antes de notificaciones de staging.
+- [x] RES-T03A Documentar cinco fechas naturales de anticipación y restricciones posteriores al límite.
+- [x] RES-T04 Implementar disponibilidad y reserva atómica para creación.
 - [ ] RES-T05 Implementar cobertura, recepción, demora y revisión.
+- [ ] RES-T05A Implementar `motivosRevision` y las tres callables administrativas de ADR-010 dentro del detalle de Eventos.
 - [ ] RES-T06 Integrar Eventos y notificaciones a Sistemas.
-- [ ] RES-T07 Validar concurrencia, horarios y traslados en emuladores.
+- [ ] RES-T07 Validar concurrencia, horarios, anticipación, multidiarios y traslados en emuladores. Concurrencia inicial, todos-o-ninguno, controles, anticipación y cálculos unitarios ya tienen evidencia; falta la matriz completa.
 
 ## Despliegue
 

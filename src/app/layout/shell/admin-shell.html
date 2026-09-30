@@ -42,13 +42,19 @@
         <span>Dashboard</span>
       </a>
 
-      <button class="nav-item" type="button" disabled aria-disabled="true">
+      <a
+        #eventsLink="routerLinkActive"
+        class="nav-item"
+        routerLink="/eventos"
+        routerLinkActive="nav-item--active"
+        [attr.aria-current]="eventsLink.isActive ? 'page' : null"
+        (click)="selectNavigation()"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
         </svg>
         <span>Eventos</span>
-        <span class="nav-item__soon">Próximamente</span>
-      </button>
+      </a>
 
       @if (isAdmin()) {
         <a
