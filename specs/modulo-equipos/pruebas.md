@@ -47,9 +47,7 @@
 - EQP-034: `npm run lint:visual` confirma que Equipos no redefine botones/icon-buttons ni usa la paleta institucional anterior.
 - EQP-035: comparación autenticada confirma igualdad de color, altura, radio, tipografía, iconos, foco y estados con los demás catálogos.
 
-## Contrato futuro de reservaciones
-
-Estos casos se ejecutarán solo cuando `reservaciones.md` sea autorizado:
+## Reservaciones autorizadas
 
 - RES-001: reserva local bloquea desde 60 minutos antes hasta 30 minutos después.
 - RES-002: reservas coincidentes consumen cantidades y nunca exceden `cantidadOperativa`.
@@ -71,6 +69,21 @@ Estos casos se ejecutarán solo cuando `reservaciones.md` sea autorizado:
 - RES-018: editar evento conserva reserva anterior cuando el nuevo estado no puede confirmarse.
 - RES-019: reintentar el mismo estado no duplica ni alterna reservas.
 - RES-020: evento que toca domingo se rechaza en frontend y backend.
+- RES-021: evento multidiario bloquea equipo local continuamente desde 60 minutos antes del primer inicio hasta 30 minutos después del último fin.
+- RES-022: equipo transferido permanece bloqueado durante todas las noches y regresa únicamente después del último fin.
+- RES-023: intervalo de más de seis fechas operativas se rechaza sin reservas parciales.
+- RES-024: intervalo con campus distintos por jornada se rechaza.
+- RES-025: creación con menos de cinco fechas naturales de anticipación se rechaza también para `admin`.
+- RES-026: después del límite permite retirar equipo o reducir cantidades y recalcula atómicamente.
+- RES-027: después del límite rechaza agregar equipo, aumentar cantidades o cambiar campus aunque exista stock.
+- RES-028: posponer recalcula reservas solo cuando la nueva fecha vuelve a cumplir cinco fechas naturales.
+- RES-029: finalizar temporalmente el evento no libera antes un equipo que sigue en desmontaje, traslado o demora.
+- RES-030: una solicitud con 21 tipos distintos se rechaza sin escrituras; 20 tipos válidos pueden confirmarse atómicamente.
+- RES-031: dos transacciones que parten sin reservas previas para el mismo equipo compiten mediante `controlReservasEquipo`; una se reintenta y no existe sobreasignación fantasma.
+- RES-032: crear, sustituir, reducir, cancelar o finalizar incrementa la versión de todos los controles afectados dentro de la misma transacción.
+- RES-033: una edición bloquea la unión ordenada de equipos anteriores y nuevos; si falla cualquier equipo, conserva todas las reservas anteriores.
+- RES-034: el cliente no puede leer ni escribir `controlReservasEquipo`, aunque sea `admin`.
+- RES-035: la función transaccional reintentada no duplica logs funcionales, correos, Calendar, PDFs ni estado de aplicación.
 
 ## Evidencia requerida antes de staging
 

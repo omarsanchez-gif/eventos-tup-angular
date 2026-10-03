@@ -1,0 +1,151 @@
+<section class="calendar-page" aria-labelledby="calendar-page-title">
+  <header class="panel page-header">
+    <div>
+      <p class="eyebrow">Gestión institucional</p>
+      <h1 id="calendar-page-title">Calendario de eventos</h1>
+      <p>Vista canónica de Firestore; Google Calendar no es la fuente de lectura.</p>
+    </div>
+    <a class="button button--primary" routerLink="/eventos">Volver al listado</a>
+  </header>
+
+  @if (events.error(); as error) {
+    <div class="alert alert--error" role="alert">
+      <span>{{ error }}</span
+      ><button type="button" aria-label="Cerrar mensaje" (click)="events.clearError()">×</button>
+    </div>
+  }
+
+  <section class="panel toolbar" aria-label="Filtros de calendario">
+    <nav class="view-switch" aria-label="Vista de eventos">
+      <a class="view-switch__item" routerLink="/eventos">Listado</a
+      ><a
+        class="view-switch__item view-switch__item--active"
+        routerLink="/eventos/calendario"
+        aria-current="page"
+        >Calendario</a
+      >
+    </nav>
+    <div class="filters">
+      <label
+        >Campus<select (change)="campusChanged($event)">
+          <option value="">Todos</option>
+          @for (campus of events.campuses(); track campus.campusId) {
+            <option [value]="campus.campusId">{{ campus.clave }} · {{ campus.nombre }}</option>
+          }
+        </select></label
+      ><label
+        >Estado<select (change)="statusChanged($event)">
+          <option value="">Todos</option>
+          <option value="programado">Programado</option>
+          <option value="en_ejecucion">En ejecución</option>
+          <option value="finalizado">Finalizado</option>
+          <option value="cancelado">Cancelado</option>
+        </select></label
+      >
+    </div>
+  </section>
+
+  <section
+    class="panel calendar-container"
+    aria-labelledby="calendar-board-title"
+    [attr.aria-busy]="events.calendarLoading()"
+  >
+    <header class="calendar-overview">
+      <div>
+        <h2 id="calendar-board-title">Agenda institucional</h2>
+        <p>Seleccione un evento para consultar el intervalo, campus y responsable.</p>
+        <p class="calendar-guidance">
+          Los eventos de varios días ocupan cada fecha del intervalo en una franja continua.
+        </p>
+      </div>
+      <ul class="status-legend" aria-label="Estados de los eventos">
+        <li><span class="status-dot status-dot--scheduled"></span>Programado</li>
+        <li><span class="status-dot status-dot--active"></span>En ejecución</li>
+        <li><span class="status-dot status-dot--finished"></span>Finalizado</li>
+        <li><span class="status-dot status-dot--cancelled"></span>Cancelado</li>
+      </ul>
+    </header>
+    @if (events.calendarLoading()) {
+      <p class="loading-state" role="status">
+        <span class="spinner" aria-hidden="true"></span>Cargando intervalo…
+      </p>
+    }
+    <full-calendar [options]="calendarOptions()" />
+    @if (!events.calendarLoading() && !events.calendarItems().length && !events.error()) {
+      <p class="empty-state" role="status">No hay eventos en el intervalo visible.</p>
+    }
+  </section>
+</section>
+
+@if (selectedEvent(); as event) {
+  <div class="dialog-backdrop">
+    <section
+      class="event-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="calendar-event-title"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">Detalle del evento</p>
+          <h2 id="calendar-event-title">{{ event.name }}</h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar detalle"
+          (click)="closeDetail()"
+        >
+          ×
+        </button>
+      </header>
+      <dl>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ statusLabel(event.status) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha y horario</dt>
+          <dd>{{ formatInterval(event) }}</dd>
+        </div>
+        <div>
+          <dt>Campus</dt>
+          <dd>{{ event.campusName }}</dd>
+        </div>
+        <div>
+          <dt>Responsable</dt>
+          <dd>{{ event.responsible }}</dd>
+        </div>
+        <div>
+          <dt>Coordinaciones</dt>
+          <dd>
+            {{ event.coordinationNames.length ? event.coordinationNames.join(', ') : 'Ninguna' }}
+          </dd>
+        </div>
+        <div>
+          <dt>Equipamiento</dt>
+          <dd>{{ event.equipmentCount }} {{ event.equipmentCount === 1 ? 'tipo' : 'tipos' }}</dd>
+        </div>
+        <div>
+          <dt>Calendar</dt>
+          <dd>{{ integrationLabel(event.calendarStatus) }}</dd>
+        </div>
+        <div>
+          <dt>Notificaciones</dt>
+          <dd>{{ integrationLabel(event.notificationStatus) }}</dd>
+        </div>
+      </dl>
+      <footer>
+        <a
+          class="button button--secondary"
+          routerLink="/eventos"
+          [queryParams]="{ eventId: event.eventId }"
+          >Gestionar evento</a
+        >
+        <button class="button button--primary" type="button" (click)="closeDetail()">Cerrar</button>
+      </footer>
+    </section>
+  </div>
+}

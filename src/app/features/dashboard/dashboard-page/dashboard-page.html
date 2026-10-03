@@ -1,0 +1,213 @@
+@if (auth.user(); as user) {
+  <section class="dashboard" aria-labelledby="dashboard-title">
+    <header class="panel dashboard-hero">
+      <div>
+        <p class="eyebrow">Panel institucional</p>
+        <h1 id="dashboard-title">Bienvenido, {{ user.nombre }}</h1>
+        <p class="dashboard-hero__lead">
+          Consulte el estado operativo del Sistema de Eventos TUP con información actualizada.
+        </p>
+      </div>
+      <dl class="profile-summary" aria-label="Perfil de la sesión">
+        <div>
+          <dt>Correo</dt>
+          <dd>{{ user.correo }}</dd>
+        </div>
+        <div>
+          <dt>Rol</dt>
+          <dd>{{ user.rol === 'admin' ? 'Administrador' : 'Usuario' }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    @if (dashboard.loading() && !dashboard.summary()) {
+      <div class="loading-state" role="status" aria-live="polite">
+        <span class="loading-state__spinner" aria-hidden="true"></span>
+        <span>Cargando resumen institucional</span>
+      </div>
+      <section class="kpi-grid" aria-hidden="true">
+        @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+          <div class="kpi-card kpi-card--skeleton"></div>
+        }
+      </section>
+    } @else if (dashboard.error(); as error) {
+      <div class="alert alert--error" role="alert">
+        <div>
+          <strong>No fue posible cargar el Dashboard</strong>
+          <span>{{ error }}</span>
+        </div>
+        <button class="button button--secondary" type="button" (click)="retry()">Reintentar</button>
+      </div>
+    } @else if (dashboard.summary(); as summary) {
+      @if (dashboard.hasPartialData()) {
+        <div class="alert alert--warning" role="status">
+          <div>
+            <strong>Algunos datos no están disponibles</strong>
+            <span>Las demás secciones conservan la información obtenida correctamente.</span>
+          </div>
+          <button class="button button--secondary" type="button" (click)="retry()">
+            Reintentar
+          </button>
+        </div>
+      }
+
+      <section class="kpi-grid" aria-label="Indicadores principales">
+        @for (kpi of kpis(); track kpi.key) {
+          <article class="kpi-card" [class.kpi-card--unavailable]="kpi.value === null">
+            <div class="kpi-card__icon" aria-hidden="true">
+              @switch (kpi.key) {
+                @case ('events') {
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
+                    />
+                  </svg>
+                }
+                @case ('upcoming') {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                }
+                @case ('users') {
+                  <svg viewBox="0 0 24 24">
+                    <path
+                      d="M16 21a4 4 0 0 0-8 0m12-1a3 3 0 0 0-3-3m-10 0a3 3 0 0 0-3 3m8-6a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                    />
+                  </svg>
+                }
+                @default {
+                  <svg viewBox="0 0 24 24">
+                    <path d="M7 3h7l4 4v14H7V3Zm7 0v5h5M10 13h5m-5 4h5" />
+                  </svg>
+                }
+              }
+            </div>
+            <div>
+              <p class="kpi-card__label">{{ kpi.label }}</p>
+              <p
+                class="kpi-card__value"
+                [attr.aria-label]="kpi.label + ': ' + (kpi.value ?? 'no disponible')"
+              >
+                {{ kpi.value ?? '—' }}
+              </p>
+              <p class="kpi-card__description">{{ kpi.description }}</p>
+            </div>
+          </article>
+        }
+      </section>
+
+      <div class="dashboard-content">
+        <section class="panel upcoming-panel" aria-labelledby="upcoming-title">
+          <header class="section-header">
+            <div>
+              <p class="eyebrow">Agenda institucional</p>
+              <h2 id="upcoming-title">Próximos eventos</h2>
+            </div>
+            <span>30 días</span>
+          </header>
+
+          @if (summary.upcoming.length === 0) {
+            <div class="empty-state" role="status">
+              <strong>No hay eventos programados para los próximos 30 días</strong>
+              <span>Los nuevos registros aparecerán aquí automáticamente.</span>
+            </div>
+          } @else {
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Evento</th>
+                    <th scope="col">Fecha y hora</th>
+                    <th scope="col">Responsable</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (event of summary.upcoming; track event.eventId) {
+                    <tr>
+                      <td>
+                        <strong>{{ event.name }}</strong>
+                      </td>
+                      <td>{{ eventDate(event.dateStart) }} · {{ event.timeStart }}</td>
+                      <td>{{ event.responsible }}</td>
+                      <td>
+                        <span
+                          class="status-badge"
+                          [class]="'status-badge status-badge--' + event.status"
+                        >
+                          {{ statusLabel(event.status) }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="event-cards" aria-label="Próximos eventos">
+              @for (event of summary.upcoming; track event.eventId) {
+                <article class="event-card">
+                  <div class="event-card__heading">
+                    <strong>{{ event.name }}</strong>
+                    <span
+                      class="status-badge"
+                      [class]="'status-badge status-badge--' + event.status"
+                    >
+                      {{ statusLabel(event.status) }}
+                    </span>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Fecha</dt>
+                      <dd>{{ eventDate(event.dateStart) }} · {{ event.timeStart }}</dd>
+                    </div>
+                    <div>
+                      <dt>Responsable</dt>
+                      <dd>{{ event.responsible }}</dd>
+                    </div>
+                  </dl>
+                </article>
+              }
+            </div>
+          }
+        </section>
+
+        <aside class="panel activity-panel" aria-labelledby="activity-title">
+          <header class="section-header">
+            <div>
+              <p class="eyebrow">Seguimiento</p>
+              <h2 id="activity-title">Actividad reciente</h2>
+            </div>
+          </header>
+
+          @if (summary.recentActivity.length === 0) {
+            <div class="empty-state" role="status">
+              <strong>No hay actividad de eventos para mostrar</strong>
+              <span>Las creaciones y actualizaciones recientes aparecerán aquí.</span>
+            </div>
+          } @else {
+            <ol class="activity-list">
+              @for (
+                activity of summary.recentActivity;
+                track activity.eventId + activity.occurredAt
+              ) {
+                <li>
+                  <span class="activity-list__marker" aria-hidden="true"></span>
+                  <div>
+                    <p>
+                      <strong>{{
+                        activity.action === 'creacion' ? 'Evento creado' : 'Evento actualizado'
+                      }}</strong>
+                      <span>{{ activity.name }}</span>
+                    </p>
+                    <p>{{ activity.responsible }} · {{ activityDate(activity.occurredAt) }}</p>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </aside>
+      </div>
+    }
+  </section>
+}

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada para Campus y ampliada documentalmente para Equipos el 21 de agosto de 2026. La implementación de Equipos, reservaciones, traslados y su integración con Eventos permanece pendiente de autorización separada.
+Aprobada para Campus y ampliada para Equipos el 21 de agosto de 2026. Campus y el catálogo de Equipos fueron implementados y desplegados únicamente a staging. La política multidiaria se resolvió el 28 de septiembre; reservaciones, traslados e integración con Eventos fueron autorizados mediante ADR-009, implementados y desplegados únicamente a staging desde el 30 de septiembre. Producción permanece fuera de alcance.
 
 ## Contexto
 
@@ -57,9 +57,15 @@ La institución opera inicialmente en dos campus: Tecnológico Universitario Pla
 9. El evento del lunes en FCS traslada equipo remoto el viernes a las 17:00, porque el sábado no permite completar recepción después de esa hora.
 10. Cambiar fecha, horario, campus, equipos o cantidades recalcula la solicitud completa; si el nuevo estado no puede confirmarse, se conserva el anterior.
 
-## Pendiente bloqueante de reservaciones
+## Intervalos de varios días resueltos
 
-Debe definirse si Eventos permitirá intervalos de varios días. Esta decisión no bloquea el catálogo, pero sí la autorización de reservaciones y Eventos.
+- Eventos admite un máximo de seis fechas operativas consecutivas, en un solo campus y sin iniciar, terminar o transcurrir en domingo.
+- El intervalo es continuo desde el primer inicio hasta el último fin. Los equipos permanecen montados, reservados y no reutilizables durante las noches.
+- Para equipo local, montaje se calcula antes del primer inicio y desmontaje después del último fin.
+- Para equipo transferido, la salida se calcula respecto del primer inicio y la liberación de regreso respecto del último fin.
+- La creación exige cinco fechas naturales de anticipación conforme a la fecha de servidor en `America/Cancun`. Después del límite no se agrega ni aumenta equipo y no se cambia de campus.
+
+La decisión funcional multidiaria dejó de ser bloqueante. ADR-009 aprobó la estrategia transaccional, los controles por equipo, los índices y las reservaciones. El ID canónico de la Coordinación de Sistemas quedó registrado en `configuracion/logisticaEquipos` antes de activar las notificaciones logísticas de staging.
 
 ## Fuera del incremento Campus
 

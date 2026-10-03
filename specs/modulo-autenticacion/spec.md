@@ -16,7 +16,7 @@ Permitir acceso exclusivamente a usuarios institucionales previamente autorizado
 - Cierre de sesión.
 - Protección de rutas.
 - Login institucional.
-- Vista temporal autenticada en `/dashboard`.
+- Redirección autenticada al Dashboard funcional en `/dashboard`.
 - Mensajes funcionales de error.
 
 ## No incluye
@@ -27,7 +27,7 @@ Permitir acceso exclusivamente a usuarios institucionales previamente autorizado
 - MFA.
 - Otros proveedores.
 - Gestión visual de usuarios.
-- Dashboard funcional, KPIs, actividad o próximos eventos.
+- Implementación interna de KPIs, actividad o próximos eventos; pertenece a `modulo-dashboard`.
 - Funcionalidad propia del sidebar o topbar distinta de navegación, identidad y logout.
 
 ## Contrato `bootstrapAuthorization`
@@ -96,21 +96,20 @@ isAuthenticated
 - Mensajes amigables para rechazo, cancelación y fallos.
 - Contenido conforme al wireframe de `../design-system/spec.md`.
 
-## Vista temporal autenticada
+## Destino autenticado
 
 Ruta: `/dashboard`.
 
-Propósito: comprobar autenticación, recuperación de sesión, claims, perfil y logout sin implementar el Dashboard funcional.
+Propósito: comprobar autenticación, recuperación de sesión, claims y perfil antes de permitir que `modulo-dashboard` solicite su read model funcional.
 
-Contenido exclusivo:
+Datos de identidad que Autenticación entrega al shell y al Dashboard:
 
-- Mensaje “Bienvenido al Sistema de Eventos TUP”.
 - Nombre del usuario.
 - Correo institucional.
 - Rol asignado.
-- Contexto breve de sesión autorizada.
+- Estado de sesión autorizada.
 
-La vista se presenta dentro del shell definido por `modulo-layout`. El cierre de sesión pertenece al shell para que sea compartido por todas las rutas privadas. No debe incluir KPIs, tablas, actividad, próximos eventos ni funcionalidad de módulos fuera de alcance. Cuando `modulo-dashboard` sea autorizado, esta vista será reemplazada por su implementación funcional.
+El Dashboard se presenta dentro del shell definido por `modulo-layout`. El cierre de sesión pertenece al shell para que sea compartido por todas las rutas privadas. `modulo-dashboard` controla KPI, próximos eventos, actividad y estados de esa pantalla; Autenticación conserva únicamente el contrato de identidad, sesión, redirección y autorización.
 
 ## Seguridad
 
@@ -126,6 +125,6 @@ La vista se presenta dentro del shell definido por `modulo-layout`. El cierre de
 - Usuario autorizado y activo accede con claims correctos.
 - Usuario inexistente, inactivo, externo, con rol inválido o UID conflictivo no accede.
 - La sesión se recupera sin mostrar contenido privado antes de autorizar.
-- La vista temporal muestra únicamente los datos y contexto especificados dentro del shell administrativo.
+- El Dashboard recibe nombre, correo y rol desde el estado autenticado sin duplicar tokens ni consultar nuevamente el perfil desde el componente.
 - Logout impide volver mediante historial.
 - No se exponen secretos ni errores técnicos.

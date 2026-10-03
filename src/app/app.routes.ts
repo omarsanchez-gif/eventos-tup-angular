@@ -21,10 +21,31 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/temporary-dashboard/temporary-dashboard').then(
-            (component) => component.TemporaryDashboard,
+          import('./features/dashboard/dashboard-page/dashboard-page').then(
+            (component) => component.DashboardPage,
           ),
-        title: 'Bienvenida | Sistema de Eventos TUP',
+        title: 'Dashboard | Sistema de Eventos TUP',
+      },
+      {
+        path: 'eventos',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/events/events-page/events-page').then(
+                (component) => component.EventsPage,
+              ),
+            title: 'Eventos | Sistema de Eventos TUP',
+          },
+          {
+            path: 'calendario',
+            loadComponent: () =>
+              import('./features/events/events-calendar-page/events-calendar-page').then(
+                (component) => component.EventsCalendarPage,
+              ),
+            title: 'Calendario | Sistema de Eventos TUP',
+          },
+        ],
       },
       {
         path: 'campus',

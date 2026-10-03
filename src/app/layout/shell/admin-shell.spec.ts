@@ -54,6 +54,7 @@ describe('AdminShell', () => {
     expect(element.querySelector('main#main-content')).toBeTruthy();
     expect(element.querySelector('router-outlet')).toBeTruthy();
     expect(element.querySelector('a[href="/dashboard"]')?.textContent).toContain('Dashboard');
+    expect(element.querySelector('a[href="/eventos"]')?.textContent).toContain('Eventos');
     expect(element.querySelector('a[href="/coordinaciones"]')?.textContent).toContain(
       'Coordinaciones',
     );
@@ -63,23 +64,19 @@ describe('AdminShell', () => {
     expect(element.querySelector('.skip-link')?.textContent).toContain('Saltar al contenido');
   });
 
-  it('keeps only Eventos disabled for an admin', () => {
-    const disabledItems = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-        '.nav-item[aria-disabled="true"]',
-      ),
-    );
-    expect(disabledItems).toHaveLength(1);
-    expect(disabledItems.every((item) => item.disabled)).toBe(true);
-    expect(disabledItems[0]?.textContent).toContain('Eventos');
+  it('enables Eventos for an authorized admin', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('a[href="/eventos"]')).toBeTruthy();
+    expect(element.querySelector('.nav-item[aria-disabled="true"]')).toBeNull();
   });
 
-  it('hides administrative catalogs for the usuario role', () => {
+  it('keeps Eventos and hides administrative catalogs for the usuario role', () => {
     user.update((current) => (current ? { ...current, rol: 'usuario' } : current));
     fixture.detectChanges();
 
-    const content = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(content).toContain('Eventos');
+    const element = fixture.nativeElement as HTMLElement;
+    const content = element.textContent ?? '';
+    expect(element.querySelector('a[href="/eventos"]')).toBeTruthy();
     expect(content).not.toContain('Usuarios');
     expect(content).not.toContain('Coordinaciones');
     expect(content).not.toContain('Campus');

@@ -4,7 +4,7 @@
 
 ### AUTH-001 — Inicio válido
 
-Cuenta institucional registrada, activa y con rol válido. Debe acceder a `/dashboard`, cargar perfil y claims, y mostrar la vista temporal.
+Cuenta institucional registrada, activa y con rol válido. Debe acceder a `/dashboard`, cargar perfil y claims, y permitir que el Dashboard funcional solicite su resumen.
 
 ### AUTH-002 — Usuario inexistente
 
@@ -106,11 +106,11 @@ Durante autenticación, el botón debe estar deshabilitado y exponer `aria-busy`
 
 ### AUTH-025 — Teclado y foco
 
-El botón, la alerta, la vista temporal y logout deben ser operables y comprensibles con teclado y lector de pantalla.
+El botón, la alerta, el destino autenticado y logout deben ser operables y comprensibles con teclado y lector de pantalla. La accesibilidad del contenido funcional se completa en las pruebas de cada módulo.
 
 ### AUTH-026 — Responsive
 
-Login y vista temporal funcionales a 320 px, tableta y escritorio, sin desplazamiento horizontal.
+Login, shell y destino autenticado funcionales a 320 px, tableta y escritorio, sin desplazamiento horizontal.
 
 ### AUTH-027 — Movimiento reducido
 
@@ -120,6 +120,6 @@ Con `prefers-reduced-motion`, las animaciones decorativas deben desactivarse o r
 
 No deben guardarse tokens, perfil sensible o secretos manualmente en Local Storage.
 
-### AUTH-029 — Contenido de vista temporal
+### AUTH-029 — Identidad conservada en Dashboard
 
-`/dashboard` debe mostrar únicamente bienvenida, nombre, correo, rol y contexto de sesión como contenido de la ruta. Puede estar rodeado por el shell administrativo y su logout compartido. No debe mostrar KPIs, tablas ni funcionalidad de módulos futuros.
+`/dashboard` debe conservar nombre, correo y rol autenticados dentro del Dashboard funcional y no duplicar el logout del shell. Los KPI, próximos eventos y actividad se validan mediante `modulo-dashboard/pruebas.md`.

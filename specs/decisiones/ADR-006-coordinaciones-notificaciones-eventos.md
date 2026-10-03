@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada el 19 de agosto de 2026 y ampliada con la política operativa aprobada el mismo día. La fase de Coordinaciones fue autorizada, implementada, validada y desplegada únicamente a staging el 19 de agosto de 2026. La fase de Eventos, su outbox, workers, Calendar y correo permanece documentada y pendiente de autorización de implementación.
+Aprobada el 19 de agosto de 2026, ampliada con la política operativa aprobada el mismo día y armonizada el 28 de septiembre de 2026 con la cancelación histórica de ADR-008. Coordinaciones fue autorizada, implementada, validada y desplegada únicamente a staging el 19 de agosto. Eventos, outbox, workers, Calendar y correo fueron autorizados después, implementados y desplegados únicamente a staging desde el 30 de septiembre. La autorización dinámica de contactos institucionales de Coordinaciones quedó desplegada el 3 de octubre. Producción permanece fuera de alcance.
 
 ## Contexto
 
@@ -21,7 +21,7 @@ Firebase no ofrece una transacción atómica entre Firestore, Google Calendar y 
 7. Separar Calendar y correo. Los contactos no se agregan a `attendees`.
 8. Representar cada envío en `notificacionesEventos` con clave idempotente y estado por destinatario.
 9. Un worker backend envía y reintenta; un fallo SMTP no revierte Evento, PDF o Calendar.
-10. Notificar creación; cambios de nombre, fecha, hora o coordinaciones; retiro de coordinación; y cancelación por eliminación.
+10. Notificar creación; cambios de nombre, fecha, hora o coordinaciones; retiro de coordinación; y cancelación. La cancelación conserva el documento histórico conforme a ADR-008 y no depende de eliminación física.
 11. Una coordinación utilizada conserva `utilizada: true` permanentemente y no puede eliminarse, solo suspenderse.
 12. Cada coordinación admite como máximo 10 correos institucionales.
 13. Un evento no impone un máximo funcional de coordinaciones seleccionadas.
@@ -30,6 +30,7 @@ Firebase no ofrece una transacción atómica entre Firestore, Google Calendar y 
 16. El reemplazo de PDF confirma primero la referencia nueva; los archivos huérfanos se purgan después de 24 horas.
 17. Eventos utiliza paginación por cursor de 25 registros.
 18. Calendar y SMTP se validan en staging con recursos sintéticos y destinatarios controlados.
+19. La autorización SMTP admite la lista fija del ambiente y, adicionalmente, trabajos protegidos de tipo `coordinacion` o `sistemas` con `coordinacionId` canónico y correo del dominio institucional. La procedencia se fotografía al crear el trabajo para conservar reintentos e históricos sin releer datos mutables; correos libres y creadores fuera de la lista fija continúan bloqueados.
 
 ## Consecuencias positivas
 
@@ -72,4 +73,5 @@ Descartado porque el flujo histórico no puede recuperar de forma confiable un c
 
 ## Pendientes bloqueantes
 
-- Provisionar y verificar recursos, lista permitida y cuotas del worker, Calendar y SMTP en staging antes de implementar Eventos.
+- Antes de implementar Eventos: aprobar estrategia transaccional e índices, seleccionar la Coordinación de Sistemas por ID, aceptar contratos vigentes y autorizar expresamente el incremento.
+- Calendar, API, datos OAuth, buzón SMTP, contraseña de aplicación y presupuesto ya fueron provisionados. Antes del primer despliegue funcional de integraciones a staging aún se deben cargar secretos en Secret Manager, aplicar la lista permitida, confirmar cuotas y ejecutar pruebas reales controladas.

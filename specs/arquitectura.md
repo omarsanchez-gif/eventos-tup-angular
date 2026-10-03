@@ -102,27 +102,32 @@ SCSS encapsulado solo para distribución específica
 /login
 /dashboard
 /eventos
+/eventos/calendario
 /usuarios
 /coordinaciones
 /campus
 /equipos
 ```
 
-El alcance actual autoriza código para Login, `/dashboard`, `/usuarios`, `/coordinaciones`, `/campus` y el catálogo `/equipos` dentro del shell administrativo. Las rutas administrativas se habilitan únicamente para `admin`. `/eventos`, disponible para todo usuario autorizado, permanece documentada y deshabilitada; las reservaciones de Equipos tampoco están autorizadas.
+El alcance actual autoriza código para Login, `/dashboard`, `/usuarios`, `/coordinaciones`, `/campus`, el catálogo `/equipos`, Eventos y reservaciones. Las rutas administrativas se habilitan únicamente para `admin`; `/eventos` y `/eventos/calendario` están habilitadas para todo usuario autorizado. Eventos fue desplegado únicamente a staging el 30 de septiembre de 2026; producción continúa fuera de alcance.
 
 ## Composición de rutas privadas
 
 ```text
 Rutas privadas [authorizedGuard]
   └── AdminShell
-      ├── /dashboard → TemporaryDashboard
+      ├── /dashboard → DashboardPage
       ├── /usuarios [adminGuard] → UsersPage
       └── /coordinaciones [adminGuard] → CoordinationsPage
       └── /campus [adminGuard] → CampusesPage
       └── /equipos [adminGuard] → EquipmentPage
+      └── /eventos → EventsPage
+          └── /eventos/calendario → EventsCalendarPage
 ```
 
 `AdminShell` es un componente standalone de presentación y navegación. Consume el estado público de `AuthFacade`, ejecuta logout mediante la facade y aloja el `router-outlet`; no consulta Firebase ni contiene reglas de negocio de módulos.
+
+Dashboard implementa `DashboardPage → DashboardFacade → DashboardGateway → getDashboardSummary`. La callable revalida claims y perfil canónico para ambos roles, ejecuta agregaciones y dos consultas limitadas con Admin SDK y devuelve un read model efímero sanitizado. Angular nunca lee directamente `usuarios` ni calcula métricas desde la página cargada de Eventos. No existe colección de Dashboard.
 
 El módulo de Usuarios sigue el flujo `UsersPage → UsersFacade → UsersGateway → callables`. El componente no importa Firebase. Las cinco callables Gen 2 revalidan claims y el documento canónico del administrador, ejecutan las validaciones y escrituras Firestore y sincronizan Authentication mediante Admin SDK. Firestore permanece como fuente canónica ante cualquier reconciliación.
 
@@ -155,12 +160,79 @@ eventos
 - Una coordinación contiene como máximo 10 correos; el selector de Eventos no impone un máximo funcional y puede incluir todas las activas disponibles.
 - El backend obtiene los correos canónicos; no confía en destinatarios enviados por el navegador.
 - El evento conserva IDs y nombres como fotografía histórica, pero no almacena correos visibles para todo usuario autorizado.
-- Calendar no recibe los contactos como asistentes. La creación, actualización o eliminación en el calendario institucional no depende del resultado SMTP.
-- Cada correo se representa mediante un registro protegido e idempotente en `notificacionesEventos`; un worker backend controla envío, reintentos y estados por destinatario.
+- Calendar no recibe los contactos como asistentes. La creación, actualización o retiro por cancelación en el calendario institucional no depende del resultado SMTP.
+- Cada correo se representa mediante un registro protegido e idempotente en `notificacionesEventos`; un worker backend controla envío, reintentos y estados por destinatario. La fotografía protegida contiene los datos funcionales necesarios para generar HTML y texto plano deterministas durante reintentos, sin releer valores mutables ni exponerlos al navegador.
 - El worker ejecuta un intento inmediato y reintentos a los 5 minutos, 30 minutos y 2 horas; los registros terminales expiran después de 90 días.
 - Eventos pagina 25 registros mediante cursores de Firestore. El catálogo administrativo de Coordinaciones conserva búsqueda local sobre un máximo técnico aprobado de 500 registros y falla sin resultados parciales si se excede.
-- Calendar y SMTP se validan en staging mediante recursos sintéticos y una lista permitida antes de cualquier autorización productiva.
+- Calendar y SMTP se validan en staging mediante recursos sintéticos, la lista fija del ambiente y la autorización dinámica de contactos canónicos de Coordinaciones antes de cualquier autorización productiva.
 - La decisión completa está registrada en `decisiones/ADR-006-coordinaciones-notificaciones-eventos.md`.
+
+## Arquitectura objetivo temporal y calendario de Eventos
+
+```text
+EventsPage / EventsCalendarPage [autorizado]
+    ↓
+EventsFacade [Signals + estado derivado]
+    ↓
+EventsGateway
+    ├── listado paginado de 25 por cursor
+    └── intervalo visible sanitizado, máximo 42 fechas
+            ↓
+        Firestore canónico
+
+FullCalendar Standard [presentación lazy]
+    └── detalle del evento; sin crear, arrastrar ni redimensionar
+
+Google Calendar [integración backend de salida]
+    └── nunca es fuente de la vista administrativa
+```
+
+- `inicioAt` y `finAt` son instantes canónicos calculados por backend desde fecha y hora local en `America/Cancun`; los campos históricos separados se conservan.
+- `programado`, `en_ejecucion` y `finalizado` son valores derivados. No existe un cron que escriba una transición por evento; `cancelado` sí se persiste y prevalece.
+- Las respuestas de consulta incluyen `serverNow`. La facade conserva esa referencia, avanza el reloj únicamente para presentación y actualiza el estado al cargar, navegar y llegar a la siguiente frontera temporal. Toda decisión backend vuelve a usar hora de servidor.
+- Un evento multidiario es un único intervalo continuo, máximo seis fechas operativas, en un solo campus y sin domingo. Equipos permanecen montados y bloqueados durante las noches.
+- La ruta `/eventos` conserva listado y paginación; `/eventos/calendario` usa la misma facade y permisos, consulta solo el rango visible y permite alternar entre lista y calendario sin duplicar datos.
+- FullCalendar Standard `7.1.0` se carga únicamente con la ruta lazy de Eventos. Mes, semana, día y lista están implementados; Premium/Scheduler, edición por arrastre y creación por selección quedan fuera de alcance.
+- La consulta calendario incluye eventos superpuestos, incluidos los iniciados antes del rango. Los índices y la consulta aprobados están en ADR-009 y se validan en Emulator Suite antes de desplegar.
+- La dependencia y sus consecuencias se registran en `decisiones/ADR-008-ciclo-temporal-calendario-eventos.md`.
+
+## Cierre operativo de Eventos
+
+```text
+EventsPage / EventsCalendarPage
+    ↓ lista, búsqueda y detalle sanitizado
+EventsFacade
+    ↓
+EventsGateway
+    ├── listEvents(busqueda, cursor)
+    ├── checkEventAvailability(intervalo, equipos, eventId?)
+    ├── getEventDetail(eventId)
+    ├── updateEvent(eventId, estadoObjetivo)
+    ├── cancelEvent(eventId)
+    └── reconcileEventIntegrations(eventId)
+
+Detalle del evento [admin]
+    └── Logística de equipos
+        ├── confirmar cobertura
+        ├── confirmar recepción
+        └── reportar demora
+
+Operaciones de Eventos
+    ├── Firestore transaccional
+    ├── Calendar idempotente
+    └── notificacionesEventos
+            ↓ lease de 10 minutos
+        worker SMTP cada 5 minutos
+```
+
+- La búsqueda global usa `terminosBusqueda` generados por backend y un índice `array-contains` más creación descendente; conserva páginas de 25 y no incorpora un motor externo.
+- El detalle es el único punto de entrada de edición, cancelación y logística. Las acciones de propiedad y rol se repiten en backend.
+- La previsualización de disponibilidad usa `eventId` únicamente en edición. La callable valida el evento y su propietario antes de excluir sus reservas; creación no envía el campo y toda mutación vuelve a validar disponibilidad dentro de la transacción autoritativa.
+- `EventsPage` vuelve a consultar esa callable al recuperar foco o visibilidad y cada 30 segundos mientras el formulario sea visible y tenga intervalo válido. La facade conserva el resultado anterior durante la actualización, evita solicitudes solapadas y el componente detiene el monitor al cerrar o destruirse. Si la respuesta cambia, Angular anuncia el conflicto sin reducir cantidades ni convertir la previsualización en autorización.
+- `calendarEstado` y `notificacionesEstado` son resúmenes seguros para la UI; errores técnicos, contactos, leases y claves idempotentes permanecen protegidos.
+- `cleanupEventProtocols` es una Function programada, idempotente y acotada. La retención de notificaciones usa TTL sobre `fechaExpiracion`; ninguno forma parte de componentes Angular.
+- La compatibilidad histórica usa un comando administrativo separado con modo seco; nunca se ejecuta como efecto lateral de una lectura.
+- El contrato completo está en `decisiones/ADR-010-cierre-operativo-eventos.md`.
 
 Coordinaciones implementa el flujo `CoordinationsPage → CoordinationsFacade → CoordinationsGateway → callables`. Sus seis callables revalidan claims y perfil canónico; las mutaciones usan transacciones para nombre único, capacidad, estado y eliminación. Firestore Rules permite lectura completa solo a `admin` y bloquea toda escritura de cliente. La implementación fue validada localmente y sus seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026. La verificación remota confirmó las Functions en `us-central1` y el rechazo `401` de una llamada anónima; Hosting y producción no fueron modificados.
 
@@ -177,7 +249,7 @@ EquipmentGateway
     ↓
 seis callables administrativas → equipos
 
-EventForm [authorized, futuro]
+EventForm [autorizado; alta Angular implementada]
     ↓ solicita campus + intervalo + cantidades
 EquipmentReservationService backend
     ↓ valida catálogos y disponibilidad de forma atómica
@@ -192,10 +264,16 @@ reservasEquipo
 - La disponibilidad, los intervalos, fotografías y estados logísticos se calculan en backend.
 - El cliente envía IDs y cantidades solicitadas; no envía disponibilidad, campus históricos, clasificación, correos o estados.
 - Una reserva de varios equipos se confirma completa o no escribe ningún elemento.
-- `cantidadDisponible` no se persiste. Antes del código de reservaciones se aprobará una estrategia transaccional e índices Firestore que impida sobreasignación concurrente.
+- `cantidadDisponible` no se persiste. ADR-009 define una transacción que lee reservas superpuestas y actualiza `controlReservasEquipo/{equipoId}` para crear un punto de contención por cada equipo afectado.
+- La unión de equipos anteriores y nuevos se ordena antes de leer controles. Cada transacción actualiza evento, reservas deterministas, controles y marcas de uso como una sola unidad; Calendar, SMTP y Storage permanecen fuera de la función reintentable.
+- Los índices compuestos declarativos viven en `firestore.indexes.json`: disponibilidad por equipo, estado e intervalo; superposición general y por campus; búsqueda global y procesamiento de notificaciones. El listado por `fechaCreacion DESC` y `__name__ DESC` usa el índice automático de campo único de Firestore, porque el servicio rechaza esa combinación como índice compuesto redundante.
+- Para eventos multidiarios, la reserva cubre el intervalo continuo completo y las noches; montaje se aplica antes del primer inicio y desmontaje o regreso después del último fin.
 - La configuración logística referencia la coordinación de Sistemas por ID canónico y conserva `America/Cancun` como zona horaria.
 - La primera política admite traslados TUP–FCS de 30 minutos con destinos explícitos; un campus futuro requiere extensión documental.
 - La definición completa está en `modulo-equipos/spec.md`, `modulo-equipos/reservaciones.md` y ADR-007.
+- La estrategia de concurrencia e índices está en `decisiones/ADR-009-transacciones-indices-eventos.md`.
+
+El incremento del 30 de septiembre implementa disponibilidad, creación, búsqueda/listado, calendario, detalle, edición, cancelación y acciones logísticas mediante `EventsService → FirestoreEventsRepository`. Cada mutación vuelve a leer usuario, campus, configuración, coordinaciones, equipos, controles y reservas superpuestas y actualiza el estado canónico en una transacción de todo o nada. Calendar, SMTP y Storage se ejecutan después mediante adaptadores idempotentes; la bandeja SMTP usa lease, reintentos y avisos logísticos por causa. El mantenimiento diario y el backfill son procesos acotados separados. Esta arquitectura fue probada localmente y desplegada a staging con 16 Functions, Rules y Hosting. Creación/reconciliación de Calendar y entrega SMTP permitida ya cuentan con evidencia real; actualización, cancelación y rechazo fuera de lista continúan pendientes.
 
 ## Configuración
 
@@ -203,6 +281,11 @@ reservasEquipo
 - Secretos exclusivamente en backend.
 - Conexión a emuladores solo en local.
 - Producción nunca es valor predeterminado de desarrollo.
+- Local usa dobles por defecto; una prueba excepcional con credenciales usa `functions/.secret.local`, nunca un environment Angular.
+- Staging y producción consumen secretos estructurados desde Secret Manager: `GOOGLE_CALENDAR_CONFIG` y `SMTP_CONFIG`.
+- Las Functions declaran explícitamente el secreto requerido; no existe un secreto global disponible para todo el backend.
+- La lista fija SMTP forma parte de la configuración backend del ambiente. Inmediatamente antes del envío, el adaptador acepta esa lista o la procedencia protegida `coordinacion`/`sistemas` con ID canónico y dominio institucional; no consulta Angular ni acepta destinatarios libres.
+- El adaptador SMTP recibe asunto, HTML y texto ya construidos por un renderizador puro y seguro; Nodemailer no compone contenido ni consulta Firestore.
 
 ### Mapa de proyectos Firebase
 
@@ -217,6 +300,8 @@ El proyecto `eventos-tup` no forma parte de la arquitectura aprobada. Todo coman
 Staging usa Firestore `(default)` en `nam5`, inicializado con la autorización del administrador. El frontend toma de `environment.staging.ts` la configuración Firebase y el dominio institucional público para validación temprana; Calendar, SMTP y la validación autoritativa del dominio permanecen en backend.
 
 El plan Blaze está activo solo en staging. Google Sign-In usa una marca OAuth propia, con `localhost` y `127.0.0.1` autorizados para desarrollo. `bootstrapAuthorization` se ejecuta en `us-central1`; sus imágenes de Artifact Registry se eliminan después de un día para limitar costos.
+
+Staging tiene un presupuesto informativo de `100 MXN` con avisos al primer gasto y a `50 MXN`, `80 MXN` y `100 MXN`; no es un interruptor automático. Calendar usa el calendario institucional adicional y SMTP usa `eventos@tecplayacar.edu.mx`. La lista fija conserva las cuatro cuentas aprobadas; además se autorizan los contactos institucionales cuya procedencia desde Coordinaciones quede fotografiada por backend en la bandeja protegida. Los correos libres continúan bloqueados.
 
 Cloud Storage de staging utiliza el bucket predeterminado `eventos-tup-angular-stg.firebasestorage.app`, regional en `US-CENTRAL1` y clase `STANDARD`. La ubicación es inmutable. Security Rules solo se despliegan después de pasar sus pruebas automatizadas.
 

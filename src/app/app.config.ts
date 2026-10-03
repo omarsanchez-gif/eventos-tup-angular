@@ -13,8 +13,12 @@ import { CAMPUSES_GATEWAY } from './features/campuses/data/campuses.gateway';
 import { FirebaseCampusesGateway } from './features/campuses/data/firebase-campuses.gateway';
 import { COORDINATIONS_GATEWAY } from './features/coordinations/data/coordinations.gateway';
 import { FirebaseCoordinationsGateway } from './features/coordinations/data/firebase-coordinations.gateway';
+import { DASHBOARD_GATEWAY } from './features/dashboard/data/dashboard.gateway';
+import { FirebaseDashboardGateway } from './features/dashboard/data/firebase-dashboard.gateway';
 import { EQUIPMENT_GATEWAY } from './features/equipment/data/equipment.gateway';
 import { FirebaseEquipmentGateway } from './features/equipment/data/firebase-equipment.gateway';
+import { EVENTS_GATEWAY } from './features/events/data/events.gateway';
+import { FirebaseEventsGateway } from './features/events/data/firebase-events.gateway';
 import { FirebaseUsersGateway } from './features/users/data/firebase-users.gateway';
 import { USERS_GATEWAY } from './features/users/data/users.gateway';
 
@@ -30,8 +34,12 @@ export const appConfig: ApplicationConfig = {
       provide: COORDINATIONS_GATEWAY,
       useExisting: FirebaseCoordinationsGateway,
     },
+    FirebaseDashboardGateway,
+    { provide: DASHBOARD_GATEWAY, useExisting: FirebaseDashboardGateway },
     FirebaseEquipmentGateway,
     { provide: EQUIPMENT_GATEWAY, useExisting: FirebaseEquipmentGateway },
+    FirebaseEventsGateway,
+    { provide: EVENTS_GATEWAY, useExisting: FirebaseEventsGateway },
     FirebaseUsersGateway,
     { provide: USERS_GATEWAY, useExisting: FirebaseUsersGateway },
     provideAppInitializer(() => inject(AuthFacade).initialize()),

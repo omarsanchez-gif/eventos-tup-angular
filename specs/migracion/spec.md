@@ -15,7 +15,7 @@ Reemplazar Vue por Angular sin perder funcionalidad, datos, archivos, integracio
 7. Aprobar e implementar Coordinaciones.
 8. Aprobar infraestructura protegida de notificaciones.
 9. Autorizar e implementar Eventos.
-10. Autorizar e implementar Dashboard.
+10. Implementar Dashboard conforme a la autorización del 3 de octubre de 2026.
 11. Ejecutar regresión integral.
 12. Publicar en staging/preview.
 13. Ejecutar corte productivo con reversión.
@@ -38,6 +38,14 @@ Reemplazar Vue por Angular sin perder funcionalidad, datos, archivos, integracio
 - Vue debe seguir leyendo eventos con campos adicionales sin perder los campos históricos antes de cualquier despliegue productivo.
 - La paginación nueva consulta 25 eventos por cursor y debe conservar el orden determinista de los registros históricos.
 - Los PDFs existentes no se consideran huérfanos; la limpieza de 24 horas solo actúa sobre cargas temporales o nuevas sin referencia canónica comprobada.
+
+## Compatibilidad temporal y de calendario
+
+- Eventos históricos con fecha y hora completas pueden derivar `inicioAt`, `finAt` y estado en lectura; no se realiza backfill implícito.
+- Si un histórico tiene datos temporales incompletos, se conserva la presentación compatible de `estatus` y se marca para revisión.
+- Los nuevos campos `inicioAt`, `finAt`, `fechaCancelacion` y `canceladoPorUid` son aditivos y deben comprobarse contra la lectura de Vue antes de cualquier despliegue productivo.
+- El flujo Angular nuevo conserva eventos cancelados como históricos de solo lectura; la convivencia con Vue debe impedir que la aplicación anterior los reactive, edite o trate como eventos vigentes.
+- FullCalendar consulta Firestore mediante el contrato Angular y no modifica IDs ni usa Google Calendar como fuente de migración.
 
 ## Corrección de seguridad aprobada
 

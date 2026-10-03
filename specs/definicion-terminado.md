@@ -21,6 +21,20 @@
 - La trazabilidad está actualizada.
 - Se validó en emuladores y, cuando corresponda, staging.
 
+## Para Eventos y reservaciones
+
+- Fronteras de cinco fechas de anticipación, seis fechas operativas, domingo y zona `America/Cancun` fueron probadas con reloj controlado.
+- La transacción de varios equipos demuestra todo o nada, idempotencia y ausencia de sobreasignación concurrente.
+- Eventos multidiarios mantienen equipos bloqueados durante todas las noches y separan estado temporal de logística.
+- `Programado`, `En ejecución` y `Finalizado` se derivan sin cron; cancelación histórica, Calendar, correo y reservas se reconcilian sin estados falsos.
+- FullCalendar consulta solo el intervalo visible, usa Firestore como fuente, permanece de solo lectura y ofrece vistas mes, semana, día y lista accesibles.
+- La búsqueda global usa el índice y cursor aprobados, encuentra nombre o responsable fuera de la página visible y no descarga la colección.
+- Edición y cancelación demuestran propiedad, comparación previo/objetivo, sustitución atómica y conservación del estado anterior ante fallo.
+- Cobertura, recepción y demora demuestran roles, motivos de revisión independientes y control monotónico del equipo.
+- Calendar, SMTP y limpieza demuestran idempotencia, lease exclusivo, lotes, recuperación y estados públicos sin datos sensibles.
+- El backfill histórico pasa primero en modo seco; ninguna ejecución productiva forma parte implícita de la publicación.
+- Índices Firestore, calendario, SMTP, lista permitida y Coordinación de Sistemas de staging están verificados antes de aceptación.
+
 ## Para una publicación
 
 - Build de producción exitoso.

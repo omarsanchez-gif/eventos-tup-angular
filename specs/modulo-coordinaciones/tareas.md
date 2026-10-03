@@ -31,7 +31,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T16 Implementar edición y correos canónicos.
 - [x] COO-T17 Implementar activación/suspensión por estado objetivo.
 - [x] COO-T18 Implementar eliminación condicionada a `utilizada`.
-- [ ] COO-T19 Implementar transición permanente a `utilizada: true` desde Eventos.
+- [x] COO-T19 Implementar transición permanente a `utilizada: true` desde la creación de Eventos.
 - [x] COO-T20 Sanitizar errores y logs.
 
 ## Seguridad futura
@@ -65,7 +65,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 ## Cierre futuro
 
 - [ ] COO-T40 Obtener aceptación funcional y visual.
-- [ ] COO-T41 Autorizar explícitamente el inicio de Eventos.
+- [x] COO-T41 Autorizar explícitamente el inicio de Eventos el 29 de septiembre de 2026.
 - [x] COO-T42 Confirmar que producción no fue utilizada ni modificada.
 - [x] COO-T44 Desplegar las seis callables de Coordinaciones únicamente a staging con alcance explícito.
 - [x] COO-T45 Desplegar Firestore Rules a staging en una operación separada después de aprobar sus pruebas.

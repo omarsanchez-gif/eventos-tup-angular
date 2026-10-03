@@ -2,7 +2,7 @@
 
 ## Estado
 
-Incremento A del catálogo implementado, validado automáticamente y desplegado únicamente a staging el 21 de agosto de 2026. La prueba manual y aceptación continúan pendientes; reservaciones, Eventos y producción no están autorizados.
+Incremento A del catálogo implementado y desplegado únicamente a staging el 21 de agosto de 2026. Desde el 30 de septiembre, staging también incorpora reservaciones, sustitución/cancelación, cobertura, recepción, demora, revisión y notificaciones logísticas desde Eventos. La normalización visual forma parte del Hosting vigente; la aceptación manual y producción continúan pendientes.
 
 ## Documentación
 
@@ -17,8 +17,8 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 
 ## Pendientes antes del código
 
-- [ ] EQP-T09 Capturar y aceptar TUP/FCS en staging.
-- [ ] EQP-T10 Confirmar inventario utilizable inicial por campus.
+- [x] EQP-T09 Capturar TUP/FCS con horarios canónicos en staging; aceptación visual integral continúa en EQP-T23.
+- [x] EQP-T10 Confirmar el inventario utilizable inicial: equipo transferible parte de TUP hacia FCS conforme a los registros aprobados.
 - [x] EQP-T11 Aprobar funcional y visualmente el wireframe.
 - [x] EQP-T12 Autorizar expresamente el incremento A del catálogo.
 
@@ -35,15 +35,18 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 - [x] EQP-T21 Ejecutar lint, formato y builds.
 - [ ] EQP-T22 Validar manualmente en local con datos sintéticos.
 
-## Reservaciones futuras — no autorizadas
+## Reservaciones autorizadas
 
-- [ ] RES-T01 Resolver eventos de varios días.
-- [ ] RES-T02 Aprobar estrategia transaccional e índices Firestore.
-- [ ] RES-T03 Aprobar configuración logística protegida.
-- [ ] RES-T04 Implementar disponibilidad y reserva atómica.
-- [ ] RES-T05 Implementar cobertura, recepción, demora y revisión.
-- [ ] RES-T06 Integrar Eventos y notificaciones a Sistemas.
-- [ ] RES-T07 Validar concurrencia, horarios y traslados en emuladores.
+- [x] RES-T01 Resolver eventos de varios días: máximo seis fechas operativas, un campus y bloqueo nocturno continuo.
+- [x] RES-T02 Aprobar estrategia transaccional e índices Firestore mediante ADR-009.
+- [x] RES-T03 Aprobar configuración logística protegida; resolver el ID real de Sistemas antes de notificaciones de staging.
+- [x] RES-T03A Documentar cinco fechas naturales de anticipación y restricciones posteriores al límite.
+- [x] RES-T04 Implementar disponibilidad y reserva atómica para creación.
+- [x] RES-T05 Implementar cobertura, recepción, demora y revisión.
+- [x] RES-T05A Implementar `motivosRevision` y las tres callables administrativas de ADR-010 dentro del detalle de Eventos.
+- [x] RES-T06 Integrar Eventos y notificaciones a Sistemas.
+- [x] RES-T06A Implementar `tipo: logistica` con deduplicación por evento, equipo, motivo, versión de origen y destinatario canónico.
+- [ ] RES-T07 Validar concurrencia, horarios, anticipación, multidiarios y traslados en emuladores. Concurrencia inicial, todos-o-ninguno, controles, anticipación y cálculos unitarios ya tienen evidencia; falta la matriz completa.
 
 ## Despliegue
 
@@ -51,12 +54,12 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 - [x] EQP-T24 Autorizar y desplegar por separado Functions, Rules y Hosting de staging.
 - [x] EQP-T25 Confirmar que producción no fue utilizada.
 
-## Normalización visual pendiente
+## Normalización visual
 
 - [x] EQP-T26 Documentar la auditoría de divergencias respecto al sistema de diseño global.
 - [x] EQP-T27 Retirar del SCSS de Equipos las redefiniciones de botones, icon-buttons, colores, tamaños, radios y estados compartidos.
 - [ ] EQP-T28 Comparar Equipos con Usuarios, Coordinaciones y Campus en escritorio, tableta y 320 px, incluido teclado y foco visible.
-- [ ] EQP-T29 Publicar la corrección en staging únicamente después de pruebas, aceptación y autorización expresa.
+- [x] EQP-T29 Publicar la corrección en staging con autorización expresa; el Hosting vigente conserva la versión normalizada.
 - [x] EQP-T30 Ejecutar lint visual, suite completa y build de staging después de normalizar.
 
 ## Evidencia de normalización
@@ -64,4 +67,4 @@ Incremento A del catálogo implementado, validado automáticamente y desplegado 
 - `npm run lint:visual` aprobado sin selectores compartidos duplicados ni colores institucionales obsoletos.
 - Suite completa aprobada: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules.
 - Build de staging aprobado con bundle inicial de 468.25 kB y `equipment-page` diferido de 34.77 kB.
-- No se modificaron Eventos, reservaciones, Functions, Rules ni datos; la corrección visual aún no fue desplegada.
+- El incremento que originó esta evidencia no modificó Eventos, reservaciones, Functions, Rules ni datos. La corrección visual fue incorporada después al Hosting de staging; la aceptación autenticada continúa pendiente.

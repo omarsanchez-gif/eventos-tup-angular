@@ -32,12 +32,23 @@ service cloud.firestore {
 
     match /eventos/{eventId} {
       allow read: if isAuthorized();
-      allow create: if isAuthorized()
-        && request.resource.data.creadoPorUid == request.auth.uid;
-      allow update: if isAuthorized()
-        && resource.data.creadoPorUid == request.auth.uid
-        && request.resource.data.creadoPorUid == resource.data.creadoPorUid;
-      allow delete: if false;
+      allow write: if false;
+    }
+
+    match /reservasEquipo/{reservationId} {
+      allow read, write: if false;
+    }
+
+    match /controlReservasEquipo/{equipmentId} {
+      allow read, write: if false;
+    }
+
+    match /notificacionesEventos/{notificationId} {
+      allow read, write: if false;
+    }
+
+    match /configuracion/{configurationId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

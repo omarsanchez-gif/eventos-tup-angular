@@ -31,7 +31,12 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "@fullcalendar/angular/skeleton.css",
+              "@fullcalendar/angular/themes/classic/theme.css",
+              "@fullcalendar/angular/themes/classic/palette.css",
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
