@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada el 30 de septiembre de 2026 por instrucción del usuario de documentar las recomendaciones necesarias antes de continuar código. Cierra contratos técnicos pendientes para que el siguiente incremento sea únicamente implementación y pruebas. No autoriza despliegue a staging ni producción.
+Aprobada el 30 de septiembre de 2026 por instrucción del usuario de documentar las recomendaciones necesarias antes de continuar código. Cerró los contratos técnicos que permitieron implementar y, mediante autorizaciones posteriores separadas, desplegar Eventos únicamente a staging. Esta ADR por sí sola no autoriza nuevos despliegues ni producción.
 
 ## Contexto
 
@@ -82,6 +82,8 @@ La interfaz vive en el detalle del evento, sección “Logística de equipos”.
 9. Calendar usa el mismo estado canónico y recrea el evento ante `404/410`; nunca agrega asistentes.
 
 `notificacionesEventos` añade `procesadorId`, `bloqueoHasta` y `ultimoIntento` para hacer observable y recuperable la reclamación.
+
+Los correos a Sistemas usan `tipo: logistica`. Su `revision` es la versión monotónica del control que originó esa causa, fotografiada por separado en `versionesAvisoLogistico`; la clave idempotente incluye evento, equipo, motivo, versión y destinatario. Por ello otra operación logística no repite causas vigentes ni altera `revisionNotificacion` o los correos funcionales del evento.
 
 ## Decisión 6: retención y limpieza
 

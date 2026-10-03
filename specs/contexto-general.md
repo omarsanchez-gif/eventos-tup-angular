@@ -2,7 +2,7 @@
 
 ## Estado
 
-Base documental de la migración Angular. Autenticación, Layout, Usuarios, Coordinaciones, Campus y el catálogo de Equipos cuentan con implementación local parcial o completa; Coordinaciones, Campus y el catálogo de Equipos tienen incrementos previos desplegados únicamente a staging, con aceptación manual todavía pendiente. Campus y Equipos fueron normalizados visualmente en código local para consumir las primitivas globales; la revisión autenticada y el despliegue de esa corrección siguen pendientes. El incremento local de Eventos ya implementa creación, disponibilidad y reserva atómica, listado paginado, detalle inicial, carga de PDF, calendario administrativo y estados temporales. Edición, cancelación, logística administrativa, integraciones, limpieza, búsqueda global, aceptación y despliegue de Eventos continúan pendientes. ADR-010 cierra los contratos recomendados para implementar ese alcance sin decisiones adicionales.
+Base documental de la migración Angular. Autenticación, Layout, Dashboard, Usuarios, Coordinaciones, Campus, Equipos, Eventos y reservaciones cuentan con implementación y despliegues autorizados únicamente a staging; la aceptación manual transversal todavía está pendiente. Campus y Equipos fueron normalizados visualmente para consumir las primitivas globales. Eventos implementa creación, disponibilidad y reserva atómica, búsqueda paginada, detalle, edición, cancelación histórica, logística administrativa, PDF, calendario administrativo, estados temporales, Calendar, SMTP, limpieza y backfill. El 30 de septiembre de 2026 se desplegaron Rules, 16 Functions y Hosting de Eventos únicamente a staging, con secretos enlazados, lista fija, configuración logística, índices y TTL. El 1 de octubre se verificaron la creación/reconciliación real de Calendar y la entrega SMTP permitida, se amplió la lista fija autorizada, se publicó la actualización automática de disponibilidad del formulario abierto y se corrigieron los índices del calendario. El 2 de octubre se publicaron las acciones directas del creador, la visibilidad de Integración exclusiva para administradores, la normalización visual, la ocupación multidiaria y el correo HTML institucional. El 3 de octubre se desplegó en las ocho Functions consumidoras de SMTP la autorización dinámica para contactos institucionales con procedencia protegida de Coordinaciones, sin rotar `SMTP_CONFIG`. Ese mismo día se desplegó el Dashboard real y sanitizado; su índice está `READY`, la callable está activa en `us-central1` y Hosting respondió HTTP 200 con el bundle esperado. La prueba real de correo dinámico, actualización y cancelación externas, negativas controladas y aceptación manual continúan pendientes. Producción permanece fuera de alcance.
 
 ## Propósito
 
@@ -26,7 +26,7 @@ El producto existente permite:
 
 ## Usuarios y roles
 
-- `admin`: accede a Dashboard, Eventos y Usuarios.
+- `admin`: accede a Dashboard, Eventos, Usuarios, Coordinaciones, Campus y Equipos.
 - `usuario`: accede a Dashboard y Eventos.
 
 Los roles proceden de Firestore. No se agregarán roles durante la migración.
@@ -61,7 +61,7 @@ No se crearán módulos adicionales sin una especificación aprobada.
 - El catálogo de Campus se administra antes de Equipos y Eventos; TUP y FCS son registros capturables, no constantes del frontend.
 - El catálogo de Equipos se administra por nombre, campus, cantidad operativa y clasificación antes de integrar reservaciones con Eventos.
 - La disponibilidad se calcula por intervalo y nunca se guarda como contador mutable.
-- Las reservaciones confirman todos los equipos solicitados o ninguno. La creación atómica está implementada localmente; edición, cancelación y acciones logísticas administrativas permanecen pendientes.
+- Las reservaciones confirman todos los equipos solicitados o ninguno. Creación, edición, cancelación y acciones logísticas administrativas están implementadas, probadas y desplegadas únicamente a staging.
 - Equipos locales usan márgenes de montaje de 60 minutos y desmontaje de 30; los transferidos permanecen bloqueados hasta regresar al campus base.
 - No existen eventos en domingo. Se permiten eventos continuos de hasta seis fechas operativas consecutivas, en un solo campus; los equipos permanecen montados y bloqueados durante las noches.
 - Todo evento nuevo exige cinco fechas naturales de anticipación en `America/Cancun`; el día límite completo es válido y no existe excepción administrativa.
@@ -79,7 +79,10 @@ No se crearán módulos adicionales sin una especificación aprobada.
 - El historial técnico de notificaciones se conserva 90 días después de llegar a un estado terminal.
 - Los PDFs sustituidos se eliminan después de confirmar la nueva referencia; los archivos huérfanos se purgan después de 24 horas.
 - Eventos se consulta en páginas de 25 registros mediante cursores de Firestore.
-- Eventos tendrá una vista FullCalendar Standard dentro del mismo módulo, con mes, semana, día y lista, consulta Firestore por intervalo visible y sin edición por arrastre.
+- Eventos cuenta con una vista FullCalendar Standard dentro del mismo módulo, con mes, semana, día y lista, consulta Firestore por intervalo visible y sin edición por arrastre.
+- El listado y el calendario de Eventos siguen la composición visual administrativa compartida; `Listado`/`Calendario` es una extensión funcional y no una variante de paneles, alertas, tablas, acciones o tipografía.
+- EVT-106, publicada únicamente en Hosting de staging, muestra cada evento multidiario como una franja continua sobre todas sus fechas ocupadas y presenta estados, acumulación por día, controles y foco mediante el sistema visual compartido; no cambia fechas ni horas canónicas.
+- EVT-107 reemplazó la personalización incompatible de EVT-106 por la integración pública de FullCalendar 7 y su paleta Classic. La muestra local validó una franja de cuatro celdas, contraste blanco sobre azul y un panel con seis filas separadas; después se publicó únicamente en Hosting de staging y la URL remota confirmó `main-XUBYXJ4E.js` y `styles-DKW66HHD.css`.
 - Google Calendar continúa como integración de salida y no alimenta el calendario administrativo.
 - Calendar y SMTP se verifican en staging con recursos sintéticos y una lista controlada de destinatarios.
 

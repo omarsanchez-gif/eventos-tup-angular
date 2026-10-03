@@ -88,6 +88,7 @@
 - RN-063: Al reemplazar un PDF, primero se confirma la nueva referencia y después se elimina el archivo anterior. Un archivo cargado que no quede referenciado se considera huérfano y se purga después de 24 horas.
 - RN-064: El listado de Eventos usa páginas de 25 registros y cursores de Firestore; no descarga la colección completa para simular páginas.
 - RN-065: El catálogo administrativo admite como máximo 500 coordinaciones en esta versión. Las listas nunca devuelven resultados parciales; al excederlo se exige una nueva estrategia de consulta aprobada.
+- RN-082: Antes de abrir SMTP, un destinatario debe estar en `allowedRecipients` del ambiente o proceder de un trabajo protegido cuyo `destinatarioTipo` sea `coordinacion` o `sistemas`, tenga `coordinacionId` canónico y use exactamente el dominio institucional. La segunda vía conserva la autorización fotografiada al crear el trabajo, incluso si la coordinación se suspende o sus contactos cambian antes de un reintento; nunca autoriza correos libres, externos o proporcionados por el cliente.
 - RN-066: Un evento nuevo debe registrarse a más tardar cinco fechas naturales antes de su fecha local de inicio en `America/Cancun`; el día límite se acepta completo hasta las 23:59:59 y no existe excepción administrativa en esta versión.
 - RN-067: Un evento puede durar como máximo seis fechas operativas consecutivas, pertenece a un solo campus y se representa como un intervalo continuo; no puede iniciar, terminar ni transcurrir en domingo.
 - RN-068: En un evento de varios días los equipos permanecen montados, reservados y no reutilizables durante las noches; montaje se calcula antes del primer inicio y desmontaje y regreso después del último fin.
@@ -103,6 +104,7 @@
 - RN-078: `calendarEstado` y `notificacionesEstado` comunican únicamente estados funcionales. No exponen errores técnicos, secretos, contactos ni claves idempotentes.
 - RN-079: Eventos históricos solo reciben `inicioAt`, `finAt` y `terminosBusqueda` mediante un backfill explícito, reanudable y probado primero en modo seco; no se crean reservas, Calendar o correos durante ese proceso.
 - RN-080: La limpieza de protocolos comprueba `protocoloRuta` canónica antes de borrar; antigüedad por sí sola nunca autoriza eliminación.
+- RN-081: La previsualización de disponibilidad durante una edición excluye únicamente las reservas activas del mismo evento después de validar en backend que el solicitante es su propietario y que no está cancelado. Las reservas de cualquier otro evento continúan consumiendo capacidad y la mutación final vuelve a calcular todo de forma transaccional.
 
 ## Equipos
 
@@ -142,6 +144,8 @@
 - RN-RES-020: `motivosRevision` conserva causas independientes. Confirmar cobertura retira únicamente `cobertura_sistemas` y no oculta revisiones por inventario o coordinación.
 - RN-RES-021: Solo `admin` confirma cobertura o recepción y reporta demora. Recepción anticipada finaliza y libera la reserva; demora extiende `bloqueoFin` y `liberacionProgramada`; ambas operaciones incrementan el control del equipo.
 - RN-RES-022: Las acciones logísticas son idempotentes, usan hora de servidor y registran auditoría estructurada sin correos ni secretos.
+- RN-RES-023: Los avisos logísticos usan `notificacionesEventos` con `tipo: logistica`, destinatarios resueltos desde la coordinación canónica de Sistemas y clave idempotente por evento, equipo, motivo, versión de origen de esa causa y correo. `versionesAvisoLogistico` impide que actualizar una causa reenvíe las demás. Se generan por cobertura pendiente, inventario reducido, cambio incompatible posterior al traslado, demora y cancelación posterior a la salida; nunca convierten a esos contactos en asistentes de Calendar.
+- RN-RES-024: Mientras el formulario de Evento permanezca abierto con un intervalo válido, la previsualización de disponibilidad se actualiza al recuperar foco o visibilidad y periódicamente mientras la pestaña esté visible. Un cambio externo nunca modifica cantidades silenciosamente: conserva la captura, marca el conflicto, lo anuncia y mantiene la revalidación transaccional final.
 
 ## Consultas
 
@@ -149,6 +153,15 @@
 - RN-029: Eventos se buscan por nombre o responsable.
 - RN-030: Los listados son paginados visualmente.
 - RN-031: El Dashboard muestra datos reales, no valores simulados.
+- RN-DASH-001: `admin` y `usuario` autorizados consultan el mismo resumen sanitizado; el conteo de usuarios activos no concede lectura de documentos individuales.
+- RN-DASH-002: Eventos registrados cuenta todos los documentos, incluidos cancelados como historial.
+- RN-DASH-003: Próximos eventos incluye únicamente no cancelados con inicio desde la hora de servidor y antes de los siguientes 30 días en `America/Cancun`.
+- RN-DASH-004: La tabla de próximos devuelve como máximo cinco eventos ordenados por inicio ascendente.
+- RN-DASH-005: Usuarios activos cuenta exclusivamente documentos con `activo: true` mediante agregación backend.
+- RN-DASH-006: Eventos con protocolo cuenta referencias `protocoloUrl` de cadena no vacía; no inspecciona Storage desde Angular.
+- RN-DASH-007: Actividad reciente deriva como máximo cinco creaciones o actualizaciones de `fechaCreacion` y `fechaActualizacion`; una cancelación se presenta como actualización, no como auditoría independiente.
+- RN-DASH-008: Los estados temporales del Dashboard usan la misma derivación backend de Eventos y la referencia `serverNow`; el navegador no decide los KPI.
+- RN-DASH-009: Un fallo parcial muestra la sección como no disponible y conserva las demás; ausencia de datos se representa como cero o lista vacía solo cuando la consulta canónica aprobó.
 
 ## Restricciones de migración
 

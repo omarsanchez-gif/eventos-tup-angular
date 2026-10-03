@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Proporcionar la estructura privada, institucional y responsive que aparece después de autorizar la sesión, sin adelantar funcionalidad del Dashboard, Eventos o Usuarios.
+Proporcionar la estructura privada, institucional y responsive que aparece después de autorizar la sesión y aloja los módulos funcionales vigentes sin incorporar su lógica de negocio.
 
 ## Alcance
 
@@ -17,26 +17,29 @@ Proporcionar la estructura privada, institucional y responsive que aparece despu
 
 ## Fuera de alcance
 
-- KPIs, estadísticas o actividad del Dashboard.
-- Listados, búsquedas, formularios o acciones de Eventos.
-- Listados, búsquedas, formularios o acciones de Usuarios.
+- KPIs, estadísticas o actividad propios del Dashboard; pertenecen a `modulo-dashboard`.
+- Listados, búsquedas, formularios o acciones propios de Eventos, Usuarios, Coordinaciones, Campus o Equipos.
 - Menú de perfil, edición de cuenta o notificaciones.
-- Rutas provisionales `/eventos` o `/usuarios` sin su módulo autorizado.
+- Decidir permisos de datos o mutaciones; los guards, Rules y Functions aplican la autorización de cada módulo.
 
 ## Referencia visual
 
 La composición toma como pauta el sistema histórico: sidebar morado a la izquierda, topbar blanca, fondo gris claro y contenido en superficies blancas. No es una copia literal; emplea los tokens institucionales de `../design-system/spec.md`, jerarquía más clara y comportamiento accesible.
 
-## Navegación durante este incremento
+## Navegación vigente
 
-| Opción        | `admin` | `usuario` | Estado actual                                   |
-| ------------- | ------- | --------- | ----------------------------------------------- |
-| Dashboard     | Visible | Visible   | Activa y navega a `/dashboard`                  |
-| Eventos       | Visible | Visible   | Deshabilitada hasta autorizar `modulo-eventos`  |
-| Usuarios      | Visible | Oculta    | Deshabilitada hasta autorizar `modulo-usuarios` |
-| Cerrar sesión | Visible | Visible   | Activa                                          |
+| Opción         | `admin` | `usuario` | Ruta                   | Estado actual |
+| -------------- | ------- | --------- | ---------------------- | ------------- |
+| Dashboard      | Visible | Visible   | `/dashboard`           | Activa        |
+| Eventos        | Visible | Visible   | `/eventos`             | Activa        |
+| Calendario     | Interna | Interna   | `/eventos/calendario`  | Activa        |
+| Campus         | Visible | Oculta    | `/campus`              | Activa        |
+| Coordinaciones | Visible | Oculta    | `/coordinaciones`      | Activa        |
+| Equipos        | Visible | Oculta    | `/equipos`             | Activa        |
+| Usuarios       | Visible | Oculta    | `/usuarios`            | Activa        |
+| Cerrar sesión  | Visible | Visible   | Sin ruta independiente | Activa        |
 
-Las opciones deshabilitadas usan `disabled` y `aria-disabled="true"`, no crean rutas ni emiten navegación y muestran el texto auxiliar “Próximamente” de forma perceptible.
+El shell no muestra opciones “Próximamente”. `admin` ve todos los módulos administrativos; `usuario` ve únicamente Dashboard y Eventos. La ausencia visual no sustituye los guards ni la autorización backend.
 
 ## Identidad
 
@@ -61,7 +64,7 @@ Las opciones deshabilitadas usan `disabled` y `aria-disabled="true"`, no crean r
 - La apertura no modifica permanentemente el ancho del contenido.
 - Un overlay cierra el panel al hacer clic.
 - `Escape` cierra el panel y el foco vuelve al botón de apertura.
-- Seleccionar Dashboard cierra el panel automáticamente.
+- Seleccionar cualquier opción activa cierra el panel automáticamente.
 - El contenido conserva al menos 16 px de margen lateral a 320 px.
 
 ## Accesibilidad
@@ -85,9 +88,9 @@ Las opciones deshabilitadas usan `disabled` y `aria-disabled="true"`, no crean r
 ## Criterios de aceptación
 
 - El shell aparece únicamente después de una sesión autorizada.
-- Dashboard se identifica visual y semánticamente como opción activa.
-- `usuario` no ve Usuarios; `admin` sí la ve deshabilitada.
-- Eventos permanece deshabilitada para ambos roles hasta autorizar su módulo.
+- La ruta seleccionada se identifica visual y semánticamente como opción activa.
+- `usuario` no ve Usuarios, Coordinaciones, Campus ni Equipos; `admin` ve y puede navegar a esos módulos.
+- Dashboard y Eventos están activos para ambos roles autorizados.
 - Logout limpia la sesión y abre Login.
 - Sidebar y navegación funcionan con teclado y lector de pantalla.
 - El layout funciona desde 320 px sin desplazamiento horizontal.

@@ -7,6 +7,7 @@ import type {
   CreateSystemEventInput,
   EventAvailabilityInput,
   EventAvailabilityResult,
+  EventDetail,
   EventSummary,
 } from '../../../shared/models/system-event';
 import { CAMPUSES_GATEWAY } from '../../campuses/data/campuses.gateway';
@@ -37,9 +38,13 @@ export class EventsFacade implements OnDestroy {
   private readonly noticeState = signal<string | null>(null);
   private readonly calendarItemsState = signal<readonly EventSummary[]>([]);
   private readonly calendarLoadingState = signal(false);
+  private readonly detailState = signal<EventDetail | null>(null);
+  private readonly detailLoadingState = signal(false);
+  private readonly actionLoadingState = signal<string | null>(null);
   private requestVersion = 0;
   private serverClockOffsetMs: number | null = null;
   private temporalTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly records = this.recordsState.asReadonly();
   readonly campuses = this.campusesState.asReadonly();
@@ -57,16 +62,13 @@ export class EventsFacade implements OnDestroy {
   readonly notice = this.noticeState.asReadonly();
   readonly calendarItems = this.calendarItemsState.asReadonly();
   readonly calendarLoading = this.calendarLoadingState.asReadonly();
-  readonly filteredRecords = computed(() => {
-    const term = this.searchState().trim().toLocaleLowerCase('es-MX');
-    return term
-      ? this.recordsState().filter((record) =>
-          `${record.name} ${record.responsible} ${record.campusName}`
-            .toLocaleLowerCase('es-MX')
-            .includes(term),
-        )
-      : this.recordsState();
-  });
+  readonly detail = this.detailState.asReadonly();
+  readonly detailLoading = this.detailLoadingState.asReadonly();
+  readonly actionLoading = this.actionLoadingState.asReadonly();
+  readonly filteredRecords = computed(() => this.recordsState());
+  readonly searchHint = computed(() =>
+    this.searchState().length === 1 ? 'Escriba al menos dos caracteres para buscar.' : null,
+  );
 
   async load(): Promise<void> {
     this.loadingState.set(true);
@@ -74,7 +76,7 @@ export class EventsFacade implements OnDestroy {
     try {
       const cursor = this.cursorStackState()[this.pageState() - 1] ?? null;
       const [events, campuses, coordinations, equipment] = await Promise.all([
-        this.gateway.list(cursor),
+        this.gateway.list(cursor, this.backendSearch()),
         this.campusesGateway.listSelectable(),
         this.coordinationsGateway.listSelectable(),
         this.equipmentGateway.listSelectable(),
@@ -94,7 +96,14 @@ export class EventsFacade implements OnDestroy {
   }
 
   search(term: string): void {
-    this.searchState.set(term.trim());
+    const normalized = term.trim().replace(/\s+/gu, ' ');
+    this.searchState.set(normalized);
+    this.pageState.set(1);
+    this.cursorStackState.set([null]);
+    this.nextCursorState.set(null);
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    if (normalized.length === 1) return;
+    this.searchTimer = setTimeout(() => void this.load(), 300);
   }
 
   async nextPage(): Promise<void> {
@@ -113,10 +122,13 @@ export class EventsFacade implements OnDestroy {
     await this.load();
   }
 
-  async checkAvailability(input: EventAvailabilityInput): Promise<boolean> {
+  async checkAvailability(
+    input: EventAvailabilityInput,
+    preserveCurrent = false,
+  ): Promise<boolean> {
     const version = ++this.requestVersion;
     this.availabilityLoadingState.set(true);
-    this.availabilityState.set(null);
+    if (!preserveCurrent) this.availabilityState.set(null);
     try {
       const result = await this.gateway.checkAvailability(input);
       if (version === this.requestVersion) this.availabilityState.set(result);
@@ -145,14 +157,12 @@ export class EventsFacade implements OnDestroy {
     this.noticeState.set(null);
     try {
       const protocolUrl = await this.gateway.uploadProtocol(file, input.fechaInicio.slice(0, 4));
-      await this.gateway.create({
+      const result = await this.gateway.create({
         ...input,
         protocoloUrl: protocolUrl,
         protocoloNombre: file.name,
       });
-      this.noticeState.set(
-        'Evento guardado. Calendar y notificaciones quedan pendientes de integración.',
-      );
+      this.noticeState.set(this.integrationNotice('Evento guardado.', result));
       this.pageState.set(1);
       this.cursorStackState.set([null]);
       await this.load();
@@ -163,6 +173,105 @@ export class EventsFacade implements OnDestroy {
     } finally {
       this.mutatingState.set(false);
     }
+  }
+
+  async loadDetail(eventId: string): Promise<EventDetail | null> {
+    this.detailLoadingState.set(true);
+    this.errorState.set(null);
+    try {
+      const detail = await this.gateway.detail(eventId);
+      this.detailState.set(detail);
+      return detail;
+    } catch (error) {
+      this.errorState.set(mapEventsError(error));
+      this.detailState.set(null);
+      return null;
+    } finally {
+      this.detailLoadingState.set(false);
+    }
+  }
+
+  clearDetail(): void {
+    this.detailState.set(null);
+  }
+
+  async update(
+    eventId: string,
+    input: Omit<CreateSystemEventInput, 'protocoloUrl' | 'protocoloNombre'>,
+    currentProtocol: { readonly url: string; readonly name: string },
+    replacement: File | null,
+  ): Promise<boolean> {
+    if (this.mutatingState()) return false;
+    this.mutatingState.set(true);
+    this.errorState.set(null);
+    try {
+      const protocolUrl = replacement
+        ? await this.gateway.uploadProtocol(replacement, input.fechaInicio.slice(0, 4))
+        : currentProtocol.url;
+      const result = await this.gateway.update(eventId, {
+        ...input,
+        protocoloUrl: protocolUrl,
+        protocoloNombre: replacement?.name ?? currentProtocol.name,
+      });
+      this.noticeState.set(this.integrationNotice('Evento actualizado.', result));
+      await Promise.all([this.load(), this.loadDetail(eventId)]);
+      return true;
+    } catch (error) {
+      this.errorState.set(mapEventsError(error));
+      return false;
+    } finally {
+      this.mutatingState.set(false);
+    }
+  }
+
+  async cancel(eventId: string): Promise<boolean> {
+    if (this.mutatingState()) return false;
+    this.mutatingState.set(true);
+    this.errorState.set(null);
+    try {
+      const result = await this.gateway.cancel(eventId);
+      this.noticeState.set(this.integrationNotice('Evento cancelado.', result));
+      await this.load();
+      this.detailState.set(await this.gateway.detail(eventId));
+      return true;
+    } catch (error) {
+      this.errorState.set(mapEventsError(error));
+      return false;
+    } finally {
+      this.mutatingState.set(false);
+    }
+  }
+
+  async reconcile(eventId: string): Promise<void> {
+    await this.runAction(`reconcile:${eventId}`, async () => {
+      const result = await this.gateway.reconcile(eventId);
+      this.noticeState.set(this.integrationNotice('Reconciliación ejecutada.', result));
+      await Promise.all([this.load(), this.loadDetail(eventId)]);
+    });
+  }
+
+  async confirmCoverage(eventId: string, equipmentId: string): Promise<void> {
+    await this.runAction(`coverage:${equipmentId}`, async () => {
+      await this.gateway.confirmCoverage(eventId, equipmentId);
+      this.noticeState.set('Cobertura de Sistemas confirmada.');
+      await this.loadDetail(eventId);
+    });
+  }
+
+  async confirmReception(eventId: string, equipmentId: string): Promise<void> {
+    await this.runAction(`reception:${equipmentId}`, async () => {
+      await this.gateway.confirmReception(eventId, equipmentId);
+      this.noticeState.set('Recepción confirmada y equipo liberado.');
+      await this.loadDetail(eventId);
+    });
+  }
+
+  async reportDelay(eventId: string, equipmentId: string, release: string): Promise<void> {
+    await this.runAction(`delay:${equipmentId}`, async () => {
+      await this.gateway.reportDelay(eventId, equipmentId, release);
+      this.noticeState.set('Demora registrada; la disponibilidad fue extendida.');
+      await this.loadDetail(eventId);
+    });
   }
 
   async loadCalendar(start: string, end: string, campusId: string | null): Promise<void> {
@@ -191,6 +300,7 @@ export class EventsFacade implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
+    if (this.searchTimer) clearTimeout(this.searchTimer);
   }
 
   private synchronizeServerClock(serverNow: string): void {
@@ -198,6 +308,40 @@ export class EventsFacade implements OnDestroy {
     if (Number.isNaN(serverTime)) return;
     this.serverClockOffsetMs = serverTime - Date.now();
     this.scheduleTemporalRefresh();
+  }
+
+  private backendSearch(): string | null {
+    const term = this.searchState();
+    return term.length >= 2 ? term : null;
+  }
+
+  private integrationNotice(
+    prefix: string,
+    result: {
+      readonly calendarStatus: EventSummary['calendarStatus'];
+      readonly notificationStatus: EventSummary['notificationStatus'];
+    },
+  ): string {
+    if (
+      (result.calendarStatus === 'sincronizado' || result.calendarStatus === 'retirado') &&
+      (result.notificationStatus === 'completas' || result.notificationStatus === 'no_aplica')
+    ) {
+      return `${prefix} Integraciones completas.`;
+    }
+    return `${prefix} Una o más integraciones permanecen pendientes o requieren revisión.`;
+  }
+
+  private async runAction(key: string, action: () => Promise<void>): Promise<void> {
+    if (this.actionLoadingState()) return;
+    this.actionLoadingState.set(key);
+    this.errorState.set(null);
+    try {
+      await action();
+    } catch (error) {
+      this.errorState.set(mapEventsError(error));
+    } finally {
+      this.actionLoadingState.set(null);
+    }
   }
 
   private currentServerTime(): number | null {

@@ -6,16 +6,16 @@
       "fields": [
         { "fieldPath": "equipoId", "order": "ASCENDING" },
         { "fieldPath": "estado", "order": "ASCENDING" },
-        { "fieldPath": "bloqueoInicio", "order": "ASCENDING" },
-        { "fieldPath": "bloqueoFin", "order": "ASCENDING" }
+        { "fieldPath": "bloqueoFin", "order": "ASCENDING" },
+        { "fieldPath": "bloqueoInicio", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "eventos",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "inicioAt", "order": "ASCENDING" },
-        { "fieldPath": "finAt", "order": "ASCENDING" }
+        { "fieldPath": "finAt", "order": "ASCENDING" },
+        { "fieldPath": "inicioAt", "order": "ASCENDING" }
       ]
     },
     {
@@ -23,18 +23,59 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "campusId", "order": "ASCENDING" },
-        { "fieldPath": "inicioAt", "order": "ASCENDING" },
-        { "fieldPath": "finAt", "order": "ASCENDING" }
+        { "fieldPath": "finAt", "order": "ASCENDING" },
+        { "fieldPath": "inicioAt", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "eventos",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "estatus", "order": "ASCENDING" },
+        { "fieldPath": "inicioAt", "order": "ASCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "eventos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "terminosBusqueda", "arrayConfig": "CONTAINS" },
         { "fieldPath": "fechaCreacion", "order": "DESCENDING" },
         { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notificacionesEventos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "proximoIntento", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notificacionesEventos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "bloqueoHasta", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notificacionesEventos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventoId", "order": "ASCENDING" },
+        { "fieldPath": "revision", "order": "ASCENDING" }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "notificacionesEventos",
+      "fieldPath": "fechaExpiracion",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
 }

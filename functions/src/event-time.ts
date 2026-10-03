@@ -192,19 +192,20 @@ function eachDate(start: string, end: string): readonly string[] {
   return Array.from({ length: count + 1 }, (_, index) => addCalendarDays(start, index));
 }
 
-export function validateEventWindow(
+function validateWindow(
   dateStart: string,
   timeStart: string,
   dateEnd: string,
   timeEnd: string,
   now: Date,
+  requireAdvance: boolean,
 ): EventWindow {
   const start = localDateTime(dateStart, timeStart);
   const end = localDateTime(dateEnd, timeEnd);
   if (end.getTime() <= start.getTime()) {
     throw new EventTimeError('invalid-date-range', 'El fin debe ser posterior al inicio.');
   }
-  if (dateOrdinal(dateStart) - dateOrdinal(localDate(now)) < 5) {
+  if (requireAdvance && dateOrdinal(dateStart) - dateOrdinal(localDate(now)) < 5) {
     throw new EventTimeError(
       'event-advance-required',
       'El evento debe registrarse con cinco fechas naturales de anticipación.',
@@ -221,6 +222,30 @@ export function validateEventWindow(
     );
   }
   return { start, end, operationalDateCount: dates.length };
+}
+
+export function validateEventWindow(
+  dateStart: string,
+  timeStart: string,
+  dateEnd: string,
+  timeEnd: string,
+  now: Date,
+): EventWindow {
+  return validateWindow(dateStart, timeStart, dateEnd, timeEnd, now, true);
+}
+
+export function validateUpdatedEventWindow(
+  dateStart: string,
+  timeStart: string,
+  dateEnd: string,
+  timeEnd: string,
+  now: Date,
+): EventWindow {
+  return validateWindow(dateStart, timeStart, dateEnd, timeEnd, now, false);
+}
+
+export function satisfiesEventAdvance(dateStart: string, now: Date): boolean {
+  return dateOrdinal(dateStart) - dateOrdinal(localDate(now)) >= 5;
 }
 
 function minutes(value: string): number {

@@ -2,16 +2,16 @@
 
 ## Estado
 
-Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de septiembre de 2026 con anticipación, eventos multidiarios, estados derivados y FullCalendar. El 30 de septiembre se obtuvo evidencia local de creación y disponibilidad transaccionales, consultas, carga inicial de PDF, controles de concurrencia, índices, Rules y experiencia Angular; ADR-010 añadió búsqueda global, logística administrativa, leases, limpieza y backfill. Integraciones, edición, cancelación, aceptación manual y la ejecución integral EVT-001 a EVT-102 continúan pendientes.
+Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de septiembre de 2026 con anticipación, eventos multidiarios, estados derivados y FullCalendar. El 30 de septiembre se obtuvo evidencia local de creación, disponibilidad, búsqueda, detalle, edición, cancelación, logística administrativa, integraciones con dobles, leases, limpieza, backfill, concurrencia, Rules y experiencia Angular; además se desplegaron secretos, configuración, Rules, Functions y Hosting únicamente a staging. El 1 de octubre se verificaron una entrega SMTP permitida y la creación/reconciliación real de `PRUEBA 1` en Calendar sin duplicar el correo. La aceptación manual, la actualización y cancelación externas, el rechazo SMTP fuera de lista y la ejecución exhaustiva de toda la matriz EVT-001 a EVT-102 continúan pendientes.
 
 ### Evidencia automatizada disponible
 
-- 66 pruebas unitarias de Functions aprobadas, incluidas las de tiempo, creación, consultas y validación del protocolo PDF.
-- 5 pruebas específicas con Firestore Emulator aprobadas para concurrencia sin reservas previas, todos-o-ninguno, versión monotónica, listado paginado y consulta por intervalo.
+- 71 pruebas unitarias de Functions aprobadas, incluidas tiempo, creación, consultas, protocolo PDF, disponibilidad de edición y adaptadores de Calendar/SMTP.
+- 14 pruebas específicas con Firestore Emulator aprobadas para concurrencia, todos-o-ninguno, versión monotónica, búsqueda, detalle, edición, exclusión segura de reserva propia, cancelación, logística, avisos a Sistemas, leases, backfill y limpieza.
 - 15 pruebas de Firestore y Storage Rules aprobadas; el cliente no escribe Eventos ni lee reservas, controles, notificaciones o configuración.
-- 57 pruebas Angular aprobadas, incluida la transición temporal automática de la facade de Eventos; compilación TypeScript de Functions, lint completo, formato y build Angular de staging aprobados.
-- La suite integral suma 171 pruebas aprobadas: 57 Angular, 66 Functions, 33 de emuladores funcionales y 15 de Rules.
-- Las pruebas no acreditan todavía aceptación visual, teclado, lector de pantalla, integraciones reales, edición, cancelación ni despliegue.
+- 63 pruebas Angular aprobadas, incluidas la transición temporal automática, la propagación del `eventId` al abrir una edición, la actualización anunciada al recuperar foco y las acciones/visibilidad por rol del listado; compilación TypeScript de Functions, lint completo, formato y build Angular de staging aprobados.
+- La evidencia automatizada vigente suma 191 pruebas aprobadas: 63 Angular, 71 Functions, 42 de emuladores funcionales y 15 de Rules.
+- Las pruebas no acreditan todavía aceptación visual, teclado, lector de pantalla, integraciones reales ni despliegue; edición y cancelación sí cuentan con evidencia automatizada local.
 
 ## Acceso y propiedad
 
@@ -167,6 +167,10 @@ Usuario autorizado ve nombres fotografiados, pero no correos ni registros de ent
 
 Admin, usuario, sesión sin claims y anónimo no pueden leer o escribir `notificacionesEventos` directamente.
 
+### EVT-099A — Avisos logísticos idempotentes
+
+Cobertura pendiente, demora, inventario reducido, cambio incompatible y cancelación posterior a la salida crean trabajos `tipo: logistica` únicamente para los correos de la coordinación canónica de Sistemas. Reconciliar otra vez sin cambiar la versión de origen de esa causa no duplica trabajos; una nueva ocurrencia obtiene otra versión sin repetir los demás motivos vigentes. Estos trabajos no incrementan `revisionNotificacion` ni reenvían la actualización funcional a creador y coordinaciones.
+
 ### EVT-036 — Worker restringido
 
 Solo procesa estados válidos y no acepta trabajos fabricados por cliente.
@@ -227,7 +231,7 @@ Cada consulta devuelve como máximo 25 eventos en orden determinista; avanzar y 
 
 ### EVT-050 — Recursos controlados de staging
 
-Calendar usa el calendario sintético y SMTP solo entrega a la lista permitida; ningún contacto real ni recurso de producción recibe efectos durante la aceptación.
+Calendar usa el calendario institucional compartido de staging. SMTP entrega a las cuentas de la lista fija y a contactos del dominio institucional cuya procedencia canónica de Coordinaciones quede fotografiada en un trabajo protegido; creadores fuera de la lista fija, direcciones externas, correos libres y trabajos sin coordinación canónica permanecen bloqueados. Ningún recurso de producción recibe efectos durante la aceptación.
 
 ## Campus, Equipos y reservaciones
 
@@ -389,11 +393,15 @@ Build Angular, archivos versionados, documentación y logs no contienen client s
 
 ### EVT-088 — Secretos enlazados por Function
 
-Cada Function de Calendar o SMTP declara únicamente el secreto que consume. Una Function no enlazada no puede leerlo y falla de forma cerrada con un error funcional sanitizado.
+Cada Function de Calendar o SMTP declara únicamente el secreto que consume. Una Function no enlazada no puede leerlo y falla de forma cerrada con un error funcional sanitizado. Un secreto con dos JSON concatenados se rechaza antes de solicitar el token. La recuperación crea una versión con un único objeto, valida token y lectura del calendario sin exponer valores, redespliega solo consumidores y reconcilia sin duplicar Calendar ni correos ya enviados.
 
-### EVT-089 — Lista permitida de staging
+Evidencia de staging del 1 de octubre de 2026: las siete callables consumidoras quedaron enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 2; la reconciliación autenticada persistió `calendarEstado: sincronizado`, conservó `notificacionesEstado: completas` y la bandeja protegida mantuvo un único trabajo `creacion/enviado` previo al reintento. Google Calendar devolvió la entrada `PRUEBA 1` como `confirmed` para el intervalo esperado. No se expusieron secretos ni identificadores externos completos.
 
-En `eventos-tup-angular-stg`, `omar.sanchez@tecplayacar.edu.mx` puede recibir el envío controlado. Cualquier otro destinatario canónico se bloquea antes de SMTP, no se redirige y no se marca como enviado.
+### EVT-089 — Lista fija y procedencia permitida de staging
+
+En `eventos-tup-angular-stg`, `omar.sanchez@tecplayacar.edu.mx`, `eventos@tecplayacar.edu.mx`, `victor.yama@tecplayacar.edu.mx` y `lizett.mendez@tecplayacar.edu.mx` forman la lista fija para creadores y cuentas operativas. Además, puede recibir un contacto fuera de esa lista cuando el backend lo resolvió desde Coordinaciones, el trabajo protegido conserva `destinatarioTipo: coordinacion | sistemas` y `coordinacionId` canónico, y el correo pertenece exactamente al dominio institucional. Cualquier otro destinatario se bloquea antes de SMTP, no se redirige y no se marca como enviado. Una configuración sin `allowedRecipients`, con tipo inválido, vacía o duplicada falla antes de crear el transporte; la prueba negativa inspecciona estado y logs sanitizados sin contactar cuentas no autorizadas.
+
+Evidencia histórica del 1 de octubre de 2026: bajo la versión 2, `PRUEBA 2` revisión 3 envió el trabajo del creador y terminó el trabajo de coordinación con `recipient-not-allowed`, produciendo `parciales`. La versión 3 se creó con las cuatro direcciones exactas y las ocho Functions consumidoras se verificaron `ACTIVE` y enlazadas a esa versión. EVT-110 sustituyó esa restricción absoluta por la procedencia protegida descrita arriba, sin rotar el secreto, y el 3 de octubre se desplegaron las ocho Functions consumidoras en staging. Falta comprobar una entrega real a un contacto de Coordinaciones fuera de la lista fija; el trabajo terminal anterior no se reintenta automáticamente.
 
 ### EVT-090 — Configuración local no versionada
 
@@ -413,9 +421,25 @@ Dos creaciones simultáneas para el mismo equipo, cuando la consulta inicial no 
 
 Editar fecha, campus o equipos bloquea la unión ordenada de equipos anteriores y nuevos. Si cualquier reserva objetivo falla, evento y reservas anteriores permanecen sin cambios.
 
+### EVT-093A — Disponibilidad al abrir edición
+
+Abrir un evento con equipos ya reservados consulta disponibilidad con su `eventId`: las reservas activas propias no se descuentan, las reservas superpuestas de otros eventos sí y el formulario permite conservar cantidades válidas sin mostrar una indisponibilidad falsa. Crear no envía `eventId`. Un ID inexistente, ajeno o cancelado se rechaza y nunca permite ignorar capacidad; `updateEvent` vuelve a calcular el estado dentro de su transacción.
+
+Evidencia del 1 de octubre de 2026: aprobaron la regresión Angular, las pruebas unitarias de Functions y la prueba con Firestore Emulator; `checkEventAvailability` y Hosting se desplegaron por separado únicamente a staging. Falta la aceptación autenticada en navegador abriendo un evento existente con equipo reservado.
+
+### EVT-093B — Actualización del formulario abierto
+
+Con un intervalo y equipos válidos, el formulario vuelve a consultar al recuperar foco o visibilidad y cada 30 segundos mientras la pestaña esté visible. Si otra pestaña consume capacidad, conserva las cantidades capturadas, actualiza “Disponibles”, marca el resumen no confirmable y anuncia el cambio mediante región viva. Durante la consulta conserva el resultado anterior, no solapa llamadas, no consulta con el documento oculto y detiene temporizadores al cerrar o destruir el componente. La confirmación backend continúa rechazando cualquier carrera posterior.
+
+Evidencia del 1 de octubre de 2026: la prueba de componente simula una segunda respuesta que reduce la capacidad al recuperar foco, confirma la actualización a `Disponibles: 0`, el anuncio accesible y la conservación de la cantidad capturada. Las 59 pruebas Angular, lint completo, guardia visual, formato y build de staging aprobaron; después se publicó únicamente Hosting en staging. Falta la aceptación manual en dos pestañas.
+
 ### EVT-094 — Índices declarativos
 
-Emulator Suite y staging ejecutan disponibilidad, calendario general, calendario por campus y listado paginado usando los índices declarados; una ausencia de índice falla en pruebas y no se resuelve descargando colecciones completas.
+Emulator Suite y staging ejecutan disponibilidad, calendario general, calendario por campus y listado paginado usando los índices declarados; una ausencia de índice falla en pruebas y no se resuelve descargando colecciones completas. La prueba remota de disponibilidad debe confirmar que Firestore utiliza el índice `reservasEquipo` en orden `equipoId`, `estado`, `bloqueoFin`, `bloqueoInicio` y no devuelve `FAILED_PRECONDITION`.
+
+Las pruebas remotas de calendario deben confirmar por separado que la consulta general utiliza `finAt`, `inicioAt`, y que la consulta filtrada utiliza `campusId`, `finAt`, `inicioAt`. Ambos índices deben estar `READY`; cada consulta debe recuperar el intervalo superpuesto sin `FAILED_PRECONDITION` y sin descargar el historial completo.
+
+Evidencia del 1 de octubre de 2026: los dos índices corregidos alcanzaron `READY`; la consulta general recuperó 8 documentos y la filtrada por un campus existente recuperó 6, ambas sin `FAILED_PRECONDITION`. Después se retiraron los dos índices de orden inverso y el inventario final quedó con siete índices compuestos, todos `READY`.
 
 ### EVT-095 — Búsqueda global paginada
 
@@ -448,6 +472,62 @@ Listado y detalle muestran estados funcionales coherentes durante éxito, fallo 
 ### EVT-102 — Backfill controlado
 
 El modo seco no escribe. La ejecución autorizada calcula únicamente instantes y términos de históricos completos, omite inválidos con reporte, admite reanudación y no crea reservas, Calendar o notificaciones.
+
+### EVT-103 — Acciones directas y propiedad en el listado
+
+El creador de un evento no cancelado ve en la columna `Acciones` los controles accesibles `Ver detalle`, `Editar evento` y `Cancelar evento`. Editar carga el detalle canónico y abre directamente el formulario; cancelar abre una confirmación que explica la conservación histórica y solo después invoca la operación. Para un evento ajeno o cancelado no se renderizan editar ni cancelar. En móvil se conservan las mismas acciones con texto. Backend vuelve a validar propiedad y estado en todos los casos.
+
+### EVT-104 — Integraciones visibles solo para administradores
+
+Con rol canónico `usuario`, el listado no renderiza el encabezado `Integración`, estados de Calendar ni estados de correo. Con rol `admin`, la columna y sus estados públicos sí aparecen. Cambiar el rol reactivo actualiza la vista sin depender de ocultamiento por CSS ni exponer datos técnicos.
+
+Evidencia del 2 de octubre de 2026: los 6 casos del componente de listado y la regresión Angular completa de 63 pruebas aprobaron. También aprobaron lint Angular/Functions/visual, formato y build de staging. Después se publicó únicamente Hosting en staging y la URL respondió HTTP 200 con el bundle esperado; falta la aceptación autenticada por rol.
+
+### EVT-105 — Composición visual administrativa normalizada
+
+El listado de Eventos conserva el orden común de encabezado, alertas, controles, listado y diálogos. Sus superficies usan las primitivas compartidas `panel` y `alert`; el encabezado del listado usa separación de 16 px y relleno de 20 px; las tarjetas móviles agrupan acciones en `card-actions`; cada encabezado de tabla declara `scope="col"`; y los tooltips de acciones aparecen con puntero, `focus-within` o foco directo. El selector `Listado`/`Calendario` permanece como extensión funcional dentro del panel de controles y no altera colores, tipografía, radios, tamaños o estados compartidos. Debe aprobar `npm run lint:visual`, lint, formato, pruebas Angular y build de staging sin introducir cambios funcionales.
+
+Evidencia del 2 de octubre de 2026: aprobaron la guardia visual, lint Angular/Functions, formato, build de staging y la regresión completa de 63 pruebas Angular en 17 archivos. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó el bundle esperado `main-ACLYBD7D.js`. No se desplegaron servicios backend ni producción; la revisión visual autenticada y responsive permanece pendiente.
+
+### EVT-106 — Ocupación multidiaria y presentación del calendario
+
+Un evento del 12 al 15 de octubre se proyecta en FullCalendar como fecha completa con inicio inclusivo `2026-10-12` y fin exclusivo `2026-10-16`, por lo que cubre visualmente 12, 13, 14 y 15. Un evento de una sola fecha conserva sus instantes ISO y sigue siendo horario. El cálculo funciona también al cruzar fin de mes y no altera el objeto canónico recibido.
+
+En vista mensual todos los eventos usan `display: block`, muestran nombre y estado, aplican el color semántico correspondiente y limitan filas por celda con acceso “más”. La cuadrícula, controles, día actual, leyenda, foco y vistas responsive consumen tokens del sistema de diseño y deben aprobar `npm run lint:visual`. Seleccionar por puntero o teclado conserva el mismo detalle con fechas y horas exactas.
+
+Evidencia del 2 de octubre de 2026: tres pruebas nuevas aprobaron inicio inclusivo, fin exclusivo, conservación del evento horario y cruce de mes. La regresión completa quedó en 66 pruebas Angular distribuidas en 18 archivos; también aprobaron lint Angular/Functions, guardia visual, formato y build de staging. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó `main-6DTMESSF.js`. No se desplegaron servicios backend ni producción; la aceptación visual autenticada permanece pendiente.
+
+### EVT-107 — Compatibilidad visual con FullCalendar 7
+
+La compilación incluye `skeleton.css`, `theme.css` y `palette.css` del tema Classic. La proyección usa `className`, `color` y `contrastColor` admitidos por FullCalendar 7, por lo que cada evento se presenta como bloque semántico y el multidiario conserva una franja continua. No existen personalizaciones dependientes de `.fc`, `.fc-event`, `.fc-popover` u otros selectores internos retirados. El panel de “más” conserva filas legibles sin superposición y limita su altura al viewport.
+
+Evidencia del 2 de octubre de 2026: aprobaron 66 pruebas Angular en 18 archivos, lint Angular/Functions, guardia visual, formato y build de staging. La muestra aislada con los mismos assets y tokens midió 280 px para un evento del 12 al 15 sobre celdas de 71 px, comprobó texto blanco sobre fondo institucional y abrió seis filas separadas en un popover de 360 × 216 px con `overflow-y: auto` completamente dentro del viewport. Después se publicó únicamente Hosting de staging; la URL respondió HTTP 200 y entregó `main-XUBYXJ4E.js` y `styles-DKW66HHD.css`. No se desplegaron Functions, Rules, índices, secretos, datos ni producción.
+
+### EVT-108 — Sustitución segura del Calendar de staging
+
+El calendario institucional adicional está compartido con `eventos@tecplayacar.edu.mx` con permiso para modificar eventos. El refresh token usa `calendar.events`; una lectura del endpoint de eventos debe aprobar antes de rotar el secreto. `GOOGLE_CALENDAR_CONFIG` conserva exactamente `clientId`, `clientSecret`, `refreshToken` y `calendarId`; ninguno se imprime, documenta o envía al cliente. Después de crear la versión nueva se redespliegan únicamente `createEvent`, `updateEvent`, `cancelEvent`, `reportEquipmentDelay`, `reconcileEventIntegrations`, `processEventIntegrations` y `syncUpdatedEventIntegrations` a staging y las siete deben quedar `ACTIVE`.
+
+Los eventos de prueba y `calendarEventId` del calendario desechable no se migran ni se reconcilian. La aceptación final crea un evento nuevo desde la aplicación y confirma exactamente una entrada en el calendario institucional; actualizar y cancelar deben operar sobre esa misma entrada. Producción, Hosting, Rules, índices, Firestore, Storage y SMTP permanecen sin cambios.
+
+Evidencia del 2 de octubre de 2026: OAuth `calendar.events`, estructura del secreto, coincidencia del calendario objetivo y lectura del endpoint aprobaron. `GOOGLE_CALENDAR_CONFIG` versión 3 quedó `ENABLED` y las siete Functions quedaron `ACTIVE` en `us-central1`. La creación nueva desde la aplicación permanece pendiente.
+
+### EVT-109 — Correos HTML institucionales
+
+Creación, actualización, retiro de coordinación, cancelación y logística generan asunto `[Eventos TUP]`, HTML responsive y texto plano equivalente. El HTML usa los tokens institucionales aprobados, estado textual, evento, fecha en español, horario de Cancún, campus, dirección, responsable y las secciones opcionales disponibles de coordinaciones, equipos, observaciones y cambios.
+
+Valores con `<`, `>`, `&`, comillas o saltos de línea no pueden inyectar etiquetas, atributos o encabezados. El HTML no contiene scripts, formularios, recursos remotos, rastreadores, correos de otros destinatarios, IDs internos, estados técnicos, inventario total, secretos o enlaces no autorizados. Un trabajo histórico sin los campos ampliados conserva asunto, intervalo, responsable y texto/HTML válidos sin informar cambios falsos.
+
+La fotografía de una revisión nueva conserva los datos canónicos y el resumen de campos modificados. Reintentar el trabajo produce el mismo contenido; no vuelve a leer nombres o cantidades modificados posteriormente. El adaptador SMTP entrega simultáneamente `html` y `text` después de validar la allowlist.
+
+Evidencia del 2 de octubre de 2026: aprobaron 75 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator, además de lint Angular/Functions/visual, formato, `git diff --check` y compilación TypeScript de Functions. Las pruebas cubren los cinco tipos de notificación, texto alternativo, datos opcionales, fotografía histórica, resumen de cambios, escape de HTML y asuntos sin saltos de línea. Después se desplegaron únicamente `createEvent`, `updateEvent`, `cancelEvent`, `reportEquipmentDelay`, `reconcileEventIntegrations`, `processEventIntegrations`, `syncUpdatedEventIntegrations` y `processEventNotifications` en staging; Firebase confirmó las ocho actualizaciones. La entrega visual real queda pendiente de aceptar mediante una revisión nueva, porque los correos ya enviados no se regeneran.
+
+### EVT-110 — Autorización dinámica de contactos de Coordinaciones
+
+Un destinatario fuera de `allowedRecipients` se entrega cuando el trabajo protegido contiene `destinatarioTipo: coordinacion` o `sistemas`, `coordinacionId` canónico y el correo pertenece exactamente al dominio institucional. La autorización usa la fotografía de procedencia del trabajo y no se pierde si la coordinación se suspende o cambia antes de un reintento. El mismo correo como creador y contacto seleccionado conserva procedencia de Coordinación para la deduplicación.
+
+Un creador institucional fuera de la lista fija, un correo externo aunque se etiquete como coordinación, un trabajo de coordinación sin ID, un tipo desconocido o un correo libre continúan fallando con `recipient-not-allowed` antes de crear el transporte SMTP. Angular no aporta los metadatos de autorización. La lista fija continúa operativa y `SMTP_CONFIG` no requiere una versión nueva.
+
+Evidencia del 3 de octubre de 2026: aprobaron 78 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator. Se verificaron contacto institucional fuera de la lista fija, creador fuera de lista, dominio externo, coordinación sin ID, ausencia de apertura SMTP en rechazos y preferencia de procedencia de Coordinación cuando el mismo correo también es el creador. Aprobaron además compilación TypeScript de Functions, lint Angular/Functions/visual, formato y `git diff --check`. Después se actualizaron únicamente `createEvent`, `updateEvent`, `cancelEvent`, `reportEquipmentDelay`, `reconcileEventIntegrations`, `processEventIntegrations`, `syncUpdatedEventIntegrations` y `processEventNotifications` en staging; Firebase confirmó las ocho operaciones. No se modificaron secretos, Hosting, Rules, índices, datos o producción. La entrega real positiva y las negativas controladas permanecen pendientes.
 
 ## Evidencia requerida
 

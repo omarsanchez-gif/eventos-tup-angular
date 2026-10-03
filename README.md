@@ -10,12 +10,16 @@ Migración del frontend institucional a Angular 22, guiada exclusivamente por la
 - Custom Claims `authorized` y `role` mediante Admin SDK.
 - Estado de autenticación con Signals, guards y recuperación de sesión.
 - Shell administrativo responsive con sidebar, topbar, navegación por rol, perfil y cierre de sesión.
-- Vista temporal autenticada en `/dashboard` integrada al shell.
+- Dashboard funcional en `/dashboard` con cuatro KPI, próximos eventos y actividad reciente mediante un read model sanitizado.
 - Módulo administrativo de Usuarios en `/usuarios`, con guard por rol, listado, búsqueda, paginación, alta, edición, estado y eliminación.
 - Cinco callables administrativas con Firestore canónico, validaciones transaccionales, sincronización de claims, revocación e idempotencia.
-- Reglas y pruebas de autorización para Firestore y Storage.
+- Módulos administrativos de Coordinaciones, Campus y Equipos, visibles únicamente para `admin`.
+- Eventos en `/eventos` y `/eventos/calendario` para todo usuario autorizado, con creación, búsqueda, edición, cancelación histórica, PDF y FullCalendar.
+- Reservaciones atómicas de equipos, disponibilidad por intervalo, eventos multidiarios y logística entre TUP y FCS.
+- Integraciones backend idempotentes con Google Calendar institucional y correo HTML mediante secretos de staging.
+- Reglas y pruebas de autorización para Firestore y Storage, índices compuestos y TTL de notificaciones.
 
-Dashboard funcional y Eventos continúan fuera del alcance actual. Eventos permanece deshabilitado como “Próximamente”; Usuarios solo aparece para `admin`.
+Todo el alcance anterior está desplegado únicamente a staging. La aceptación manual transversal y varias pruebas operativas de Calendar/SMTP continúan pendientes; producción no está autorizada.
 
 ## Requisitos locales
 
@@ -71,15 +75,15 @@ Para comprobar su compilación:
 npm run build:staging
 ```
 
-El proyecto ya tiene una aplicación web, Firestore en `nam5` inicializado con la autorización admin, Google Sign-In y un sitio de Hosting. `localhost` y `127.0.0.1` están autorizados para pruebas locales. El plan Blaze está activo y `bootstrapAuthorization` está desplegada en `us-central1` con una política que elimina imágenes de compilación anteriores a un día.
+El proyecto tiene aplicación web, Firestore en `nam5`, Google Sign-In, Storage, Functions Gen 2 y Hosting. `localhost` y `127.0.0.1` están autorizados para pruebas locales. El plan Blaze está activo, existe un presupuesto informativo de `100 MXN` con alertas y Artifact Registry elimina imágenes de Functions con más de un día.
 
-Las cinco callables de Usuarios están implementadas, aprobadas en Emulator Suite y desplegadas en `us-central1` únicamente para staging. Con `npm run start:staging`, una sesión `admin` puede listar, crear, editar, activar, desactivar y eliminar autorizaciones conforme al spec. Producción permanece fuera de alcance.
+Las callables de autorización, Usuarios, Coordinaciones, Campus, Equipos, Eventos y Dashboard están desplegadas en `us-central1` únicamente para staging conforme a sus specs. Firestore Rules y Storage Rules protegen las escrituras directas y los documentos internos; los siete índices de Eventos están `READY`, el índice del Dashboard está `READY` y el TTL de notificaciones está `ACTIVE`.
 
 La cuenta `omar.sanchez@tecplayacar.edu.mx` está autorizada y activa en Firestore staging con rol `admin` y nombre visible `Omar Sanchez`. Cuando el UID aún no esté asociado, `bootstrapAuthorization` lo vinculará en el siguiente acceso; en cada acceso actualizará `ultimoAcceso` y reconciliará los claims.
 
-Cloud Storage está aprovisionado en `eventos-tup-angular-stg.firebasestorage.app`, región `US-CENTRAL1`, con clase `STANDARD`. Las 8 pruebas de Firestore y Storage Rules están aprobadas; Firestore Rules fueron publicadas en staging para proteger Usuarios y Storage Rules permanecen sin desplegar porque ese servicio no forma parte de este incremento.
+Cloud Storage está aprovisionado en `eventos-tup-angular-stg.firebasestorage.app`, región `US-CENTRAL1`, con clase `STANDARD`. Las 15 pruebas vigentes de Firestore y Storage Rules están aprobadas y ambas reglas están desplegadas únicamente a staging.
 
-Cuando staging esté funcional y validado, Hosting podrá publicarse explícitamente con:
+Hosting ya está publicado en staging. Cualquier actualización posterior requiere autorización y se ejecuta explícitamente con:
 
 ```powershell
 npm run deploy:staging:hosting
@@ -93,7 +97,9 @@ Google Sign-In se administra como configuración versionada y se despliega únic
 npm run deploy:staging:auth
 ```
 
-Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular.
+Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 3 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
+
+Continúan pendientes antes de aceptar staging: creación sintética en el calendario institucional vigente, actualización y cancelación reales, entrega a un contacto de Coordinaciones fuera de la lista fija, negativas controladas y revisión manual accesible y responsive con ambos roles.
 
 ## Calidad
 
@@ -101,7 +107,8 @@ Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular.
 npm run lint
 npm run test
 npm run test:functions
-npm run test:users:emulators
+npm run test:events:emulators
+npm run test:dashboard:emulators
 npm run test:rules
 npm run build
 ```
@@ -116,4 +123,4 @@ npm run test:all
 
 `firebase.json` está configurado para compilar Cloud Functions y publicar la SPA generada en `dist/eventos-tup-angular/browser`. El alias predeterminado es intencionalmente `demo-eventos-tup`; `staging` corresponde a `eventos-tup-angular-stg` y `production` a `eventos-tup-bb903`. El proyecto visible `eventos-tup` no está autorizado para esta migración.
 
-Blaze es pago por uso. Antes de ampliar pruebas o habilitar nuevas integraciones se debe crear un presupuesto con alertas en Google Cloud; el importe requiere aprobación del responsable del proyecto.
+Blaze es pago por uso. El presupuesto de `100 MXN` y sus alertas son informativos y no detienen automáticamente los servicios; cualquier ampliación de recursos debe conservar el control de costos y documentarse antes del despliegue.

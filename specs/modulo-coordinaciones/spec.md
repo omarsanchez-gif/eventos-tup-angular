@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging; permanecen pendientes la revisión manual accesible y la aceptación funcional y visual.
+Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging y el Hosting vigente incluye `/coordinaciones`. Sus contactos institucionales pueden autorizar notificaciones de Eventos mediante procedencia protegida, sin incorporarlos a la lista fija del secreto. Permanecen pendientes la revisión manual accesible y la aceptación funcional y visual; producción no está autorizada.
 
 ## Objetivo
 
@@ -289,4 +289,4 @@ Columnas:
 
 ## Decisiones pendientes
 
-No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima; la aceptación funcional y visual autenticada continúa pendiente. Hosting y producción no fueron modificados.
+No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima. Ese despliegue inicial no modificó Hosting; publicaciones posteriores del frontend incorporaron `/coordinaciones`. La aceptación funcional y visual autenticada continúa pendiente y producción no fue modificada.

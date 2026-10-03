@@ -5,7 +5,10 @@ import { createProtocolValidator, type ProtocolBucket } from './protocol-validat
 function bucket(metadata: { contentType?: string; size?: string | number }): ProtocolBucket {
   return {
     name: 'eventos-tup-angular-stg.firebasestorage.app',
-    file: vi.fn(() => ({ getMetadata: vi.fn(async () => [metadata] as const) })),
+    file: vi.fn(() => ({
+      getMetadata: vi.fn(async () => [metadata] as const),
+      delete: vi.fn(async () => undefined),
+    })),
   };
 }
 
@@ -18,7 +21,7 @@ describe('validador autoritativo de protocolos', () => {
       createProtocolValidator(bucket({ contentType: 'application/pdf', size: '1024' })).validate(
         validUrl,
       ),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ path: 'eventos/2026/protocol.pdf' });
   });
 
   it('rechaza URLs externas o de otro bucket', async () => {

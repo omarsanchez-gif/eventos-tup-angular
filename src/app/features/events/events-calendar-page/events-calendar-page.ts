@@ -19,6 +19,7 @@ import type { DatesSetInfo, EventClickInfo } from 'fullcalendar';
 
 import type { EventSummary, EventTemporalStatus } from '../../../shared/models/system-event';
 import { EventsFacade } from '../state/events.facade';
+import { toCalendarEvent } from './calendar-event.mapper';
 
 interface CalendarEventMountInfo {
   readonly event: { readonly id: string };
@@ -47,7 +48,6 @@ export class EventsCalendarPage implements OnInit {
   });
   protected readonly calendarOptions = computed<CalendarOptions>(() => ({
     plugins: [themePlugin, dayGridPlugin, timeGridPlugin, listPlugin],
-    themeSystem: 'standard',
     locales: allLocales,
     locale: 'es',
     timeZone: 'America/Cancun',
@@ -58,7 +58,13 @@ export class EventsCalendarPage implements OnInit {
       center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
     },
-    buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día', list: 'Lista' },
+    buttonText: {
+      today: 'Hoy',
+      month: 'Mes',
+      week: 'Semana',
+      day: 'Día',
+      list: 'Lista',
+    },
     editable: false,
     selectable: false,
     eventStartEditable: false,
@@ -66,14 +72,12 @@ export class EventsCalendarPage implements OnInit {
     navLinks: false,
     nowIndicator: true,
     height: 'auto',
-    events: this.visibleItems().map((item) => ({
-      id: item.eventId,
-      title: `${item.name} · ${this.statusLabel(item.status)}`,
-      start: item.start ?? undefined,
-      end: item.end ?? undefined,
-      classNames: [`event-${item.status}`],
-      extendedProps: { campus: item.campusName, status: item.status },
-    })),
+    fixedWeekCount: false,
+    dayMaxEvents: 4,
+    moreLinkText: (count) => `+${count} más`,
+    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    eventOrder: 'start,title',
+    events: this.visibleItems().map((item) => toCalendarEvent(item, this.statusLabel(item.status))),
     datesSet: (info) => this.rangeChanged(info),
     eventClick: (info) => this.eventClicked(info),
     eventDidMount: (info) => this.decorateEvent(info),
@@ -95,6 +99,7 @@ export class EventsCalendarPage implements OnInit {
 
   protected closeDetail(): void {
     this.selectedEvent.set(null);
+    this.events.clearDetail();
   }
 
   protected statusLabel(status: EventTemporalStatus): string {
@@ -110,6 +115,20 @@ export class EventsCalendarPage implements OnInit {
     return event.dateStart === event.dateEnd
       ? `${event.dateStart} · ${event.timeStart}–${event.timeEnd}`
       : `${event.dateStart} ${event.timeStart} – ${event.dateEnd} ${event.timeEnd}`;
+  }
+
+  protected integrationLabel(
+    value: EventSummary['calendarStatus'] | EventSummary['notificationStatus'],
+  ): string {
+    return {
+      pendiente: 'Pendiente',
+      sincronizado: 'Sincronizado',
+      error: 'Requiere revisión',
+      retirado: 'Retirado',
+      completas: 'Completas',
+      parciales: 'Parciales',
+      no_aplica: 'No aplica',
+    }[value];
   }
 
   @HostListener('document:keydown.escape')
@@ -131,7 +150,12 @@ export class EventsCalendarPage implements OnInit {
 
   private eventClicked(info: EventClickInfo): void {
     const event = this.events.calendarItems().find((item) => item.eventId === info.event.id);
-    if (event) this.selectedEvent.set(event);
+    if (event) {
+      this.selectedEvent.set(event);
+      void this.events.loadDetail(event.eventId).then((detail) => {
+        if (detail) this.selectedEvent.set(detail);
+      });
+    }
   }
 
   private decorateEvent(info: CalendarEventMountInfo): void {
@@ -146,6 +170,9 @@ export class EventsCalendarPage implements OnInit {
       if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
         keyboardEvent.preventDefault();
         this.selectedEvent.set(event);
+        void this.events.loadDetail(event.eventId).then((detail) => {
+          if (detail) this.selectedEvent.set(detail);
+        });
       }
     });
   }

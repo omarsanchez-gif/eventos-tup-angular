@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada para Campus y ampliada para Equipos el 21 de agosto de 2026. Campus y el incremento A del catálogo de Equipos fueron implementados y desplegados únicamente a staging. La política multidiaria se resolvió el 28 de septiembre y reservaciones, traslados e integración con Eventos fueron autorizados el 29 de septiembre de 2026 mediante ADR-009. Producción permanece fuera de alcance.
+Aprobada para Campus y ampliada para Equipos el 21 de agosto de 2026. Campus y el catálogo de Equipos fueron implementados y desplegados únicamente a staging. La política multidiaria se resolvió el 28 de septiembre; reservaciones, traslados e integración con Eventos fueron autorizados mediante ADR-009, implementados y desplegados únicamente a staging desde el 30 de septiembre. Producción permanece fuera de alcance.
 
 ## Contexto
 
@@ -65,7 +65,7 @@ La institución opera inicialmente en dos campus: Tecnológico Universitario Pla
 - Para equipo transferido, la salida se calcula respecto del primer inicio y la liberación de regreso respecto del último fin.
 - La creación exige cinco fechas naturales de anticipación conforme a la fecha de servidor en `America/Cancun`. Después del límite no se agrega ni aumenta equipo y no se cambia de campus.
 
-La decisión funcional multidiaria deja de ser bloqueante. ADR-009 aprueba la estrategia transaccional, los controles por equipo, los índices y la autorización de reservaciones. Permanece pendiente resolver el ID canónico de la Coordinación de Sistemas ya creada en staging antes de activar notificaciones logísticas reales.
+La decisión funcional multidiaria dejó de ser bloqueante. ADR-009 aprobó la estrategia transaccional, los controles por equipo, los índices y las reservaciones. El ID canónico de la Coordinación de Sistemas quedó registrado en `configuracion/logisticaEquipos` antes de activar las notificaciones logísticas de staging.
 
 ## Fuera del incremento Campus
 

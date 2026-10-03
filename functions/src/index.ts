@@ -9,7 +9,8 @@ import {
 import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { defineString } from 'firebase-functions/params';
+import { defineSecret, defineString } from 'firebase-functions/params';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 import {
   AuthorizationError,
@@ -63,18 +64,37 @@ import {
   type AdminUsersDependencies,
 } from './admin-users.js';
 import {
+  DashboardError,
+  getDashboardSummary as dashboardSummary,
+  type DashboardRequestIdentity,
+} from './dashboard.js';
+import {
   checkEventAvailability as checkAvailability,
+  cancelEventRecord,
+  confirmEquipmentReceptionRecord,
+  confirmReservationCoverageRecord,
   createEventRecord,
   EventsError,
+  getEventDetailRecord,
   listCalendarEventRecords,
   listEventRecords,
+  reconcileEventIntegrationsRecord,
+  reportEquipmentDelayRecord,
+  updateEventRecord,
   type EventRequestIdentity,
   type EventsDependencies,
 } from './events.js';
+import { createGoogleCalendarClient, createSmtpMailer } from './event-integration-adapters.js';
+import { createEventIntegrationsService } from './event-integrations.js';
+import {
+  backfillEventHistory,
+  cleanupEventProtocols as cleanupProtocols,
+} from './event-maintenance.js';
 import { createFirestoreAdminCampusesRepository } from './firestore-admin-campuses.repository.js';
 import { createFirestoreAdminCoordinationsRepository } from './firestore-admin-coordinations.repository.js';
 import { createFirestoreAdminEquipmentRepository } from './firestore-admin-equipment.repository.js';
 import { createFirestoreAdminUsersRepository } from './firestore-admin-users.repository.js';
+import { createFirestoreDashboardRepository } from './firestore-dashboard.repository.js';
 import { createFirestoreEventsRepository } from './firestore-events.repository.js';
 import { createProtocolValidator } from './protocol-validator.js';
 
@@ -83,14 +103,26 @@ if (getApps().length === 0) {
 }
 
 const institutionalDomain = defineString('INSTITUTIONAL_DOMAIN');
+const googleCalendarConfiguration = defineSecret('GOOGLE_CALENDAR_CONFIG');
+const smtpConfiguration = defineSecret('SMTP_CONFIG');
 const firestore = getFirestore();
 const adminAuth = getAuth();
 const adminCampusesRepository = createFirestoreAdminCampusesRepository(firestore);
 const adminCoordinationsRepository = createFirestoreAdminCoordinationsRepository(firestore);
 const adminEquipmentRepository = createFirestoreAdminEquipmentRepository(firestore);
 const adminUsersRepository = createFirestoreAdminUsersRepository(firestore);
+const dashboardRepository = createFirestoreDashboardRepository(firestore);
 const eventsRepository = createFirestoreEventsRepository(firestore);
 const protocolValidator = createProtocolValidator(getStorage().bucket());
+const eventIntegrations = createEventIntegrationsService({
+  firestore,
+  calendar: createGoogleCalendarClient(() => googleCalendarConfiguration.value()),
+  mailer: createSmtpMailer(
+    () => smtpConfiguration.value(),
+    () => institutionalDomain.value(),
+  ),
+  logger,
+});
 
 function dataToUserRecord(
   reference: DocumentReference<DocumentData>,
@@ -308,12 +340,25 @@ function toEventIdentity(
     : null;
 }
 
+function toDashboardIdentity(
+  auth: Readonly<{ uid: string; token: Readonly<Record<string, unknown>> }> | undefined,
+): DashboardRequestIdentity | null {
+  return auth
+    ? {
+        uid: auth.uid,
+        authorized: auth.token['authorized'] === true,
+        role: auth.token['role'],
+      }
+    : null;
+}
+
 function eventsDependencies(): EventsDependencies {
   return {
     repository: eventsRepository,
     clock: { now: () => new Date() },
     logger,
     protocols: protocolValidator,
+    integrations: eventIntegrations,
   };
 }
 
@@ -412,13 +457,47 @@ async function executeEventOperation<T>(operation: () => Promise<T>): Promise<T>
   }
 }
 
+async function executeDashboardOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof DashboardError) {
+      throw new HttpsError(error.functionsCode, error.message, {
+        functionalCode: error.functionalCode,
+      });
+    }
+
+    logger.error('Error no controlado en una operación de Dashboard.', {
+      cause: error instanceof Error ? error.name : 'unknown',
+    });
+    throw new HttpsError('unavailable', 'El servicio no está disponible.', {
+      functionalCode: 'service-unavailable',
+    });
+  }
+}
+
 const adminCallableOptions = {
   invoker: 'public' as const,
   region: 'us-central1' as const,
 };
 
+const eventIntegrationCallableOptions = {
+  ...adminCallableOptions,
+  secrets: [googleCalendarConfiguration, smtpConfiguration],
+};
+
 export const listAuthorizedUsers = onCall(adminCallableOptions, async (request) =>
   executeAdminOperation(() => listUsers(toAdminIdentity(request.auth), adminUsersDependencies())),
+);
+
+export const getDashboardSummary = onCall(adminCallableOptions, async (request) =>
+  executeDashboardOperation(() =>
+    dashboardSummary(toDashboardIdentity(request.auth), request.data, {
+      repository: dashboardRepository,
+      clock: { now: () => new Date() },
+      logger,
+    }),
+  ),
 );
 
 export const createAuthorizedUser = onCall(adminCallableOptions, async (request) =>
@@ -598,7 +677,7 @@ export const checkEventAvailability = onCall(adminCallableOptions, async (reques
   ),
 );
 
-export const createEvent = onCall(adminCallableOptions, async (request) =>
+export const createEvent = onCall(eventIntegrationCallableOptions, async (request) =>
   executeEventOperation(() =>
     createEventRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
   ),
@@ -614,4 +693,148 @@ export const listCalendarEvents = onCall(adminCallableOptions, async (request) =
   executeEventOperation(() =>
     listCalendarEventRecords(toEventIdentity(request.auth), request.data, eventsDependencies()),
   ),
+);
+
+export const getEventDetail = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    getEventDetailRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const updateEvent = onCall(eventIntegrationCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    updateEventRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const cancelEvent = onCall(eventIntegrationCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    cancelEventRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const confirmReservationCoverage = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    confirmReservationCoverageRecord(
+      toEventIdentity(request.auth),
+      request.data,
+      eventsDependencies(),
+    ),
+  ),
+);
+
+export const confirmEquipmentReception = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    confirmEquipmentReceptionRecord(
+      toEventIdentity(request.auth),
+      request.data,
+      eventsDependencies(),
+    ),
+  ),
+);
+
+export const reportEquipmentDelay = onCall(eventIntegrationCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    reportEquipmentDelayRecord(toEventIdentity(request.auth), request.data, eventsDependencies()),
+  ),
+);
+
+export const reconcileEventIntegrations = onCall(eventIntegrationCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    reconcileEventIntegrationsRecord(
+      toEventIdentity(request.auth),
+      request.data,
+      eventsDependencies(),
+    ),
+  ),
+);
+
+export const processEventIntegrations = onCall(eventIntegrationCallableOptions, async (request) =>
+  executeEventOperation(() =>
+    reconcileEventIntegrationsRecord(
+      toEventIdentity(request.auth),
+      request.data,
+      eventsDependencies(),
+    ),
+  ),
+);
+
+export const syncUpdatedEventIntegrations = onCall(
+  eventIntegrationCallableOptions,
+  async (request) =>
+    executeEventOperation(async () => {
+      const data =
+        request.data && typeof request.data === 'object' && !Array.isArray(request.data)
+          ? (request.data as Record<string, unknown>)
+          : {};
+      if (
+        Object.keys(data).some((key) => !['eventId', 'revisionEsperada'].includes(key)) ||
+        typeof data['eventId'] !== 'string' ||
+        !Number.isInteger(data['revisionEsperada'])
+      ) {
+        throw new EventsError('invalid-argument', 'invalid-argument', 'La solicitud no es válida.');
+      }
+      const eventSnapshot = await firestore.doc(`eventos/${data['eventId']}`).get();
+      if (!eventSnapshot.exists) {
+        throw new EventsError('event-not-found', 'not-found', 'El evento no existe.');
+      }
+      if (eventSnapshot.data()?.['revisionNotificacion'] !== data['revisionEsperada']) {
+        throw new EventsError(
+          'invalid-argument',
+          'failed-precondition',
+          'La revisión del evento cambió.',
+        );
+      }
+      return reconcileEventIntegrationsRecord(
+        toEventIdentity(request.auth),
+        { eventId: data['eventId'] },
+        eventsDependencies(),
+      );
+    }),
+);
+
+export const processEventNotifications = onSchedule(
+  {
+    region: 'us-central1',
+    schedule: 'every 5 minutes',
+    timeZone: 'America/Cancun',
+    secrets: [smtpConfiguration],
+  },
+  async () => {
+    const result = await eventIntegrations.processDue(50);
+    logger.info('Worker de notificaciones de Eventos finalizado.', result);
+  },
+);
+
+export const cleanupEventProtocols = onSchedule(
+  {
+    region: 'us-central1',
+    schedule: '0 4 * * *',
+    timeZone: 'America/Cancun',
+  },
+  async () => {
+    const result = await cleanupProtocols({
+      firestore,
+      bucket: getStorage().bucket(),
+    });
+    if (result.reconciliationRequired) {
+      logger.warn('reconciliation-required en limpieza de protocolos.', result);
+    } else {
+      logger.info('Limpieza de protocolos finalizada.', result);
+    }
+  },
+);
+
+export const backfillEvents = onCall(adminCallableOptions, async (request) =>
+  executeEventOperation(async () => {
+    const identity = toEventIdentity(request.auth);
+    if (!identity || !identity.authorized || identity.role !== 'admin') {
+      throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+    }
+    const canonical = await eventsRepository.findCanonicalRequester(identity.uid);
+    if (!canonical?.activo || canonical.role !== 'admin') {
+      throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+    }
+    return backfillEventHistory({ firestore, data: request.data });
+  }),
 );

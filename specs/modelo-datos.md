@@ -2,7 +2,7 @@
 
 ## Principio
 
-La migración Angular conserva los campos históricos sin renombrarlos, eliminarlos o convertirlos. El 19 de agosto de 2026 se autorizó la colección aditiva `coordinaciones`. El 21 de agosto de 2026 se autorizaron `campus` y el incremento A de `equipos`, posteriormente implementados y desplegados únicamente a staging. El 29 de septiembre de 2026 se autorizaron los campos aditivos de Eventos, `reservasEquipo`, `controlReservasEquipo` y la configuración logística conforme a ADR-009. El 30 de septiembre la creación backend empezó a escribir este modelo únicamente en código y Emulator Suite local; no fue desplegado a staging y producción continúa fuera de alcance.
+La migración Angular conserva los campos históricos sin renombrarlos, eliminarlos o convertirlos. El 19 de agosto de 2026 se autorizó la colección aditiva `coordinaciones`. El 21 de agosto de 2026 se autorizaron `campus` y el incremento A de `equipos`, posteriormente implementados y desplegados únicamente a staging. El 29 de septiembre de 2026 se autorizaron los campos aditivos de Eventos, `reservasEquipo`, `controlReservasEquipo` y la configuración logística conforme a ADR-009. El 30 de septiembre el modelo completo de Eventos, reservaciones y notificaciones quedó implementado, probado y desplegado únicamente a staging; producción continúa fuera de alcance.
 
 ## Colección `campus`
 
@@ -27,7 +27,7 @@ fechaCreacion: Timestamp
 fechaActualizacion: Timestamp
 ```
 
-Nombre y clave son únicos. Dirección y referencia son opcionales. Los horarios usan `HH:mm`, domingo permanece inactivo y `utilizado` cambia permanentemente a `true` cuando un consumidor futuro crea la primera referencia. El ID Firestore es independiente de la clave.
+Nombre y clave son únicos. Dirección y referencia son opcionales. Los horarios usan `HH:mm`, domingo permanece inactivo y `utilizado` cambia permanentemente a `true` cuando Equipos o Eventos crea la primera referencia. El ID Firestore es independiente de la clave.
 
 ## Colección `equipos`
 
@@ -69,6 +69,12 @@ recepcionConfirmada: Timestamp | null
 demoraReportada: boolean
 coberturaSistemas: "no_requerida" | "pendiente" | "confirmada"
 motivosRevision: ("cobertura_sistemas" | "inventario_reducido" | "coordinacion_sistemas")[]
+versionesAvisoLogistico:
+  cobertura_sistemas: number | null
+  inventario_reducido: number | null
+  cambio_incompatible: number | null
+  demora: number | null
+  cancelacion_post_salida: number | null
 fotografia:
   equipoNombre: string
   campusBaseId: string
@@ -82,10 +88,10 @@ fechaActualizacion: Timestamp
 
 - Su ID será determinista por evento y equipo.
 - `confirmada` y `requiere_revision` consumen capacidad hasta resolver, cancelar o finalizar.
-- `motivosRevision` conserva causas independientes; `estado` vuelve a `confirmada` únicamente cuando el arreglo queda vacío.
+- `motivosRevision` conserva causas independientes; `estado` vuelve a `confirmada` únicamente cuando el arreglo queda vacío. `versionesAvisoLogistico` fotografía la versión del control que originó cada aviso; resolver una causa fija su entrada en `null` y una causa posterior obtiene una versión nueva sin repetir las demás.
 - Confirmar recepción anticipada registra hora de servidor, fija `bloqueoFin` al instante efectivo y cambia a `finalizada`. Reportar demora extiende `bloqueoFin` y `liberacionProgramada` sin liberar capacidad.
 - El cliente no escribe reservas ni estados logísticos directamente.
-- La colección está implementada localmente para creación mediante la estrategia transaccional e índices de ADR-009; edición, cancelación y despliegue siguen pendientes.
+- La colección está implementada y desplegada únicamente a staging para creación, sustitución, cancelación y operaciones logísticas mediante la estrategia transaccional e índices de ADR-009.
 
 ## Colección protegida `controlReservasEquipo`
 
@@ -196,7 +202,7 @@ El ID de Firestore identifica al evento. No existe folio institucional en el mod
 
 `coordinacionIds` permite validar referencias y bloquear la eliminación de una coordinación utilizada. `coordinacionesInvolucradas` conserva una fotografía del ID y nombre para que el historial no cambie cuando se renombra o suspende el catálogo. Los correos no se guardan en `eventos` porque la colección puede ser consultada por cualquier usuario autorizado.
 
-`campusId`, `campusHistorico`, `inicioAt`, `finAt`, `fechaCancelacion`, `canceladoPorUid`, `equipoIds`, `equiposSolicitados`, `protocoloRuta`, `calendarEstado`, `notificacionesEstado` y `terminosBusqueda` son campos aditivos autorizados. La creación backend local ya escribe los valores canónicos aplicables del primer incremento; edición, cancelación, nuevos estados y backfill histórico permanecen pendientes. Los eventos históricos conservan el objeto fijo `equipos`; no se renombra, elimina ni migra implícitamente. Un lector interpreta la ausencia de campos dinámicos como “sin reservación administrada”. Si un histórico tiene fechas locales completas se pueden derivar instantes en memoria; persistir instantes o términos exige el backfill explícito de ADR-010. Si son incompletas o inválidas, conserva la presentación compatible del `estatus` histórico y marca revisión sin inventar una zona u hora.
+`campusId`, `campusHistorico`, `inicioAt`, `finAt`, `fechaCancelacion`, `canceladoPorUid`, `equipoIds`, `equiposSolicitados`, `protocoloRuta`, `calendarEstado`, `notificacionesEstado` y `terminosBusqueda` son campos aditivos autorizados. Creación, edición, cancelación y estados derivados están implementados y desplegados únicamente a staging; el comando de backfill existe, pero no se ha ejecutado en staging ni producción. Los eventos históricos conservan el objeto fijo `equipos`; no se renombra, elimina ni migra implícitamente. Un lector interpreta la ausencia de campos dinámicos como “sin reservación administrada”. Si un histórico tiene fechas locales completas se pueden derivar instantes en memoria; persistir instantes o términos exige el backfill explícito de ADR-010. Si son incompletas o inválidas, conserva la presentación compatible del `estatus` histórico y marca revisión sin inventar una zona u hora.
 
 `revisionNotificacion` inicia en `1` al crear y aumenta únicamente cuando una operación requiere nuevas notificaciones conforme a RN-050 a RN-053. Los documentos históricos que no tengan estos tres campos se interpretan como `coordinacionIds: []`, `coordinacionesInvolucradas: []` y `revisionNotificacion: 0`; no se exige backfill para leerlos.
 
@@ -223,10 +229,12 @@ fechaActualizacion: Timestamp
 ```text
 eventoId: string
 revision: number
-tipo: "creacion" | "actualizacion" | "retiro_coordinacion" | "cancelacion"
+tipo: "creacion" | "actualizacion" | "retiro_coordinacion" | "cancelacion" | "logistica"
 destinatarioCorreo: string
-destinatarioTipo: "creador" | "coordinacion"
+destinatarioTipo: "creador" | "coordinacion" | "sistemas"
 coordinacionId: string | null
+equipoId: string | null
+motivoLogistico: "cobertura_sistemas" | "inventario_reducido" | "cambio_incompatible" | "demora" | "cancelacion_post_salida" | null
 claveIdempotencia: string
 estado: "pendiente" | "procesando" | "enviado" | "fallido"
 intentos: number
@@ -239,6 +247,15 @@ datosEvento:
   fechaFin: string
   horaFin: string
   responsable: string
+  campusNombre: string
+  campusDireccion: string | null
+  coordinacionesNombres: string[]
+  equipos:
+    - nombre: string
+      cantidad: number
+  observaciones: string
+  cambios: string[]
+  equipoNombre: string | null
 fechaCreacion: Timestamp
 fechaActualizacion: Timestamp
 fechaEnvio: Timestamp | null
@@ -249,7 +266,11 @@ bloqueoHasta: Timestamp | null
 ultimoIntento: Timestamp | null
 ```
 
-Esta colección funciona como bandeja de salida protegida. El navegador no crea, modifica ni lee sus documentos. `claveIdempotencia` es única por evento, revisión, tipo y destinatario normalizado. `datosEvento` permite completar una cancelación sin depender de volver a leer el documento original.
+Esta colección funciona como bandeja de salida protegida. El navegador no crea, modifica ni lee sus documentos. Para correos funcionales, `claveIdempotencia` es única por evento, `revisionNotificacion`, tipo y destinatario normalizado. Para `tipo: logistica`, la revisión corresponde a la entrada específica de `versionesAvisoLogistico`, tomada de la versión monotónica de `controlReservasEquipo/{equipoId}` que originó esa causa, y la clave incorpora también `equipoId` y `motivoLogistico`; así, cambiar otra causa no repite avisos todavía vigentes y una nueva ocurrencia sí genera una entrega. `datosEvento` permite completar una cancelación o alerta logística sin depender de volver a leer recursos que puedan haber cambiado.
+
+`destinatarioTipo` y `coordinacionId` también constituyen la procedencia protegida usada por el adaptador SMTP. Un trabajo `coordinacion` o `sistemas` con ID canónico permite entregar a su correo institucional aunque no aparezca en la lista fija del ambiente. Estos campos son escritos únicamente por backend después de resolver Coordinaciones; no amplían la capacidad del cliente ni exigen releer contactos mutables durante un reintento. Un trabajo sin procedencia válida conserva el control estricto de `allowedRecipients`.
+
+Los campos `equipoId`, `motivoLogistico` y `datosEvento.equipoNombre` solo son obligatorios para `tipo: logistica`; en los demás tipos permanecen en `null`. Los trabajos logísticos se dirigen exclusivamente a los correos institucionales de la coordinación cuyo ID está guardado en `configuracion/logisticaEquipos.coordinacionSistemasId`. El cliente nunca propone esos destinatarios.
 
 `intentos` cuenta el intento inicial y los reintentos. `proximoIntento` contiene la siguiente ejecución programada y queda en `null` al enviar o agotar el proceso. `procesadorId` y `bloqueoHasta` forman un lease exclusivo de 10 minutos; un worker solo envía si conserva el lease y otro puede recuperar un lease vencido. `ultimoIntento` usa hora de servidor. `fechaFinalizacion` registra el momento en que el envío alcanza `enviado` o fallo permanente. `fechaExpiracion` se fija 90 días después para la purga automática; no se utiliza para registros todavía recuperables.
 
@@ -265,4 +286,24 @@ Firestore solo almacenará `protocoloUrl` y `protocoloNombre`. El PDF permanecer
 
 No existe actualmente una colección de auditoría operativa. Su creación queda fuera de la migración inicial y requerirá una especificación y actualización de este modelo.
 
+`datosEvento` es una fotografía protegida para renderizar el mismo contenido durante reintentos sin depender de catálogos que puedan cambiar. `cambios` contiene únicamente etiquetas funcionales de campos modificados, nunca valores anteriores, correos, IDs o información técnica. Los documentos históricos creados antes de ampliar la fotografía siguen siendo procesables: los campos ausentes se omiten de la plantilla y no se interpretan como cambios.
+
 `notificacionesEventos` no sustituye una auditoría general: conserva únicamente el estado técnico mínimo necesario para entregar y reintentar correos de Eventos.
+
+## Read model no persistido de Dashboard
+
+Dashboard no crea colección, documentos ni campos. La callable `getDashboardSummary` calcula una respuesta efímera desde `eventos` y `usuarios` mediante Admin SDK:
+
+```text
+serverNow: ISO string
+metrics:
+  registeredEvents: integer | null
+  upcomingEvents: integer | null
+  activeUsers: integer | null
+  eventsWithProtocol: integer | null
+upcoming: DashboardEventSummary[0..5]
+recentActivity: DashboardActivity[0..5]
+unavailableSections: DashboardSection[]
+```
+
+`DashboardEventSummary` contiene únicamente ID, nombre, fecha y hora de inicio, responsable y estado temporal. `DashboardActivity` contiene ID, nombre, `creacion | actualizacion`, timestamp, responsable y estado temporal. No devuelve documentos de Usuario, correos de coordinaciones, URLs de protocolos, inventario, errores técnicos, secretos ni estados internos de integraciones. Los valores `null` identifican consultas fallidas; un conteo real sin coincidencias usa `0`.

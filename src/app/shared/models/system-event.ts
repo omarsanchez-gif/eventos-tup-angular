@@ -1,4 +1,6 @@
 export type EventTemporalStatus = 'programado' | 'en_ejecucion' | 'finalizado' | 'cancelado';
+export type EventCalendarStatus = 'pendiente' | 'sincronizado' | 'error' | 'retirado';
+export type EventNotificationStatus = 'pendiente' | 'completas' | 'parciales' | 'no_aplica';
 
 export interface RequestedEventEquipment {
   readonly equipoId: string;
@@ -6,6 +8,7 @@ export interface RequestedEventEquipment {
 }
 
 export interface EventAvailabilityInput {
+  readonly eventId?: string;
   readonly campusId: string;
   readonly fechaInicio: string;
   readonly horaInicio: string;
@@ -57,7 +60,41 @@ export interface EventSummary {
   readonly createdAt: string | null;
   readonly protocolUrl: string | null;
   readonly protocolName: string | null;
-  readonly calendarStatus: 'synced' | 'pending';
+  readonly calendarStatus: EventCalendarStatus;
+  readonly notificationStatus: EventNotificationStatus;
+  readonly ownedByRequester: boolean;
+}
+
+export interface EventReservationDetail {
+  readonly equipmentId: string;
+  readonly equipmentName: string;
+  readonly quantity: number;
+  readonly state: 'confirmada' | 'requiere_revision' | 'finalizada' | 'cancelada';
+  readonly reviewReasons: readonly (
+    'cobertura_sistemas' | 'inventario_reducido' | 'coordinacion_sistemas'
+  )[];
+  readonly requiresTransfer: boolean;
+  readonly blockStart: string;
+  readonly blockEnd: string;
+  readonly scheduledRelease: string;
+  readonly receptionConfirmed: string | null;
+  readonly delayReported: boolean;
+}
+
+export interface EventDetail extends EventSummary {
+  readonly observations: string;
+  readonly coordinationIds: readonly string[];
+  readonly requestedEquipment: readonly {
+    readonly equipmentId: string;
+    readonly name: string;
+    readonly quantity: number;
+    readonly baseCampusId: string;
+    readonly baseCampusName: string;
+    readonly classification: 'fijo' | 'transferible';
+  }[];
+  readonly reservations: readonly EventReservationDetail[];
+  readonly canEdit: boolean;
+  readonly canCancel: boolean;
 }
 
 export interface EventListResult {
@@ -74,6 +111,13 @@ export interface EventCalendarResult {
 export interface EventCreationResult {
   readonly eventId: string;
   readonly status: 'saved';
-  readonly calendarStatus: 'pending';
-  readonly notificationStatus: 'pending';
+  readonly calendarStatus: EventCalendarStatus;
+  readonly notificationStatus: EventNotificationStatus;
+}
+
+export interface EventMutationResult {
+  readonly eventId: string;
+  readonly status: 'saved' | 'cancelled';
+  readonly calendarStatus: EventCalendarStatus;
+  readonly notificationStatus: EventNotificationStatus;
 }

@@ -21,10 +21,10 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/temporary-dashboard/temporary-dashboard').then(
-            (component) => component.TemporaryDashboard,
+          import('./features/dashboard/dashboard-page/dashboard-page').then(
+            (component) => component.DashboardPage,
           ),
-        title: 'Bienvenida | Sistema de Eventos TUP',
+        title: 'Dashboard | Sistema de Eventos TUP',
       },
       {
         path: 'eventos',

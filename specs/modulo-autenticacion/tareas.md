@@ -6,7 +6,7 @@
 - [x] AUTH-T02 Activar TypeScript estricto, lint, formato y pruebas.
 - [x] AUTH-T03 Configurar ambientes local y staging sin secretos.
 - [x] AUTH-T04 Configurar conexión explícita a Emulator Suite en local.
-- [x] AUTH-T05 Integrar tokens mínimos del design system para Login y vista temporal.
+- [x] AUTH-T05 Integrar tokens mínimos del design system para Login y destino autenticado.
 
 ## Firebase frontend
 
@@ -44,7 +44,7 @@
 - [x] AUTH-T28 Crear guard funcional de autenticación y autorización.
 - [x] AUTH-T29 Redirigir rutas privadas a Login.
 - [x] AUTH-T30 Redirigir Login a `/dashboard` cuando la sesión sea válida.
-- [x] AUTH-T31 Crear la vista temporal `/dashboard` definida en `spec.md`.
+- [x] AUTH-T31 Integrar la redirección autenticada a `/dashboard` definida en `spec.md`.
 - [x] AUTH-T32 Implementar logout y trasladar su acceso al shell administrativo compartido.
 - [x] AUTH-T33 Impedir recuperación de contenido privado después del logout.
 
@@ -54,14 +54,14 @@
 - [x] AUTH-T35 Mostrar logo, nombre y mensaje de acceso restringido.
 - [x] AUTH-T36 Implementar botón Google con loading, disabled y `aria-busy`.
 - [x] AUTH-T37 Mapear errores Firebase y backend a mensajes funcionales.
-- [x] AUTH-T38 Mostrar nombre, correo y rol en la vista temporal; exponer logout desde el shell.
+- [x] AUTH-T38 Exponer nombre, correo y rol al Dashboard; mantener logout en el shell.
 - [x] AUTH-T39 Implementar responsive desde 320 px.
 - [x] AUTH-T40 Respetar teclado, foco y reducción de movimiento.
 
 ## Pruebas
 
 - [x] AUTH-T41 Crear pruebas unitarias de mapeo de errores y estado.
-- [x] AUTH-T42 Crear pruebas de integración de Login, sesión y vista temporal.
+- [x] AUTH-T42 Crear pruebas de integración de Login, sesión y destino autenticado.
 - [ ] AUTH-T43 Crear pruebas de callable con emuladores.
 - [x] AUTH-T44 Crear pruebas de Rules basadas en claims.
 - [ ] AUTH-T45 Ejecutar todos los casos de `pruebas.md`.

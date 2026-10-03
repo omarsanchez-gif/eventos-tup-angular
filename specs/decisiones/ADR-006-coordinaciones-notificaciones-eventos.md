@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobada el 19 de agosto de 2026, ampliada con la política operativa aprobada el mismo día y armonizada el 28 de septiembre de 2026 con la cancelación histórica de ADR-008. La fase de Coordinaciones fue autorizada, implementada, validada y desplegada únicamente a staging el 19 de agosto de 2026. La fase de Eventos, su outbox, workers, Calendar y correo permanece documentada y pendiente de autorización de implementación.
+Aprobada el 19 de agosto de 2026, ampliada con la política operativa aprobada el mismo día y armonizada el 28 de septiembre de 2026 con la cancelación histórica de ADR-008. Coordinaciones fue autorizada, implementada, validada y desplegada únicamente a staging el 19 de agosto. Eventos, outbox, workers, Calendar y correo fueron autorizados después, implementados y desplegados únicamente a staging desde el 30 de septiembre. La autorización dinámica de contactos institucionales de Coordinaciones quedó desplegada el 3 de octubre. Producción permanece fuera de alcance.
 
 ## Contexto
 
@@ -30,6 +30,7 @@ Firebase no ofrece una transacción atómica entre Firestore, Google Calendar y 
 16. El reemplazo de PDF confirma primero la referencia nueva; los archivos huérfanos se purgan después de 24 horas.
 17. Eventos utiliza paginación por cursor de 25 registros.
 18. Calendar y SMTP se validan en staging con recursos sintéticos y destinatarios controlados.
+19. La autorización SMTP admite la lista fija del ambiente y, adicionalmente, trabajos protegidos de tipo `coordinacion` o `sistemas` con `coordinacionId` canónico y correo del dominio institucional. La procedencia se fotografía al crear el trabajo para conservar reintentos e históricos sin releer datos mutables; correos libres y creadores fuera de la lista fija continúan bloqueados.
 
 ## Consecuencias positivas
 

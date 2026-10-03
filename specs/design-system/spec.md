@@ -161,6 +161,18 @@ La misma regla de fuente única aplica a:
 
 Una diferencia de contenido o distribución entre módulos no autoriza una variante nueva de color, tamaño, tipografía, radio o interacción. Toda variante nueva debe incorporarse primero a este documento y a los tokens/primitivas globales.
 
+### Composición estándar de módulos administrativos
+
+Las vistas de catálogo y operación conservan este orden visual cuando el bloque aplica:
+
+1. encabezado de página dentro de `panel`, con `eyebrow`, título, ayuda y acción primaria;
+2. alertas de error o éxito fuera de los paneles, inmediatamente después del encabezado;
+3. panel de controles para búsqueda, filtros o cambio de vista;
+4. panel de listado con encabezado, estado de carga/vacío/error, tabla de escritorio, tarjetas móviles y paginación;
+5. diálogos de captura, consulta o confirmación al final del árbol de la vista.
+
+`Eventos` puede combinar el cambio `Listado`/`Calendario` con la búsqueda en su panel de controles, porque es una extensión funcional definida, pero no crea variantes visuales de panel, alerta, tabla, tooltip o acciones. El encabezado del listado usa separación de 16 px y relleno de 20 px, igual que los demás catálogos. Las acciones de escritorio usan iconos del sistema compartido y tooltip visible con puntero o foco; en móvil usan botones con texto dentro de `card-actions`. Todos los encabezados de tabla declaran `scope="col"`.
+
 ### Auditoría de conformidad — 21 de agosto de 2026
 
 | Superficie        | Estado verificado               | Hallazgo                                                                                  |
@@ -171,7 +183,7 @@ Una diferencia de contenido o distribución entre módulos no autoriza una varia
 | Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
 | Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
 
-La corrección local retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. La aceptación visual continúa pendiente hasta completar la comparación autenticada; staging conserva la versión anterior mientras no exista autorización de despliegue.
+La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. El Hosting vigente de staging incorpora estas primitivas; la aceptación visual autenticada y responsive continúa pendiente.
 
 ### Verificación obligatoria de normalización
 
@@ -180,7 +192,7 @@ Una corrección visual transversal debe demostrar:
 1. Ausencia de redefiniciones locales de los selectores compartidos prohibidos.
 2. Uso de tokens semánticos para marca, estados, superficies, bordes y foco.
 3. Igualdad de altura, radio, tipografía, iconografía y estados para acciones equivalentes.
-4. Comparación autenticada de Usuarios, Coordinaciones, Campus y Equipos en escritorio, tableta y 320 px.
+4. Comparación autenticada de Dashboard, Eventos, Usuarios, Coordinaciones, Campus y Equipos en escritorio, tableta y 320 px.
 5. Recorrido por teclado de hover/focus, disabled, loading, error, éxito y diálogos.
 6. Pruebas Angular, lint, formato y build aprobados antes de cualquier despliegue de la corrección.
 7. `npm run lint:visual` aprobado como guardia obligatoria de todos los módulos.
@@ -258,7 +270,6 @@ Cada control interactivo debe definir:
 │                  │                                                  │
 │ [■] Dashboard    │  CONTENIDO DE LA RUTA                            │
 │ [ ] Eventos      │  Superficie institucional                        │
-│     Próximamente │                                                  │
 │ [ ] Coordinac.*  │                                                  │
 │ [ ] Campus*       │                                                  │
 │ [ ] Equipos*      │                                                  │
@@ -267,7 +278,7 @@ Cada control interactivo debe definir:
 │ Cerrar sesión    │                                                  │
 │ [Avatar] Perfil  │                                                  │
 └──────────────────┴──────────────────────────────────────────────────┘
-* Solo admin. Usuarios, Coordinaciones, Campus y Equipos están habilitados; Eventos permanece documentado y deshabilitado hasta autorizarlo.
+* Solo admin. Campus, Coordinaciones, Equipos y Usuarios están habilitados para `admin`; Dashboard y Eventos están habilitados para ambos roles autorizados.
 ```
 
 ## Wireframe del shell administrativo — móvil
@@ -286,7 +297,7 @@ Menú abierto:
 │ [TUP] SISTEMA        │ overlay  │
 │ [×]                  │          │
 │ Dashboard            │          │
-│ Eventos Próximamente │          │
+│ Eventos              │          │
 │ Coordinaciones*      │          │
 │ Campus*              │          │
 │ Equipos*             │          │
@@ -304,6 +315,27 @@ Menú abierto:
 - El área principal mantiene máximo 1280 px, padding fluido y un encabezado de página legible.
 - Iconografía de navegación: SVG lineal coherente, tamaño 20–22 px y texto siempre visible.
 - El estado activo combina superficie clara, peso tipográfico e indicador lateral; no depende solo del color.
+
+## Wireframe de Dashboard — escritorio
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│ PANEL INSTITUCIONAL  Bienvenido, Omar                               │
+│ Resumen operativo actualizado con datos del sistema                 │
+├──────────────┬──────────────┬──────────────┬────────────────────────┤
+│ Eventos      │ Próximos 30d │ Usuarios     │ Con protocolo          │
+│     42       │      6       │      3       │       39                │
+├────────────────────────────────────┬─────────────────────────────────┤
+│ Próximos eventos                   │ Actividad reciente              │
+│ Evento │ Fecha │ Responsable │ ... │ Actualización · Evento · fecha │
+└────────────────────────────────────┴─────────────────────────────────┘
+```
+
+- Las cuatro KPI cards usan la misma superficie, borde, radio y elevación; el color puede diferenciar el icono, pero el significado permanece en etiqueta y valor.
+- Los valores usan números tabulares y nunca muestran `0` mientras cargan. Una sección no disponible muestra `—` y texto de advertencia.
+- Próximos eventos ocupa el área principal; Actividad reciente usa una lista semántica. Ambas superficies conservan encabezado, estado vacío y separación coherentes con los módulos.
+- Debajo de 900 px las dos superficies se apilan. Debajo de 720 px los KPI forman una cuadrícula de dos columnas y la tabla cambia a tarjetas; a 320 px los KPI usan una columna si el contenido lo requiere.
+- No se agregan gráficas, porcentajes, tendencias decorativas, enlaces o acciones no definidos por la spec.
 
 ## Wireframe de Coordinaciones — escritorio
 
@@ -361,7 +393,7 @@ Menú abierto:
 - Un equipo utilizado muestra la restricción histórica y deshabilita eliminación con ayuda contextual.
 - En móvil cada equipo se presenta como tarjeta con nombre, campus, cantidad, clasificación, destinos, estado y las mismas acciones.
 
-## Apartado futuro de Equipos en Eventos
+## Apartado de Equipos en Eventos
 
 ```text
 ┌ Equipos requeridos ─────────────────────────────────────────────────────┐
@@ -377,7 +409,7 @@ Menú abierto:
 - El formulario no presenta cantidades provenientes del catálogo sanitizado como si fueran disponibilidad.
 - Una solicitud insuficiente explica la cantidad requerida y la confirmable, sin hacer asignación parcial.
 - `requiere revisión`, cobertura pendiente, traslado y hora de liberación se presentan como estados separados.
-- Este apartado permanece sin autorización de código hasta aprobar reservaciones y Eventos.
+- Este apartado está implementado conforme a `modulo-equipos/reservaciones.md` y `modulo-eventos/spec.md`; la disponibilidad visible no sustituye la revalidación transaccional final.
 
 ## Apartado de Coordinaciones en Eventos
 
@@ -395,7 +427,7 @@ Menú abierto:
 - Una coordinación histórica suspendida se muestra con texto “Suspendida”; el estado no depende solo del color.
 - Calendar pendiente y notificaciones pendientes se muestran como estados separados.
 
-## Wireframe futuro de Eventos — listado y calendario
+## Wireframe de Eventos — listado y calendario
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -420,6 +452,13 @@ Menú abierto:
 - Navegación de rango conserva foco predecible y anuncia carga, vacío, error y periodo mostrado.
 - Un evento de varios días se muestra como un bloque continuo, incluidas noches; la información de equipo permanece separada.
 - La vista consume Firestore por intervalo visible y no representa Google Calendar como fuente de verdad.
+- En mes, los eventos se presentan como bloques compactos con nombre y estado; no se usa la variante de punto para el catálogo institucional. Un intervalo de varias fechas cubre visualmente cada día ocupado y usa la fecha posterior a `fechaFin` únicamente como final exclusivo de FullCalendar.
+- FullCalendar 7 consume sus hojas `skeleton`, `theme` y `palette`, y se personaliza solo mediante variables del tema, propiedades públicas de evento y selectores semánticos propios `calendar-event*`; quedan prohibidos los selectores internos `fc-*` de versiones anteriores. El popover de acumulación limita su altura al viewport, permite desplazamiento y conserva bloques separados por estado.
+- La cuadrícula usa borde semántico, encabezados sutiles, día actual destacado, filas limitadas con enlace “más” y botones coherentes con los controles administrativos. Una leyenda con texto identifica los cuatro estados sin depender solo del color.
+- En semana, día y lista se conserva acceso al detalle y al intervalo horario canónico. La proyección de ocupación visual nunca modifica las fechas ni horas almacenadas.
+- En el listado de escritorio, `Acciones` usa ojo para consultar, lápiz para editar y papelera para cancelar; todos consumen `icon-button`, tienen tooltip, nombre accesible y el mismo tamaño. Editar y cancelar solo se renderizan para el creador de un evento no cancelado.
+- En tarjetas móviles se conservan las mismas acciones mediante botones con texto; no se obliga al creador a abrir el detalle para editar o cancelar.
+- La columna operativa `Integración` y sus estados Calendar/correo se renderizan únicamente para `admin`. Un perfil `usuario` no recibe una columna vacía ni contenido oculto por CSS.
 
 ## Reglas visuales del formulario de Eventos
 
@@ -429,6 +468,17 @@ Menú abierto:
 - Correcciones permitidas, reducción de equipos y cancelación continúan disponibles conforme a la spec.
 - El detalle separa claramente estado del evento, integración Calendar, correo, cobertura de Sistemas y logística de equipos.
 - La acción destructiva se denomina “Cancelar evento”, explica que conserva un registro histórico y requiere confirmación; no usa “Eliminar” para el flujo nuevo.
+
+## Correos transaccionales de Eventos
+
+- Ancho máximo de contenido: 600 px, fondo general `#f8f9fb`, superficie blanca, borde `#dfe3ea` y tipografía de sistema segura para clientes de correo.
+- Encabezado con `#252a86`, texto blanco y la identidad textual “Sistema de Eventos TUP”; la plantilla no depende de un logotipo o fuente remota para ser reconocible.
+- `Confirmación`, `Actualización`, `Retiro de coordinación`, `Cancelación` y `Aviso logístico` se muestran como texto además de usar colores semánticos.
+- El nombre del evento encabeza el contenido. Los datos principales se presentan como pares etiqueta/valor; coordinaciones, equipos, observaciones y cambios se muestran solo cuando existan.
+- Cancelación usa la paleta de error; logística usa advertencia; confirmación usa éxito; actualización conserva el primario institucional. El contraste debe permanecer legible aunque el cliente altere colores.
+- Todo estilo es inline y compatible con Gmail; se usan tablas de presentación para la estructura, sin scripts, formularios, animaciones, hojas externas, imágenes remotas o píxeles de seguimiento.
+- En móvil, el contenido usa el ancho disponible, tipografía mínima de 16 px para cuerpo y espaciado táctil, aunque no contiene acciones interactivas.
+- Cada correo tiene alternativa de texto plano con el mismo significado y un pie que identifica el envío automático y remite a la persona responsable para solicitar cambios.
 
 ## Restricciones
 

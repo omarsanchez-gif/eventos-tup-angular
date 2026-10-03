@@ -18,6 +18,12 @@ const messages: Readonly<Record<string, string>> = {
   'invalid-campus-schedule': 'No existe una ventana logística válida para el equipo.',
   'calendar-range-invalid': 'El calendario admite intervalos de hasta 42 fechas.',
   'invalid-pdf': 'El protocolo debe ser un PDF válido menor a 10 MiB.',
+  'event-not-found': 'El evento ya no existe.',
+  'event-cancelled': 'El evento cancelado es de solo lectura.',
+  'event-update-restricted':
+    'El cambio solicitado no está permitido dentro del límite de anticipación.',
+  'reservation-not-found': 'La reservación de equipo ya no existe.',
+  'reservation-state-invalid': 'La reservación ya no admite esta acción.',
   'service-unavailable': 'El servicio de eventos no está disponible. Intente nuevamente.',
 };
 

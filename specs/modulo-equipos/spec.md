@@ -2,7 +2,7 @@
 
 ## Estado
 
-Incremento A del catálogo implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La aceptación manual continúa pendiente. Reservaciones, disponibilidad, operación logística, Eventos y producción requieren autorización separada.
+El catálogo fue implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. Reservaciones, disponibilidad y operación logística fueron autorizadas después mediante ADR-009, se integraron con Eventos y están desplegadas únicamente a staging. El Hosting vigente incorpora la normalización visual compartida. La aceptación manual continúa pendiente y producción no está autorizada.
 
 ## Objetivo
 
@@ -43,7 +43,7 @@ Administrar el inventario utilizable por campus y preparar un contrato canónico
 - Montaje, desmontaje, traslado, regreso, recepción, demora y cobertura de Sistemas.
 - Integración con Eventos y notificaciones a la coordinación canónica de Sistemas.
 
-El incremento B está documentado en `reservaciones.md`, pero no queda autorizado por implementar el incremento A.
+El incremento B está documentado en `reservaciones.md`; fue autorizado separadamente el 29 de septiembre de 2026, implementado y desplegado únicamente a staging con Eventos.
 
 ## Modelo canónico del catálogo
 
@@ -145,7 +145,7 @@ El catálogo sanitizado contiene solo `equipoId`, nombre, campus base, clasifica
 
 La normalización local del 21 de agosto de 2026 eliminó de Equipos las declaraciones privadas de `.button`, sus variantes, `.icon-button` y sus estados. Encabezados, paneles, campos, badges, alertas, tooltips, diálogos y spinners consumen tokens globales cuando comparten semántica con los demás catálogos.
 
-La hoja encapsulada conserva únicamente distribución del listado y formulario de Equipos. `npm run lint:visual` impide reintroducir selectores compartidos o los colores `#3c108e`, `#2e0a70` y `#321070`. La comparación visual autenticada y la publicación de la corrección en staging continúan pendientes.
+La hoja encapsulada conserva únicamente distribución del listado y formulario de Equipos. `npm run lint:visual` impide reintroducir selectores compartidos o los colores `#3c108e`, `#2e0a70` y `#321070`. La corrección forma parte del Hosting vigente de staging; la comparación visual autenticada continúa pendiente.
 
 ## Reglas de edición e históricos
 

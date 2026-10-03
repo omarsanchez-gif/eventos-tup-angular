@@ -1,21 +1,21 @@
-<section class="calendar-page">
-  <header class="calendar-panel page-header">
+<section class="calendar-page" aria-labelledby="calendar-page-title">
+  <header class="panel page-header">
     <div>
       <p class="eyebrow">Gestión institucional</p>
-      <h1>Calendario de eventos</h1>
+      <h1 id="calendar-page-title">Calendario de eventos</h1>
       <p>Vista canónica de Firestore; Google Calendar no es la fuente de lectura.</p>
     </div>
     <a class="button button--primary" routerLink="/eventos">Volver al listado</a>
   </header>
 
   @if (events.error(); as error) {
-    <div class="calendar-alert" role="alert">
+    <div class="alert alert--error" role="alert">
       <span>{{ error }}</span
       ><button type="button" aria-label="Cerrar mensaje" (click)="events.clearError()">×</button>
     </div>
   }
 
-  <section class="calendar-panel toolbar" aria-label="Filtros de calendario">
+  <section class="panel toolbar" aria-label="Filtros de calendario">
     <nav class="view-switch" aria-label="Vista de eventos">
       <a class="view-switch__item" routerLink="/eventos">Listado</a
       ><a
@@ -45,7 +45,26 @@
     </div>
   </section>
 
-  <section class="calendar-panel calendar-container" [attr.aria-busy]="events.calendarLoading()">
+  <section
+    class="panel calendar-container"
+    aria-labelledby="calendar-board-title"
+    [attr.aria-busy]="events.calendarLoading()"
+  >
+    <header class="calendar-overview">
+      <div>
+        <h2 id="calendar-board-title">Agenda institucional</h2>
+        <p>Seleccione un evento para consultar el intervalo, campus y responsable.</p>
+        <p class="calendar-guidance">
+          Los eventos de varios días ocupan cada fecha del intervalo en una franja continua.
+        </p>
+      </div>
+      <ul class="status-legend" aria-label="Estados de los eventos">
+        <li><span class="status-dot status-dot--scheduled"></span>Programado</li>
+        <li><span class="status-dot status-dot--active"></span>En ejecución</li>
+        <li><span class="status-dot status-dot--finished"></span>Finalizado</li>
+        <li><span class="status-dot status-dot--cancelled"></span>Cancelado</li>
+      </ul>
+    </header>
     @if (events.calendarLoading()) {
       <p class="loading-state" role="status">
         <span class="spinner" aria-hidden="true"></span>Cargando intervalo…
@@ -109,8 +128,22 @@
           <dt>Equipamiento</dt>
           <dd>{{ event.equipmentCount }} {{ event.equipmentCount === 1 ? 'tipo' : 'tipos' }}</dd>
         </div>
+        <div>
+          <dt>Calendar</dt>
+          <dd>{{ integrationLabel(event.calendarStatus) }}</dd>
+        </div>
+        <div>
+          <dt>Notificaciones</dt>
+          <dd>{{ integrationLabel(event.notificationStatus) }}</dd>
+        </div>
       </dl>
       <footer>
+        <a
+          class="button button--secondary"
+          routerLink="/eventos"
+          [queryParams]="{ eventId: event.eventId }"
+          >Gestionar evento</a
+        >
         <button class="button button--primary" type="button" (click)="closeDetail()">Cerrar</button>
       </footer>
     </section>

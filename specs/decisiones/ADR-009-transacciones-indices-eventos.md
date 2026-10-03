@@ -43,29 +43,37 @@ El documento se crea idempotentemente en la primera operación que afecte al equ
 
 ## Consultas e índices aprobados
 
-`firestore.indexes.json` declarará como mínimo:
+`firestore.indexes.json` declarará como mínimo los índices compuestos que Firestore no cubre automáticamente:
 
 1. Disponibilidad por equipo e intervalo en `reservasEquipo`:
    - `equipoId ASC`
    - `estado ASC`
-   - `bloqueoInicio ASC`
    - `bloqueoFin ASC`
+   - `bloqueoInicio ASC`
 2. Calendario general por superposición en `eventos`:
-   - `inicioAt ASC`
    - `finAt ASC`
+   - `inicioAt ASC`
 3. Calendario filtrado por campus:
    - `campusId ASC`
-   - `inicioAt ASC`
    - `finAt ASC`
-4. Listado administrativo por creación:
-   - `fechaCreacion DESC`
-   - `__name__ DESC`
+   - `inicioAt ASC`
+4. El listado administrativo conserva el orden `fechaCreacion DESC`, `__name__ DESC`, pero usa el índice automático de campo único de Firestore. No se declara como índice compuesto porque el servicio lo rechaza como redundante.
 
 La consulta de superposición usa inicio anterior al fin exclusivo solicitado y fin posterior al inicio inclusivo solicitado. Los eventos sin instantes canónicos se atienden mediante el contrato histórico separado y no amplían silenciosamente la consulta principal.
 
 El estado temporal se deriva después de recuperar el intervalo, por lo que no forma parte del índice. El filtro visual de estado se aplica sobre el resultado acotado a un máximo de 42 fechas y nunca obliga a leer el historial completo.
 
 Los índices se validan primero en Emulator Suite y staging. Después de contar con volumen representativo se usa Query Explain para revisar documentos e índices leídos; cualquier cambio de orden o campos actualiza esta ADR y las pruebas.
+
+### Correcciones operativas del 1 de octubre de 2026
+
+La primera consulta autenticada de disponibilidad en staging devolvió `FAILED_PRECONDITION`: Firestore no reconoció el índice original con `bloqueoInicio` antes de `bloqueoFin` y solicitó explícitamente el orden `equipoId`, `estado`, `bloqueoFin`, `bloqueoInicio`. La consulta de superposición mantiene exactamente los mismos filtros y reglas funcionales; solo se corrige el orden físico del índice conforme al plan exigido por Firestore. La validación de staging debe ejecutar la consulta real y confirmar el índice `READY` antes de considerar recuperada la disponibilidad.
+
+La corrección fue desplegada el mismo día exclusivamente como índice de Firestore. El índice nuevo alcanzó `READY`, la consulta remota equivalente terminó sin `FAILED_PRECONDITION` y el índice anterior se retiró después de esa verificación; no se modificaron Functions, Hosting, datos ni producción.
+
+La primera consulta autenticada del calendario en staging reveló el mismo requisito físico para sus dos desigualdades: Firestore rechazó los índices con `inicioAt` antes de `finAt` y solicitó `finAt`, `inicioAt` para el calendario general, y `campusId`, `finAt`, `inicioAt` para la variante filtrada. Se autoriza invertir únicamente esos campos en `firestore.indexes.json`; la consulta conserva `inicioAt < fin exclusivo del rango` y `finAt > inicio inclusivo`, sin alterar el modelo ni las reglas funcionales.
+
+Ambos índices corregidos fueron desplegados exclusivamente a staging y alcanzaron `READY`. Las consultas remotas general y por campus recuperaron el intervalo superpuesto sin `FAILED_PRECONDITION`; después se retiraron los dos índices de orden inverso. No se desplegaron Functions, Rules ni Hosting, no se modificaron datos y producción no fue utilizada.
 
 ## Consecuencias
 

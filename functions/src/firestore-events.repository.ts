@@ -14,15 +14,18 @@ import {
 import {
   calculateEquipmentBlock,
   EventTimeError,
+  satisfiesEventAdvance,
   scheduleFromUnknown,
   type EquipmentBlockWindow,
   type OperatingSchedule,
 } from './event-time.js';
 import {
   EventsError,
+  buildEventSearchTerms,
   type CanonicalEventRequester,
   type EventAvailabilityInput,
   type EventAvailabilityItem,
+  type EventDetail,
   type EventListInput,
   type EventListResult,
   type EventMutationInput,
@@ -236,8 +239,12 @@ function temporalStatus(
   return 'programado';
 }
 
-function eventSummary(snapshot: QueryDocumentSnapshot<DocumentData>, now: Date): EventSummary {
-  const data = snapshot.data();
+function eventSummary(
+  snapshot: DocumentSnapshot<DocumentData>,
+  now: Date,
+  requesterUid: string,
+): EventSummary {
+  const data = snapshot.data() ?? {};
   const start = dateFromUnknown(data['inicioAt']);
   const end = dateFromUnknown(data['finAt']);
   const campusHistory =
@@ -278,16 +285,28 @@ function eventSummary(snapshot: QueryDocumentSnapshot<DocumentData>, now: Date):
     protocolUrl: typeof data['protocoloUrl'] === 'string' ? data['protocoloUrl'] : null,
     protocolName: typeof data['protocoloNombre'] === 'string' ? data['protocoloNombre'] : null,
     calendarStatus:
-      typeof data['calendarEventId'] === 'string' && data['calendarEventId'] ? 'synced' : 'pending',
+      data['calendarEstado'] === 'sincronizado' ||
+      data['calendarEstado'] === 'error' ||
+      data['calendarEstado'] === 'retirado'
+        ? data['calendarEstado']
+        : 'pendiente',
+    notificationStatus:
+      data['notificacionesEstado'] === 'completas' ||
+      data['notificacionesEstado'] === 'parciales' ||
+      data['notificacionesEstado'] === 'no_aplica'
+        ? data['notificacionesEstado']
+        : 'pendiente',
+    ownedByRequester: data['creadoPorUid'] === requesterUid,
   };
 }
 
 interface DecodedCursor {
   readonly createdAtMillis: number;
   readonly eventId: string;
+  readonly search: string | null;
 }
 
-function decodeCursor(value: string): DecodedCursor {
+function decodeCursor(value: string, expectedSearch: string | null): DecodedCursor {
   try {
     const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Record<
       string,
@@ -298,26 +317,92 @@ function decodeCursor(value: string): DecodedCursor {
       !Number.isFinite(parsed['createdAtMillis']) ||
       typeof parsed['eventId'] !== 'string' ||
       !parsed['eventId'] ||
-      parsed['eventId'].includes('/')
+      parsed['eventId'].includes('/') ||
+      (parsed['search'] !== null && typeof parsed['search'] !== 'string') ||
+      parsed['search'] !== expectedSearch
     ) {
       throw new Error('invalid');
     }
     return {
       createdAtMillis: parsed['createdAtMillis'],
       eventId: parsed['eventId'],
+      search: parsed['search'] as string | null,
     };
   } catch {
     throw new EventsError('invalid-argument', 'invalid-argument', 'El cursor no es válido.');
   }
 }
 
-function encodeCursor(snapshot: QueryDocumentSnapshot<DocumentData>): string | null {
+function encodeCursor(
+  snapshot: QueryDocumentSnapshot<DocumentData>,
+  search: string | null,
+): string | null {
   const createdAt = dateFromUnknown(snapshot.data()['fechaCreacion']);
   return createdAt
     ? Buffer.from(
-        JSON.stringify({ createdAtMillis: createdAt.getTime(), eventId: snapshot.id }),
+        JSON.stringify({ createdAtMillis: createdAt.getTime(), eventId: snapshot.id, search }),
       ).toString('base64url')
     : null;
+}
+
+function stringArray(value: unknown): readonly string[] {
+  return Array.isArray(value)
+    ? value.filter((item: unknown): item is string => typeof item === 'string')
+    : [];
+}
+
+function reviewReasons(
+  value: unknown,
+): readonly ('cobertura_sistemas' | 'inventario_reducido' | 'coordinacion_sistemas')[] {
+  return stringArray(value).filter(
+    (item): item is 'cobertura_sistemas' | 'inventario_reducido' | 'coordinacion_sistemas' =>
+      item === 'cobertura_sistemas' ||
+      item === 'inventario_reducido' ||
+      item === 'coordinacion_sistemas',
+  );
+}
+
+interface LogisticsNotificationVersions {
+  readonly cobertura_sistemas: number | null;
+  readonly inventario_reducido: number | null;
+  readonly cambio_incompatible: number | null;
+  readonly demora: number | null;
+  readonly cancelacion_post_salida: number | null;
+}
+
+function logisticsNotificationVersions(value: unknown): LogisticsNotificationVersions {
+  const data = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const version = (key: keyof LogisticsNotificationVersions) =>
+    Number.isInteger(data[key]) && (data[key] as number) > 0 ? (data[key] as number) : null;
+  return {
+    cobertura_sistemas: version('cobertura_sistemas'),
+    inventario_reducido: version('inventario_reducido'),
+    cambio_incompatible: version('cambio_incompatible'),
+    demora: version('demora'),
+    cancelacion_post_salida: version('cancelacion_post_salida'),
+  };
+}
+
+function eventNotFound(): never {
+  throw new EventsError('event-not-found', 'not-found', 'El evento no existe.');
+}
+
+function requireEventOwner(data: DocumentData, requesterUid: string): void {
+  if (data['creadoPorUid'] !== requesterUid) {
+    throw new EventsError(
+      'permission-denied',
+      'permission-denied',
+      'Solo el creador puede modificar este evento.',
+    );
+  }
+}
+
+function timestampRequired(value: unknown, message: string): Date {
+  const date = dateFromUnknown(value);
+  if (!date) {
+    throw new EventsError('service-unavailable', 'failed-precondition', message);
+  }
+  return date;
 }
 
 export function createFirestoreEventsRepository(firestore: Firestore): EventsRepository {
@@ -335,6 +420,11 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
     requesterUid: string,
     input: EventAvailabilityInput | EventMutationInput,
     now: Date,
+    options: {
+      readonly excludeEventId?: string;
+      readonly allowInactiveCoordinationIds?: ReadonlySet<string>;
+      readonly allowPastTransferCutoff?: boolean;
+    } = {},
   ): Promise<{
     readonly requester: CanonicalEventRequester;
     readonly eventCampus: CampusRecord;
@@ -380,7 +470,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       if (!record) {
         throw new EventsError('coordination-not-found', 'not-found', 'Una coordinación no existe.');
       }
-      if (!record.active) {
+      if (!record.active && !options.allowInactiveCoordinationIds?.has(record.id)) {
         throw new EventsError(
           'coordination-inactive',
           'failed-precondition',
@@ -462,7 +552,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             timeStart: input.timeStart,
             dateEnd: input.dateEnd,
             timeEnd: input.timeEnd,
-            now,
+            now: options.allowPastTransferCutoff ? new Date(0) : now,
             requiresTransfer,
             eventCampusSchedule: eventCampus.schedule,
             baseCampusSchedule: baseCampus.schedule,
@@ -498,6 +588,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
     );
     const calculations = blocks.map((item, index): ReservationCalculation => {
       const occupied = (overlappingSnapshots[index]?.docs ?? []).reduce((total, snapshot) => {
+        if (snapshot.data()['eventoId'] === options.excludeEventId) return total;
         const value = snapshot.data()['cantidad'];
         return total + (Number.isInteger(value) && (value as number) > 0 ? (value as number) : 0);
       }, 0);
@@ -545,7 +636,23 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
 
     async checkAvailability(requesterUid, input, now) {
       return firestore.runTransaction(async (transaction) => {
-        const result = await calculate(transaction, requesterUid, input, now);
+        if (input.eventId) {
+          const eventSnapshot = await transaction.get(events.doc(input.eventId));
+          if (!eventSnapshot.exists) eventNotFound();
+          const event = eventSnapshot.data() ?? {};
+          requireEventOwner(event, requesterUid);
+          if (event['estatus'] === 'cancelado') {
+            throw new EventsError(
+              'event-cancelled',
+              'failed-precondition',
+              'Un evento cancelado es de solo lectura.',
+            );
+          }
+        }
+        const result = await calculate(transaction, requesterUid, input, now, {
+          excludeEventId: input.eventId ?? undefined,
+          allowPastTransferCutoff: input.eventId !== null,
+        });
         return availability(result.calculations);
       });
     },
@@ -555,16 +662,17 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       let query: Query<DocumentData> = events
         .orderBy('fechaCreacion', 'desc')
         .orderBy('__name__', 'desc');
+      if (input.search) query = query.where('terminosBusqueda', 'array-contains', input.search);
       if (input.cursor) {
-        const cursor = decodeCursor(input.cursor);
+        const cursor = decodeCursor(input.cursor, input.search);
         query = query.startAfter(Timestamp.fromMillis(cursor.createdAtMillis), cursor.eventId);
       }
       const snapshot = await query.limit(26).get();
       const page = snapshot.docs.slice(0, 25);
       const last = page.at(-1);
       return {
-        items: page.map((document) => eventSummary(document, now)),
-        nextCursor: snapshot.docs.length > 25 && last ? encodeCursor(last) : null,
+        items: page.map((document) => eventSummary(document, now, requesterUid)),
+        nextCursor: snapshot.docs.length > 25 && last ? encodeCursor(last, input.search) : null,
         serverNow: now,
       };
     },
@@ -577,11 +685,97 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       if (input.campusId) query = query.where('campusId', '==', input.campusId);
       const snapshot = await query.get();
       return snapshot.docs
-        .map((document) => eventSummary(document, now))
+        .map((document) => eventSummary(document, now, requesterUid))
         .sort((left, right) => (left.start?.getTime() ?? 0) - (right.start?.getTime() ?? 0));
     },
 
-    async create(requesterUid, input, now) {
+    async getDetail(requesterUid, eventId, now): Promise<EventDetail> {
+      await requireRequester(requesterUid);
+      const [eventSnapshot, reservationSnapshot] = await Promise.all([
+        events.doc(eventId).get(),
+        reservations.where('eventoId', '==', eventId).get(),
+      ]);
+      if (!eventSnapshot.exists) eventNotFound();
+      const data = eventSnapshot.data() ?? {};
+      const summary = eventSummary(eventSnapshot, now, requesterUid);
+      const requestedEquipment = Array.isArray(data['equiposSolicitados'])
+        ? data['equiposSolicitados']
+            .map((item: unknown) => {
+              if (!item || typeof item !== 'object') return null;
+              const record = item as Record<string, unknown>;
+              const classification = record['clasificacion'];
+              if (
+                typeof record['equipoId'] !== 'string' ||
+                typeof record['nombre'] !== 'string' ||
+                !Number.isInteger(record['cantidad']) ||
+                typeof record['campusBaseId'] !== 'string' ||
+                typeof record['campusBaseNombre'] !== 'string' ||
+                (classification !== 'fijo' && classification !== 'transferible')
+              ) {
+                return null;
+              }
+              return {
+                equipmentId: record['equipoId'],
+                name: record['nombre'],
+                quantity: record['cantidad'] as number,
+                baseCampusId: record['campusBaseId'],
+                baseCampusName: record['campusBaseNombre'],
+                classification: classification as 'fijo' | 'transferible',
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null)
+        : [];
+      const reservationDetails = reservationSnapshot.docs
+        .map((snapshot) => {
+          const reservation = snapshot.data();
+          const state = reservation['estado'];
+          const history =
+            reservation['fotografia'] && typeof reservation['fotografia'] === 'object'
+              ? (reservation['fotografia'] as Record<string, unknown>)
+              : {};
+          if (
+            typeof reservation['equipoId'] !== 'string' ||
+            !Number.isInteger(reservation['cantidad']) ||
+            (state !== 'confirmada' &&
+              state !== 'requiere_revision' &&
+              state !== 'finalizada' &&
+              state !== 'cancelada')
+          ) {
+            return null;
+          }
+          const blockStart = dateFromUnknown(reservation['bloqueoInicio']);
+          const blockEnd = dateFromUnknown(reservation['bloqueoFin']);
+          const scheduledRelease = dateFromUnknown(reservation['liberacionProgramada']);
+          if (!blockStart || !blockEnd || !scheduledRelease) return null;
+          return {
+            equipmentId: reservation['equipoId'] as string,
+            equipmentName:
+              typeof history['equipoNombre'] === 'string' ? history['equipoNombre'] : 'Equipo',
+            quantity: reservation['cantidad'] as number,
+            state,
+            reviewReasons: reviewReasons(reservation['motivosRevision']),
+            requiresTransfer: reservation['esTraslado'] === true,
+            blockStart,
+            blockEnd,
+            scheduledRelease,
+            receptionConfirmed: dateFromUnknown(reservation['recepcionConfirmada']),
+            delayReported: reservation['demoraReportada'] === true,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+      const canMutate = summary.ownedByRequester && summary.status !== 'cancelado';
+      return {
+        ...summary,
+        observations: typeof data['observaciones'] === 'string' ? data['observaciones'] : '',
+        coordinationIds: stringArray(data['coordinacionIds']),
+        requestedEquipment,
+        reservations: reservationDetails,
+        canEdit: canMutate,
+        canCancel: canMutate,
+      };
+    },
+
+    async create(requesterUid, input, now, protocolPath) {
       const eventReference = events.doc();
       await firestore.runTransaction(async (transaction) => {
         const result = await calculate(transaction, requesterUid, input, now);
@@ -616,7 +810,10 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           },
           protocoloUrl: input.protocolUrl,
           protocoloNombre: input.protocolName,
+          protocoloRuta: protocolPath,
           calendarEventId: null,
+          calendarEstado: 'pendiente',
+          notificacionesEstado: 'pendiente',
           creadoPorUid: result.requester.uid,
           creadoPorCorreo: result.requester.correo,
           campusId: result.eventCampus.id,
@@ -631,6 +828,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             nombre: record.name,
           })),
           revisionNotificacion: 1,
+          terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
           equipoIds: result.calculations.map((item) => item.equipment.id),
           equiposSolicitados: result.calculations.map((item) => ({
             equipoId: item.equipment.id,
@@ -650,12 +848,24 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           const reservationReference = reservations.doc(
             reservationId(eventReference.id, item.equipment.id),
           );
+          const controlSnapshot = result.controlSnapshots.get(item.equipment.id);
+          const nextControlVersion = positiveVersion(controlSnapshot) + 1;
           transaction.create(reservationReference, {
             eventoId: eventReference.id,
             equipoId: item.equipment.id,
             cantidad: item.requested,
             campusEventoId: result.eventCampus.id,
             estado: item.block.systemsCoverage === 'pendiente' ? 'requiere_revision' : 'confirmada',
+            motivosRevision:
+              item.block.systemsCoverage === 'pendiente' ? ['cobertura_sistemas'] : [],
+            versionesAvisoLogistico: {
+              cobertura_sistemas:
+                item.block.systemsCoverage === 'pendiente' ? nextControlVersion : null,
+              inventario_reducido: null,
+              cambio_incompatible: null,
+              demora: null,
+              cancelacion_post_salida: null,
+            },
             esTraslado: item.block.requiresTransfer,
             bloqueoInicio: Timestamp.fromDate(item.block.start),
             bloqueoFin: Timestamp.fromDate(item.block.end),
@@ -676,12 +886,11 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             fechaCreacion: FieldValue.serverTimestamp(),
             fechaActualizacion: FieldValue.serverTimestamp(),
           });
-          const controlSnapshot = result.controlSnapshots.get(item.equipment.id);
           transaction.set(
             controls.doc(item.equipment.id),
             {
               equipoId: item.equipment.id,
-              version: positiveVersion(controlSnapshot) + 1,
+              version: nextControlVersion,
               fechaActualizacion: FieldValue.serverTimestamp(),
             },
             { merge: true },
@@ -703,6 +912,591 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         });
       });
       return { eventId: eventReference.id };
+    },
+
+    async update(requesterUid, eventId, input, now, protocolPath) {
+      const eventReference = events.doc(eventId);
+      return firestore.runTransaction(async (transaction) => {
+        const eventSnapshot = await transaction.get(eventReference);
+        if (!eventSnapshot.exists) eventNotFound();
+        const previous = eventSnapshot.data() ?? {};
+        requireEventOwner(previous, requesterUid);
+        if (previous['estatus'] === 'cancelado') {
+          throw new EventsError(
+            'event-cancelled',
+            'failed-precondition',
+            'Un evento cancelado es de solo lectura.',
+          );
+        }
+
+        const previousCoordinationIds = new Set(stringArray(previous['coordinacionIds']));
+        const previousEquipmentItems = Array.isArray(previous['equiposSolicitados'])
+          ? previous['equiposSolicitados']
+          : [];
+        const previousEquipment = new Map<string, number>();
+        previousEquipmentItems.forEach((item: unknown) => {
+          if (!item || typeof item !== 'object') return;
+          const record = item as Record<string, unknown>;
+          if (typeof record['equipoId'] === 'string' && Number.isInteger(record['cantidad'])) {
+            previousEquipment.set(record['equipoId'], record['cantidad'] as number);
+          }
+        });
+
+        const previousDateStart =
+          typeof previous['fechaInicio'] === 'string' ? previous['fechaInicio'] : '';
+        const scheduleChanged =
+          previousDateStart !== input.dateStart ||
+          previous['horaInicio'] !== input.timeStart ||
+          previous['fechaFin'] !== input.dateEnd ||
+          previous['horaFin'] !== input.timeEnd;
+        const campusChanged = previous['campusId'] !== input.campusId;
+        const addsOrIncreasesEquipment = input.equipment.some(
+          (item) => item.quantity > (previousEquipment.get(item.equipmentId) ?? 0),
+        );
+        if (
+          previousDateStart &&
+          !satisfiesEventAdvance(previousDateStart, now) &&
+          (campusChanged ||
+            addsOrIncreasesEquipment ||
+            (scheduleChanged && !satisfiesEventAdvance(input.dateStart, now)))
+        ) {
+          throw new EventsError(
+            'event-update-restricted',
+            'failed-precondition',
+            'El cambio solicitado no está permitido después del límite de anticipación.',
+          );
+        }
+
+        const previousReservations = await transaction.get(
+          reservations.where('eventoId', '==', eventId),
+        );
+        const previousReservationByEquipment = new Map(
+          previousReservations.docs
+            .map((snapshot) => [snapshot.data()['equipoId'], snapshot] as const)
+            .filter(
+              (entry): entry is readonly [string, (typeof previousReservations.docs)[number]] =>
+                typeof entry[0] === 'string',
+            ),
+        );
+        const result = await calculate(transaction, requesterUid, input, now, {
+          excludeEventId: eventId,
+          allowInactiveCoordinationIds: previousCoordinationIds,
+          allowPastTransferCutoff: true,
+        });
+        const unavailable = result.calculations.find((item) => item.requested > item.available);
+        if (unavailable) {
+          throw new EventsError(
+            'equipment-unavailable',
+            'failed-precondition',
+            'La disponibilidad cambió. Se conservó el evento anterior.',
+          );
+        }
+
+        const newEquipmentIds = new Set(result.calculations.map((item) => item.equipment.id));
+        const existingReservationIds = new Set(previousReservations.docs.map((item) => item.id));
+        const oldEquipmentIds = new Set(
+          previousReservations.docs
+            .map((snapshot) => snapshot.data()['equipoId'])
+            .filter((value: unknown): value is string => typeof value === 'string'),
+        );
+        const removedEquipmentIds = [...oldEquipmentIds].filter(
+          (equipmentId) => !newEquipmentIds.has(equipmentId),
+        );
+        const changedEquipmentIds = new Set<string>(removedEquipmentIds);
+        result.calculations.forEach((item) => {
+          if (
+            scheduleChanged ||
+            campusChanged ||
+            previousEquipment.get(item.equipment.id) !== item.requested
+          ) {
+            changedEquipmentIds.add(item.equipment.id);
+          }
+        });
+        const removedControlSnapshots =
+          removedEquipmentIds.length > 0
+            ? await transaction.getAll(
+                ...removedEquipmentIds.map((equipmentId) => controls.doc(equipmentId)),
+              )
+            : [];
+        const controlSnapshots = new Map(result.controlSnapshots);
+        removedControlSnapshots.forEach((snapshot) => controlSnapshots.set(snapshot.id, snapshot));
+
+        const notificationChanged =
+          previous['nombreEvento'] !== input.name ||
+          scheduleChanged ||
+          JSON.stringify([...previousCoordinationIds].sort()) !==
+            JSON.stringify([...input.coordinationIds].sort());
+        const currentRevision = Number.isInteger(previous['revisionNotificacion'])
+          ? (previous['revisionNotificacion'] as number)
+          : 0;
+        const revision = notificationChanged ? currentRevision + 1 : currentRevision;
+        const previousProtocolPath =
+          typeof previous['protocoloRuta'] === 'string' ? previous['protocoloRuta'] : null;
+        const previousNotificationState =
+          previous['notificacionesEstado'] === 'pendiente' ||
+          previous['notificacionesEstado'] === 'completas' ||
+          previous['notificacionesEstado'] === 'parciales' ||
+          previous['notificacionesEstado'] === 'no_aplica'
+            ? previous['notificacionesEstado']
+            : 'no_aplica';
+        const previousCalendarState =
+          previous['calendarEstado'] === 'pendiente' ||
+          previous['calendarEstado'] === 'sincronizado' ||
+          previous['calendarEstado'] === 'error' ||
+          previous['calendarEstado'] === 'retirado'
+            ? previous['calendarEstado']
+            : typeof previous['calendarEventId'] === 'string'
+              ? 'sincronizado'
+              : 'pendiente';
+
+        transaction.update(eventReference, {
+          nombreEvento: input.name,
+          fechaInicio: input.dateStart,
+          horaInicio: input.timeStart,
+          fechaFin: input.dateEnd,
+          horaFin: input.timeEnd,
+          inicioAt: Timestamp.fromDate(input.start),
+          finAt: Timestamp.fromDate(input.end),
+          observaciones: input.observations,
+          protocoloUrl: input.protocolUrl,
+          protocoloNombre: input.protocolName,
+          protocoloRuta: protocolPath,
+          campusId: result.eventCampus.id,
+          campusHistorico: {
+            campusId: result.eventCampus.id,
+            nombre: result.eventCampus.name,
+            direccion: result.eventCampus.address,
+          },
+          coordinacionIds: result.coordinationRecords.map((record) => record.id),
+          coordinacionesInvolucradas: result.coordinationRecords.map((record) => ({
+            coordinacionId: record.id,
+            nombre: record.name,
+          })),
+          revisionNotificacion: revision,
+          notificacionesEstado: notificationChanged ? 'pendiente' : previousNotificationState,
+          calendarEstado:
+            scheduleChanged || previous['nombreEvento'] !== input.name
+              ? 'pendiente'
+              : previousCalendarState,
+          terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
+          equipoIds: result.calculations.map((item) => item.equipment.id),
+          equiposSolicitados: result.calculations.map((item) => ({
+            equipoId: item.equipment.id,
+            nombre: item.equipment.name,
+            cantidad: item.requested,
+            campusBaseId: item.baseCampus.id,
+            campusBaseNombre: item.baseCampus.name,
+            clasificacion: item.equipment.classification,
+          })),
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+
+        result.calculations.forEach((item) => {
+          if (!changedEquipmentIds.has(item.equipment.id)) return;
+          const reservationReference = reservations.doc(reservationId(eventId, item.equipment.id));
+          const previousReservation = previousReservationByEquipment.get(item.equipment.id);
+          const previousReservationData = previousReservation?.data() ?? {};
+          const previousDeparture = dateFromUnknown(previousReservationData['salidaProgramada']);
+          const transferStarted =
+            previousReservationData['esTraslado'] === true &&
+            previousDeparture !== null &&
+            previousDeparture.getTime() <= now.getTime();
+          const nextControlVersion = positiveVersion(controlSnapshots.get(item.equipment.id)) + 1;
+          if (transferStarted) {
+            const previousReasons = reviewReasons(previousReservationData['motivosRevision']);
+            const reasons = [...new Set([...previousReasons, 'coordinacion_sistemas'])];
+            const notificationVersions = logisticsNotificationVersions(
+              previousReservationData['versionesAvisoLogistico'],
+            );
+            const previousStart = dateFromUnknown(previousReservationData['bloqueoInicio']);
+            const previousEnd = dateFromUnknown(previousReservationData['bloqueoFin']);
+            const previousRelease = dateFromUnknown(
+              previousReservationData['liberacionProgramada'],
+            );
+            transaction.update(reservationReference, {
+              cantidad: Math.max(
+                item.requested,
+                typeof previousReservationData['cantidad'] === 'number'
+                  ? previousReservationData['cantidad']
+                  : item.requested,
+              ),
+              estado: 'requiere_revision',
+              motivosRevision: reasons,
+              versionesAvisoLogistico: {
+                ...notificationVersions,
+                cambio_incompatible: nextControlVersion,
+              },
+              bloqueoInicio: Timestamp.fromDate(
+                previousStart && previousStart.getTime() < item.block.start.getTime()
+                  ? previousStart
+                  : item.block.start,
+              ),
+              bloqueoFin: Timestamp.fromDate(
+                previousEnd && previousEnd.getTime() > item.block.end.getTime()
+                  ? previousEnd
+                  : item.block.end,
+              ),
+              liberacionProgramada: Timestamp.fromDate(
+                previousRelease && previousRelease.getTime() > item.block.release.getTime()
+                  ? previousRelease
+                  : item.block.release,
+              ),
+              fechaActualizacion: FieldValue.serverTimestamp(),
+            });
+            return;
+          }
+          transaction.set(
+            reservationReference,
+            {
+              eventoId: eventId,
+              equipoId: item.equipment.id,
+              cantidad: item.requested,
+              campusEventoId: result.eventCampus.id,
+              estado:
+                item.block.systemsCoverage === 'pendiente' ? 'requiere_revision' : 'confirmada',
+              motivosRevision:
+                item.block.systemsCoverage === 'pendiente' ? ['cobertura_sistemas'] : [],
+              versionesAvisoLogistico: {
+                cobertura_sistemas:
+                  item.block.systemsCoverage === 'pendiente' ? nextControlVersion : null,
+                inventario_reducido: null,
+                cambio_incompatible: null,
+                demora: null,
+                cancelacion_post_salida: null,
+              },
+              esTraslado: item.block.requiresTransfer,
+              bloqueoInicio: Timestamp.fromDate(item.block.start),
+              bloqueoFin: Timestamp.fromDate(item.block.end),
+              salidaProgramada: timestampOrNull(item.block.departure),
+              regresoProgramado: timestampOrNull(item.block.returnStart),
+              liberacionProgramada: Timestamp.fromDate(item.block.release),
+              recepcionConfirmada: null,
+              demoraReportada: false,
+              coberturaSistemas: item.block.systemsCoverage,
+              fotografia: {
+                equipoNombre: item.equipment.name,
+                campusBaseId: item.baseCampus.id,
+                campusBaseNombre: item.baseCampus.name,
+                campusEventoId: result.eventCampus.id,
+                campusEventoNombre: result.eventCampus.name,
+                clasificacion: item.equipment.classification,
+              },
+              fechaActualizacion: FieldValue.serverTimestamp(),
+              ...(existingReservationIds.has(reservationId(eventId, item.equipment.id))
+                ? {}
+                : { fechaCreacion: FieldValue.serverTimestamp() }),
+            },
+            { merge: true },
+          );
+          transaction.update(equipment.doc(item.equipment.id), {
+            utilizado: true,
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          });
+        });
+
+        previousReservations.docs.forEach((snapshot) => {
+          const reservation = snapshot.data();
+          const equipmentId = reservation['equipoId'];
+          if (typeof equipmentId !== 'string' || newEquipmentIds.has(equipmentId)) return;
+          const departure = dateFromUnknown(reservation['salidaProgramada']);
+          const transferred = reservation['esTraslado'] === true;
+          const transferStarted = transferred && departure && departure.getTime() <= now.getTime();
+          const reasons = reviewReasons(reservation['motivosRevision']);
+          const notificationVersions = logisticsNotificationVersions(
+            reservation['versionesAvisoLogistico'],
+          );
+          const nextControlVersion = positiveVersion(controlSnapshots.get(equipmentId)) + 1;
+          transaction.update(snapshot.ref, {
+            estado: transferStarted ? 'requiere_revision' : 'cancelada',
+            ...(transferStarted
+              ? {
+                  motivosRevision: [...new Set([...reasons, 'coordinacion_sistemas'])],
+                  versionesAvisoLogistico: {
+                    ...notificationVersions,
+                    cambio_incompatible: nextControlVersion,
+                  },
+                }
+              : {
+                  bloqueoFin: Timestamp.fromDate(now),
+                  liberacionProgramada: Timestamp.fromDate(now),
+                }),
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          });
+        });
+
+        changedEquipmentIds.forEach((equipmentId) => {
+          transaction.set(
+            controls.doc(equipmentId),
+            {
+              equipoId: equipmentId,
+              version: positiveVersion(controlSnapshots.get(equipmentId)) + 1,
+              fechaActualizacion: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        });
+        transaction.update(campuses.doc(result.eventCampus.id), {
+          utilizado: true,
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+        result.coordinationRecords.forEach((record) => {
+          transaction.update(coordinations.doc(record.id), {
+            utilizada: true,
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          });
+        });
+        return { eventId, previousProtocolPath, revision, notificationChanged };
+      });
+    },
+
+    async cancel(requesterUid, eventId, now) {
+      const eventReference = events.doc(eventId);
+      return firestore.runTransaction(async (transaction) => {
+        const eventSnapshot = await transaction.get(eventReference);
+        if (!eventSnapshot.exists) eventNotFound();
+        const event = eventSnapshot.data() ?? {};
+        requireEventOwner(event, requesterUid);
+        const protocolPath =
+          typeof event['protocoloRuta'] === 'string' ? event['protocoloRuta'] : null;
+        if (event['estatus'] === 'cancelado') return { eventId, protocolPath };
+
+        const reservationSnapshot = await transaction.get(
+          reservations.where('eventoId', '==', eventId),
+        );
+        const equipmentIds = [
+          ...new Set(
+            reservationSnapshot.docs
+              .map((snapshot) => snapshot.data()['equipoId'])
+              .filter((value: unknown): value is string => typeof value === 'string'),
+          ),
+        ].sort();
+        const controlSnapshots =
+          equipmentIds.length > 0
+            ? await transaction.getAll(...equipmentIds.map((id) => controls.doc(id)))
+            : [];
+        const controlById = new Map(
+          controlSnapshots.map((snapshot) => [snapshot.id, snapshot] as const),
+        );
+
+        reservationSnapshot.docs.forEach((snapshot) => {
+          const reservation = snapshot.data();
+          const departure = dateFromUnknown(reservation['salidaProgramada']);
+          const transferred = reservation['esTraslado'] === true;
+          const transferStarted = transferred && departure && departure.getTime() <= now.getTime();
+          const equipmentId = reservation['equipoId'];
+          const notificationVersions = logisticsNotificationVersions(
+            reservation['versionesAvisoLogistico'],
+          );
+          const nextControlVersion =
+            typeof equipmentId === 'string'
+              ? positiveVersion(controlById.get(equipmentId)) + 1
+              : null;
+          transaction.update(snapshot.ref, {
+            estado: transferStarted ? reservation['estado'] : 'cancelada',
+            ...(transferStarted
+              ? {
+                  versionesAvisoLogistico: {
+                    ...notificationVersions,
+                    cancelacion_post_salida: nextControlVersion,
+                  },
+                }
+              : {
+                  bloqueoFin: Timestamp.fromDate(now),
+                  liberacionProgramada: Timestamp.fromDate(now),
+                }),
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          });
+        });
+        equipmentIds.forEach((equipmentId) => {
+          transaction.set(
+            controls.doc(equipmentId),
+            {
+              equipoId: equipmentId,
+              version: positiveVersion(controlById.get(equipmentId)) + 1,
+              fechaActualizacion: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        });
+        const revision =
+          (Number.isInteger(event['revisionNotificacion'])
+            ? (event['revisionNotificacion'] as number)
+            : 0) + 1;
+        transaction.update(eventReference, {
+          estatus: 'cancelado',
+          fechaCancelacion: Timestamp.fromDate(now),
+          canceladoPorUid: requesterUid,
+          protocoloUrl: null,
+          protocoloNombre: null,
+          protocoloRuta: null,
+          calendarEstado: 'pendiente',
+          notificacionesEstado: 'pendiente',
+          revisionNotificacion: revision,
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+        return { eventId, protocolPath };
+      });
+    },
+
+    async confirmCoverage(requesterUid, eventId, equipmentId) {
+      const requester = await requireRequester(requesterUid);
+      if (requester.role !== 'admin') {
+        throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+      }
+      const reservationReference = reservations.doc(reservationId(eventId, equipmentId));
+      await firestore.runTransaction(async (transaction) => {
+        const [eventSnapshot, reservationSnapshot, controlSnapshot] = await transaction.getAll(
+          events.doc(eventId),
+          reservationReference,
+          controls.doc(equipmentId),
+        );
+        if (!eventSnapshot?.exists) eventNotFound();
+        if (!reservationSnapshot?.exists) {
+          throw new EventsError('reservation-not-found', 'not-found', 'La reservación no existe.');
+        }
+        const reservation = reservationSnapshot.data() ?? {};
+        const reasons = reviewReasons(reservation['motivosRevision']);
+        if (!reasons.includes('cobertura_sistemas')) return;
+        if (reservation['estado'] === 'cancelada' || reservation['estado'] === 'finalizada') {
+          throw new EventsError(
+            'reservation-state-invalid',
+            'failed-precondition',
+            'La reservación ya no admite esta acción.',
+          );
+        }
+        const remaining = reasons.filter((reason) => reason !== 'cobertura_sistemas');
+        const notificationVersions = logisticsNotificationVersions(
+          reservation['versionesAvisoLogistico'],
+        );
+        transaction.update(reservationReference, {
+          motivosRevision: remaining,
+          coberturaSistemas: 'confirmada',
+          estado: remaining.length === 0 ? 'confirmada' : 'requiere_revision',
+          versionesAvisoLogistico: {
+            ...notificationVersions,
+            cobertura_sistemas: null,
+          },
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+        transaction.set(
+          controls.doc(equipmentId),
+          {
+            equipoId: equipmentId,
+            version: positiveVersion(controlSnapshot) + 1,
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      });
+    },
+
+    async confirmReception(requesterUid, eventId, equipmentId, now) {
+      const requester = await requireRequester(requesterUid);
+      if (requester.role !== 'admin') {
+        throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+      }
+      const reservationReference = reservations.doc(reservationId(eventId, equipmentId));
+      await firestore.runTransaction(async (transaction) => {
+        const [eventSnapshot, reservationSnapshot, controlSnapshot] = await transaction.getAll(
+          events.doc(eventId),
+          reservationReference,
+          controls.doc(equipmentId),
+        );
+        if (!eventSnapshot?.exists) eventNotFound();
+        if (!reservationSnapshot?.exists) {
+          throw new EventsError('reservation-not-found', 'not-found', 'La reservación no existe.');
+        }
+        const reservation = reservationSnapshot.data() ?? {};
+        if (reservation['estado'] === 'finalizada' && reservation['recepcionConfirmada']) return;
+        if (reservation['estado'] === 'cancelada') {
+          throw new EventsError(
+            'reservation-state-invalid',
+            'failed-precondition',
+            'La reservación ya no admite esta acción.',
+          );
+        }
+        transaction.update(reservationReference, {
+          estado: 'finalizada',
+          bloqueoFin: Timestamp.fromDate(now),
+          liberacionProgramada: Timestamp.fromDate(now),
+          recepcionConfirmada: Timestamp.fromDate(now),
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+        transaction.set(
+          controls.doc(equipmentId),
+          {
+            equipoId: equipmentId,
+            version: positiveVersion(controlSnapshot) + 1,
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      });
+    },
+
+    async reportDelay(requesterUid, eventId, equipmentId, release, now) {
+      const requester = await requireRequester(requesterUid);
+      if (requester.role !== 'admin') {
+        throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+      }
+      const reservationReference = reservations.doc(reservationId(eventId, equipmentId));
+      await firestore.runTransaction(async (transaction) => {
+        const [eventSnapshot, reservationSnapshot, controlSnapshot] = await transaction.getAll(
+          events.doc(eventId),
+          reservationReference,
+          controls.doc(equipmentId),
+        );
+        if (!eventSnapshot?.exists) eventNotFound();
+        if (!reservationSnapshot?.exists) {
+          throw new EventsError('reservation-not-found', 'not-found', 'La reservación no existe.');
+        }
+        const reservation = reservationSnapshot.data() ?? {};
+        if (reservation['estado'] === 'cancelada' || reservation['estado'] === 'finalizada') {
+          throw new EventsError(
+            'reservation-state-invalid',
+            'failed-precondition',
+            'La reservación ya no admite esta acción.',
+          );
+        }
+        const returnStart = timestampRequired(
+          reservation['regresoProgramado'],
+          'La reservación no tiene un regreso programado.',
+        );
+        if (release.getTime() <= now.getTime() || release.getTime() <= returnStart.getTime()) {
+          throw new EventsError(
+            'invalid-argument',
+            'invalid-argument',
+            'La nueva liberación debe ser posterior al regreso previsto.',
+          );
+        }
+        const currentRelease = dateFromUnknown(reservation['liberacionProgramada']);
+        if (
+          reservation['demoraReportada'] === true &&
+          currentRelease?.getTime() === release.getTime()
+        ) {
+          return;
+        }
+        const nextControlVersion = positiveVersion(controlSnapshot) + 1;
+        transaction.update(reservationReference, {
+          demoraReportada: true,
+          liberacionProgramada: Timestamp.fromDate(release),
+          bloqueoFin: Timestamp.fromDate(release),
+          versionesAvisoLogistico: {
+            ...logisticsNotificationVersions(reservation['versionesAvisoLogistico']),
+            demora: nextControlVersion,
+          },
+          fechaActualizacion: FieldValue.serverTimestamp(),
+        });
+        transaction.set(
+          controls.doc(equipmentId),
+          {
+            equipoId: equipmentId,
+            version: nextControlVersion,
+            fechaActualizacion: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      });
     },
   };
 }

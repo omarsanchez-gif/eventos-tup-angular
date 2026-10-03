@@ -1,8 +1,8 @@
-<section class="events-page">
-  <header class="events-panel page-header">
+<section class="events-page" aria-labelledby="events-title">
+  <header class="panel page-header">
     <div>
       <p class="eyebrow">Gestión institucional</p>
-      <h1>Eventos</h1>
+      <h1 id="events-title">Eventos</h1>
       <p>Registre eventos con cinco fechas naturales de anticipación.</p>
     </div>
     <button class="button button--primary" type="button" (click)="openCreate()">
@@ -16,19 +16,19 @@
   </header>
 
   @if (events.error(); as error) {
-    <div class="event-alert event-alert--error" role="alert">
+    <div class="alert alert--error" role="alert">
       <span>{{ error }}</span>
       <button type="button" aria-label="Cerrar mensaje" (click)="events.clearError()">×</button>
     </div>
   }
   @if (events.notice(); as notice) {
-    <div class="event-alert event-alert--success" role="status">
+    <div class="alert alert--success" role="status">
       <span>{{ notice }}</span>
       <button type="button" aria-label="Cerrar mensaje" (click)="events.clearNotice()">×</button>
     </div>
   }
 
-  <section class="events-panel toolbar" aria-label="Vista y búsqueda de eventos">
+  <section class="panel toolbar" aria-label="Vista y búsqueda de eventos">
     <nav class="view-switch" aria-label="Vista de eventos">
       <a
         class="view-switch__item view-switch__item--active"
@@ -40,7 +40,7 @@
     </nav>
     <form [formGroup]="searchForm" (submit)="$event.preventDefault()">
       <label for="event-search" class="search-field">
-        <span class="sr-only">Buscar en esta página por evento, responsable o campus</span>
+        <span class="sr-only">Buscar en todos los eventos por nombre o responsable</span>
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-4-4" />
@@ -49,7 +49,7 @@
           id="event-search"
           type="search"
           formControlName="term"
-          placeholder="Buscar en esta página"
+          placeholder="Buscar evento o responsable"
           (input)="applySearch($event)"
         />
       </label>
@@ -59,10 +59,13 @@
         </button>
       }
     </form>
+    @if (events.searchHint(); as hint) {
+      <p class="search-hint" role="status">{{ hint }}</p>
+    }
   </section>
 
   <section
-    class="events-panel list-panel"
+    class="panel list-panel"
     aria-labelledby="events-list-title"
     [attr.aria-busy]="events.loading()"
   >
@@ -78,15 +81,19 @@
       </div>
     } @else if (!events.records().length && !events.error()) {
       <div class="state">
-        <strong>No hay eventos registrados</strong
-        ><span>Cree el primer evento desde “Nuevo evento”.</span>
-      </div>
-    } @else if (!events.filteredRecords().length) {
-      <div class="state">
-        <strong>No hay coincidencias en esta página</strong
-        ><button class="button button--secondary" type="button" (click)="clearSearch()">
-          Limpiar búsqueda
-        </button>
+        <strong>{{
+          events.searchTerm()
+            ? 'No hay coincidencias'
+            : 'No hay eventos
+        registrados'
+        }}</strong>
+        @if (events.searchTerm()) {
+          <button class="button button--secondary" type="button" (click)="clearSearch()">
+            Limpiar búsqueda
+          </button>
+        } @else {
+          <span>Cree el primer evento desde “Nuevo evento”.</span>
+        }
       </div>
     } @else {
       <div class="table-wrap">
@@ -96,13 +103,15 @@
           </caption>
           <thead>
             <tr>
-              <th>Evento</th>
-              <th>Fecha y horario</th>
-              <th>Campus</th>
-              <th>Responsable</th>
-              <th>Estado</th>
-              <th>Integración</th>
-              <th class="actions-heading">Acciones</th>
+              <th scope="col">Evento</th>
+              <th scope="col">Fecha y horario</th>
+              <th scope="col">Campus</th>
+              <th scope="col">Responsable</th>
+              <th scope="col">Estado</th>
+              @if (isAdmin()) {
+                <th scope="col">Integración</th>
+              }
+              <th scope="col" class="actions-heading">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -123,17 +132,22 @@
                     statusLabel(record.status)
                   }}</span>
                 </td>
-                <td>
-                  <span
-                    class="integration-status"
-                    [class.integration-status--pending]="record.calendarStatus === 'pending'"
-                    >{{
-                      record.calendarStatus === 'synced'
-                        ? 'Calendar sincronizado'
-                        : 'Calendar pendiente'
-                    }}</span
-                  >
-                </td>
+                @if (isAdmin()) {
+                  <td>
+                    <span
+                      class="integration-status"
+                      [class.integration-status--pending]="record.calendarStatus !== 'sincronizado'"
+                      >Calendar: {{ integrationLabel(record.calendarStatus) }}</span
+                    >
+                    <span
+                      class="integration-status"
+                      [class.integration-status--pending]="
+                        record.notificationStatus !== 'completas'
+                      "
+                      >Correo: {{ integrationLabel(record.notificationStatus) }}</span
+                    >
+                  </td>
+                }
                 <td>
                   <div class="row-actions">
                     <span class="tooltip-host">
@@ -153,6 +167,44 @@
                         >Ver detalle</span
                       >
                     </span>
+                    @if (canManageFromList(record)) {
+                      <span class="tooltip-host">
+                        <button
+                          class="icon-button"
+                          type="button"
+                          [disabled]="listEditingEventId() !== null"
+                          [attr.aria-busy]="listEditingEventId() === record.eventId"
+                          [attr.aria-label]="'Editar evento ' + record.name"
+                          [attr.aria-describedby]="'event-edit-tip-' + index"
+                          (click)="openEditFromList(record)"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20Z" />
+                            <path d="m13.5 7 3.5 3.5" />
+                          </svg>
+                        </button>
+                        <span class="tooltip" role="tooltip" [id]="'event-edit-tip-' + index"
+                          >Editar evento</span
+                        >
+                      </span>
+                      <span class="tooltip-host">
+                        <button
+                          class="icon-button icon-button--danger"
+                          type="button"
+                          [disabled]="events.mutating()"
+                          [attr.aria-label]="'Cancelar evento ' + record.name"
+                          [attr.aria-describedby]="'event-cancel-tip-' + index"
+                          (click)="requestListCancellation(record)"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+                          </svg>
+                        </button>
+                        <span class="tooltip" role="tooltip" [id]="'event-cancel-tip-' + index"
+                          >Cancelar evento</span
+                        >
+                      </span>
+                    }
                   </div>
                 </td>
               </tr>
@@ -174,9 +226,29 @@
             </header>
             <p>{{ formatInterval(record) }}</p>
             <p><strong>Responsable:</strong> {{ record.responsible }}</p>
-            <button class="button button--secondary" type="button" (click)="openDetail(record)">
-              Ver detalle
-            </button>
+            <div class="card-actions">
+              <button class="button button--secondary" type="button" (click)="openDetail(record)">
+                Ver detalle
+              </button>
+              @if (canManageFromList(record)) {
+                <button
+                  class="button button--secondary"
+                  type="button"
+                  [disabled]="listEditingEventId() !== null"
+                  (click)="openEditFromList(record)"
+                >
+                  Editar
+                </button>
+                <button
+                  class="button button--danger"
+                  type="button"
+                  [disabled]="events.mutating()"
+                  (click)="requestListCancellation(record)"
+                >
+                  Cancelar
+                </button>
+              }
+            </div>
           </article>
         }
       </div>
@@ -216,9 +288,18 @@
     >
       <header>
         <div>
-          <p class="eyebrow">{{ mode === 'form' ? 'Captura institucional' : 'Consulta' }}</p>
+          <p class="eyebrow">
+            {{ mode === 'form' ? 'Captura institucional' : 'Consulta' }}
+          </p>
           <h2 id="event-dialog-title">
-            {{ mode === 'form' ? 'Nuevo evento' : selectedEvent()?.name }}
+            {{
+              mode === 'form'
+                ? editingEventId()
+                  ? 'Editar evento'
+                  : 'Nuevo
+          evento'
+                : selectedEvent()?.name
+            }}
           </h2>
         </div>
         <button
@@ -373,11 +454,19 @@
                           availabilityFor(item.equipoId)?.confirmable === false
                         "
                       >
-                        @if (events.availabilityLoading()) {
-                          Verificando…
-                        } @else if (availabilityFor(item.equipoId); as availability) {
+                        @if (availabilityFor(item.equipoId); as availability) {
                           Disponibles: {{ availability.available }} ·
-                          {{ availability.requiresTransfer ? 'Requiere traslado' : 'Equipo local' }}
+                          {{
+                            availability.requiresTransfer
+                              ? 'Requiere traslado'
+                              : 'Equipo
+              local'
+                          }}
+                          @if (events.availabilityLoading()) {
+                            · Actualizando…
+                          }
+                        } @else if (events.availabilityLoading()) {
+                          Verificando…
                         } @else {
                           Pendiente de verificar
                         }
@@ -404,10 +493,20 @@
                 >
                   {{
                     availability.confirmable
-                      ? 'Disponibilidad confirmable al momento de la consulta.'
+                      ? 'Disponibilidad confirmable al momento
+          de la consulta.'
                       : 'Una o más cantidades no están disponibles.'
                   }}
-                  La confirmación volverá a validar todo.
+                  La confirmación volverá a validar todo. Última consulta:
+                  {{ availability.checkedAt | date: 'HH:mm:ss' }}.
+                  @if (events.availabilityLoading()) {
+                    Actualizando…
+                  }
+                </p>
+              }
+              @if (availabilityChangeNotice(); as notice) {
+                <p class="availability-summary availability-summary--error" role="alert">
+                  {{ notice }}
                 </p>
               }
             }
@@ -416,7 +515,12 @@
           <fieldset>
             <legend>Protocolo PDF</legend>
             <label class="form-field"
-              >Archivo obligatorio<input
+              >{{
+                editingEventId()
+                  ? 'Reemplazar archivo (opcional)'
+                  : 'Archivo
+          obligatorio'
+              }}<input
                 type="file"
                 accept="application/pdf,.pdf"
                 (change)="fileChanged($event)"
@@ -437,11 +541,22 @@
               type="submit"
               [disabled]="events.mutating() || events.availabilityLoading()"
             >
-              {{ events.mutating() ? 'Guardando…' : 'Guardar evento' }}
+              {{
+                events.mutating()
+                  ? 'Guardando…'
+                  : editingEventId()
+                    ? 'Guardar
+          cambios'
+                    : 'Guardar evento'
+              }}
             </button>
           </div>
         </form>
-      } @else if (selectedEvent(); as event) {
+      } @else if (events.detailLoading()) {
+        <div class="state" role="status">
+          <span class="spinner" aria-hidden="true"></span><strong>Cargando detalle…</strong>
+        </div>
+      } @else if (events.detail(); as event) {
         <div class="event-detail">
           <dl>
             <div>
@@ -468,7 +583,12 @@
               <dt>Coordinaciones</dt>
               <dd>
                 {{
-                  event.coordinationNames.length ? event.coordinationNames.join(', ') : 'Ninguna'
+                  event.coordinationNames.length
+                    ? event.coordinationNames.join(
+                        ',
+            '
+                      )
+                    : 'Ninguna'
                 }}
               </dd>
             </div>
@@ -476,14 +596,87 @@
               <dt>Equipamiento</dt>
               <dd>
                 {{ event.equipmentCount }}
-                {{ event.equipmentCount === 1 ? 'tipo solicitado' : 'tipos solicitados' }}
+                {{
+                  event.equipmentCount === 1
+                    ? 'tipo
+            solicitado'
+                    : 'tipos solicitados'
+                }}
               </dd>
             </div>
             <div>
               <dt>Calendar</dt>
-              <dd>{{ event.calendarStatus === 'synced' ? 'Sincronizado' : 'Pendiente' }}</dd>
+              <dd>{{ integrationLabel(event.calendarStatus) }}</dd>
+            </div>
+            <div>
+              <dt>Notificaciones</dt>
+              <dd>{{ integrationLabel(event.notificationStatus) }}</dd>
             </div>
           </dl>
+          @if (event.observations) {
+            <section class="detail-section">
+              <h3>Observaciones</h3>
+              <p>{{ event.observations }}</p>
+            </section>
+          }
+          @if (event.reservations.length) {
+            <section class="detail-section" aria-labelledby="event-logistics-title">
+              <h3 id="event-logistics-title">Logística de equipos</h3>
+              <div class="reservation-list">
+                @for (reservation of event.reservations; track reservation.equipmentId) {
+                  <article>
+                    <div>
+                      <strong>{{ reservation.equipmentName }}</strong>
+                      <span
+                        >{{ reservation.quantity }} unidad(es) ·
+                        {{ reservationStateLabel(reservation.state) }}</span
+                      >
+                    </div>
+                    <p>
+                      Bloqueo: {{ reservation.blockStart | date: 'dd/MM/yyyy HH:mm' }} –
+                      {{ reservation.blockEnd | date: 'dd/MM/yyyy HH:mm' }}
+                    </p>
+                    @if (reservation.reviewReasons.length) {
+                      <p>Revisión: {{ reservation.reviewReasons.join(', ') }}</p>
+                    }
+                    @if (isAdmin()) {
+                      <div class="reservation-actions">
+                        @if (reservation.reviewReasons.includes('cobertura_sistemas')) {
+                          <button
+                            class="button button--secondary"
+                            type="button"
+                            (click)="requestLogisticsAction('coverage', reservation.equipmentId)"
+                          >
+                            Confirmar cobertura
+                          </button>
+                        }
+                        @if (
+                          reservation.state !== 'finalizada' && reservation.state !== 'cancelada'
+                        ) {
+                          <button
+                            class="button button--secondary"
+                            type="button"
+                            (click)="requestLogisticsAction('reception', reservation.equipmentId)"
+                          >
+                            Confirmar recepción
+                          </button>
+                          @if (reservation.requiresTransfer) {
+                            <button
+                              class="button button--secondary"
+                              type="button"
+                              (click)="requestLogisticsAction('delay', reservation.equipmentId)"
+                            >
+                              Reportar demora
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                  </article>
+                }
+              </div>
+            </section>
+          }
           @if (event.protocolUrl) {
             <a
               class="button button--secondary"
@@ -494,12 +687,152 @@
             >
           }
         </div>
+        @if (logisticsConfirmation(); as confirmation) {
+          <section
+            class="confirmation-panel"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="logistics-confirmation-title"
+          >
+            <h3 id="logistics-confirmation-title">Confirmar acción logística</h3>
+            @if (confirmation.action === 'delay') {
+              <label class="form-field"
+                >Nueva liberación<input
+                  type="datetime-local"
+                  [value]="delayRelease()"
+                  (input)="delayChanged($event)"
+              /></label>
+            } @else {
+              <p>Esta operación actualizará la disponibilidad canónica del equipo.</p>
+            }
+            <div class="dialog-actions">
+              <button
+                class="button button--secondary"
+                type="button"
+                (click)="cancelLogisticsAction()"
+              >
+                Volver
+              </button>
+              <button
+                class="button button--primary"
+                type="button"
+                [disabled]="
+                  events.actionLoading() !== null ||
+                  (confirmation.action === 'delay' && !delayRelease())
+                "
+                (click)="confirmLogisticsAction(event.eventId)"
+              >
+                Confirmar
+              </button>
+            </div>
+          </section>
+        }
+        @if (confirmingCancellation()) {
+          <section
+            class="confirmation-panel"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-event-title"
+          >
+            <h3 id="cancel-event-title">Cancelar evento</h3>
+            <p>
+              El evento quedará como historial de solo lectura y se resolverán Calendar, correo,
+              protocolo y reservaciones.
+            </p>
+            <div class="dialog-actions">
+              <button class="button button--secondary" type="button" (click)="cancelCancellation()">
+                Volver
+              </button>
+              <button
+                class="button button--danger"
+                type="button"
+                [disabled]="events.mutating()"
+                (click)="confirmCancellation(event.eventId)"
+              >
+                Confirmar cancelación
+              </button>
+            </div>
+          </section>
+        }
         <div class="dialog-actions">
+          @if (event.canEdit) {
+            <button class="button button--secondary" type="button" (click)="openEdit(event)">
+              Editar
+            </button>
+          }
+          @if (event.canCancel) {
+            <button class="button button--danger" type="button" (click)="requestCancellation()">
+              Cancelar evento
+            </button>
+          }
+          @if (event.ownedByRequester || isAdmin()) {
+            <button
+              class="button button--secondary"
+              type="button"
+              [disabled]="events.actionLoading() !== null"
+              (click)="events.reconcile(event.eventId)"
+            >
+              Reintentar integraciones
+            </button>
+          }
           <button class="button button--primary" type="button" (click)="closeDialog()">
             Cerrar
           </button>
         </div>
       }
+    </section>
+  </div>
+}
+@if (listCancellationTarget(); as event) {
+  <div class="dialog-backdrop">
+    <section
+      class="event-dialog event-dialog--confirmation"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="list-cancel-event-title"
+      aria-describedby="list-cancel-event-description"
+      cdkTrapFocus
+      [cdkTrapFocusAutoCapture]="true"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">Confirmación</p>
+          <h2 id="list-cancel-event-title">Cancelar evento</h2>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Cerrar confirmación"
+          [disabled]="events.mutating()"
+          (click)="closeListCancellation()"
+        >
+          ×
+        </button>
+      </header>
+      <div class="confirmation-dialog">
+        <p id="list-cancel-event-description">
+          “{{ event.name }}” quedará como historial de solo lectura. No se eliminará el registro y
+          se resolverán Calendar, correo, protocolo y reservaciones.
+        </p>
+        <div class="dialog-actions">
+          <button
+            class="button button--secondary"
+            type="button"
+            [disabled]="events.mutating()"
+            (click)="closeListCancellation()"
+          >
+            Volver
+          </button>
+          <button
+            class="button button--danger"
+            type="button"
+            [disabled]="events.mutating()"
+            (click)="confirmListCancellation(event.eventId)"
+          >
+            {{ events.mutating() ? 'Cancelando…' : 'Confirmar cancelación' }}
+          </button>
+        </div>
+      </div>
     </section>
   </div>
 }

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables, ampliada el 21 de agosto de 2026 con Campus y Equipos dinámicos, actualizada el 28 de septiembre de 2026 con eventos multidiarios, anticipación, estados derivados y calendario administrativo, y sincronizada el 29 de septiembre de 2026 con la configuración real disponible de staging. La implementación de Eventos y reservaciones fue autorizada expresamente el 29 de septiembre de 2026 conforme a ADR-009. El 30 de septiembre quedaron implementados y probados localmente la creación y disponibilidad transaccional, las consultas paginada y por intervalo, la carga inicial de PDF y las rutas Angular de listado, alta, detalle y calendario. Edición, cancelación, reemplazo o limpieza de PDFs, Calendar, SMTP y aceptación manual siguen pendientes. No existe despliegue de Eventos a staging y producción continúa fuera de alcance.
+Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables, ampliada el 21 de agosto de 2026 con Campus y Equipos dinámicos, actualizada el 28 de septiembre de 2026 con eventos multidiarios, anticipación, estados derivados y calendario administrativo, y autorizada para implementación el 29 de septiembre de 2026 conforme a ADR-009. Desde el 30 de septiembre están implementados y desplegados únicamente a staging creación, consultas, búsqueda, detalle, edición, cancelación, reservaciones, logística, PDF, Calendar/SMTP, mantenimiento, backfill y experiencia Angular. El calendario institucional y la entrega SMTP permitida tienen evidencia real; la autorización dinámica de contactos de Coordinaciones está desplegada. Permanecen pendientes las pruebas reales de actualización y cancelación, la entrega positiva fuera de la lista fija, las negativas controladas y la aceptación manual. Producción continúa fuera de alcance.
 
 ## Objetivo
 
@@ -33,9 +33,9 @@ Antes de integrar Eventos deben existir:
 - Rules y callables de Coordinaciones aprobadas en Emulator Suite.
 - Políticas aprobadas de límites, reintentos, retención, PDFs, paginación y verificación de staging.
 
-La creación del calendario, la habilitación de la API, la obtención de credenciales OAuth, la comprobación manual del buzón SMTP y la creación de la contraseña de aplicación ya están realizadas. Sus valores no se documentan ni se requieren para iniciar desarrollo con dobles; deben cargarse en Secret Manager antes del primer despliegue funcional de las integraciones.
+La creación del calendario institucional, la habilitación de la API, el consentimiento OAuth, la comprobación del buzón SMTP y la configuración de los secretos ya están realizadas en staging. Sus valores no se documentan. Las Functions consumidoras están enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3.
 
-La aceptación manual pendiente de los catálogos ya implementados no impide construir Eventos localmente contra contratos y dobles aprobados, pero sí debe concluir antes de aceptar Eventos en staging.
+La aceptación manual pendiente de los catálogos y de Eventos no invalida la evidencia automatizada ni el despliegue técnico existente, pero debe concluir antes de declarar staging aceptado o promover a producción.
 
 ## Alcance
 
@@ -112,6 +112,10 @@ La aceptación manual pendiente de los catálogos ya implementados no impide con
 - Admite como máximo 20 equipos distintos, sin IDs repetidos y con cantidades enteras positivas.
 - Equipos fijos aparecen solo en su campus base. Transferibles aparecen únicamente para destinos explícitamente permitidos y antes del corte logístico.
 - En eventos de varios días todos los equipos permanecen montados y reservados durante las noches; la disponibilidad cubre el intervalo continuo completo.
+- Al editar, la previsualización envía el `eventId` y no cuenta las reservas activas de ese mismo evento como ocupación externa. Backend valida existencia, propiedad y estado no cancelado antes de excluirlas; las reservas superpuestas de otros eventos sí se descuentan.
+- La previsualización nunca autoriza la mutación: `updateEvent` recalcula nuevamente el estado completo dentro de la transacción de sustitución atómica.
+- Mientras el diálogo de alta o edición permanezca abierto con datos válidos, la disponibilidad se vuelve a consultar al recuperar foco o visibilidad y cada 30 segundos con la pestaña visible. La actualización conserva el último resultado para evitar parpadeo, muestra su hora, evita llamadas simultáneas y anuncia si otra reserva cambió la capacidad.
+- La actualización automática nunca reduce, retira ni sustituye una cantidad capturada. Si deja de ser confirmable, la fila y el resumen cambian a error, el guardado queda sujeto a la nueva previsualización y la transacción backend conserva la validación definitiva.
 - Los nombres fijos históricos del objeto `eventos.equipos` permanecen solo para compatibilidad de lectura y no definen el catálogo nuevo.
 
 ### Protocolo
@@ -230,7 +234,7 @@ La cancelación se dirige al creador y a la unión sin duplicados de destinatari
 - Un evento multidiario se sincroniza como una sola entrada continua.
 - Google Calendar nunca es la fuente de la vista administrativa FullCalendar.
 
-En staging se usa exclusivamente `CALENDARIO - STAGING`, perteneciente a `eventos@tecplayacar.edu.mx`, dentro de `eventos-tup-angular-stg`. Las credenciales se leen desde `GOOGLE_CALENDAR_CONFIG` enlazado a las Functions correspondientes.
+En staging se usa exclusivamente el calendario institucional adicional compartido con `eventos@tecplayacar.edu.mx`, con permiso para realizar cambios y administrar el uso compartido, dentro de `eventos-tup-angular-stg`. Las credenciales OAuth con alcance `calendar.events` y el ID exacto se leen desde `GOOGLE_CALENDAR_CONFIG` enlazado a las Functions correspondientes. El antiguo `CALENDARIO - STAGING` y sus eventos de prueba no se migran ni se reconcilian.
 
 ## Notificaciones por correo
 
@@ -244,11 +248,14 @@ En staging se usa exclusivamente `CALENDARIO - STAGING`, perteneciente a `evento
 - Cada correo es individual; no expone otros destinatarios.
 - Un correo repetido en varias coordinaciones recibe un solo mensaje por tipo y revisión.
 - Los destinatarios son siempre institucionales.
-- El cuerpo incluye tipo de aviso, evento, fecha, horario y responsable.
+- El asunto usa `[Eventos TUP]`, el tipo funcional y el nombre del evento, normalizados en una sola línea.
+- Cada entrega incluye HTML responsive y texto plano equivalente. La composición usa encabezado institucional, etiqueta textual de tipo, nombre, fecha en español, horario de Cancún, campus y dirección, responsable, nombres de coordinaciones, equipos y cantidades, observaciones y cambios cuando existan.
+- Creación, actualización, retiro, cancelación y logística tienen mensajes y estados visuales propios; el significado nunca depende solo del color.
+- La plantilla no depende de recursos externos y escapa todos los campos canónicos. No incluye correos de terceros, IDs, estado técnico de Calendar/SMTP, inventario total, secretos, adjuntos o enlaces sin autorización.
 - Los trabajos ya enviados no vuelven a enviarse en un reintento.
 - Los fallos se muestran como notificaciones pendientes, no como pérdida del evento.
 
-En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` con `secure: true`. El backend permite entregar únicamente a `omar.sanchez@tecplayacar.edu.mx`; cualquier otro destinatario se bloquea antes de SMTP y nunca se redirige silenciosamente. La configuración se lee desde `SMTP_CONFIG` enlazado a las Functions correspondientes.
+En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` con `secure: true`. `allowedRecipients` conserva las cuatro cuentas operativas aprobadas. También se permite un destinatario cuando el trabajo protegido fue creado por backend con `destinatarioTipo: coordinacion | sistemas`, `coordinacionId` canónico y correo del dominio institucional exacto. Esta procedencia fotografiada conserva reintentos, suspensiones e históricos sin rotar el secreto. Cualquier creador fuera de la lista fija, correo externo, trabajo sin coordinación o metadato inválido se bloquea antes de SMTP y nunca se redirige silenciosamente.
 
 ## Consulta y detalle
 
@@ -257,15 +264,18 @@ En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` co
 - Backend calcula `terminosBusqueda`: prefijos de campos completos hasta 80 caracteres y de cada palabra hasta 30, sin diacríticos, en minúsculas, únicos y con máximo de 500.
 - El cursor queda ligado al término; cambiar o limpiar búsqueda reinicia la primera página.
 - El listado no muestra correos de Coordinaciones.
+- La columna `Integración`, con los estados resumidos de Calendar y correo, se renderiza únicamente cuando el perfil canónico autenticado tiene rol `admin`; para `usuario` no existe encabezado, celda ni texto equivalente en el DOM.
+- La columna `Acciones` ofrece `Ver detalle` a todo usuario autorizado. Si el registro pertenece al solicitante y no está cancelado, ofrece además acceso directo a `Editar evento` y `Cancelar evento`, sin exigir abrir primero el detalle.
 - El detalle muestra nombres de coordinaciones, incluso si después fueron suspendidas o renombradas.
 - `getEventDetail` entrega los IDs y cantidades necesarios para editar, además de una proyección logística sanitizada; no expone correos, configuración, claves idempotentes, leases o controles.
 - No muestra `notificacionesEventos`, claves idempotentes, errores SMTP ni listas de destinatarios.
 - `calendarEventId` puede mostrarse como referencia operativa únicamente conforme al diseño aprobado.
 - Los eventos cancelados permanecen visibles como históricos y no ofrecen edición o reactivación.
 
-### Acciones en el detalle
+### Acciones de propietario en listado y detalle
 
 - Solo el propietario ve `Editar` y `Cancelar`; el backend vuelve a validar propiedad.
+- En escritorio, las acciones directas del listado usan los iconos institucionales de ojo, lápiz y papelera, con nombre accesible y tooltip. En móvil mantienen las mismas capacidades mediante botones con texto.
 - `Editar` reutiliza el formulario, conserva coordinaciones suspendidas ya asociadas y aplica las restricciones posteriores al límite.
 - `Cancelar` exige confirmación explícita, no borra el documento y comunica integración completa o parcial.
 - La sección “Logística de equipos” muestra cobertura, traslado, regreso, liberación, demora y recepción en texto.
@@ -282,6 +292,9 @@ En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` co
 - Cada solicitud cubre únicamente el rango visible, máximo 42 fechas, e incluye eventos cuyo intervalo se superpone aunque inicie antes del rango.
 - La respuesta se obtiene desde Firestore mediante la capa de Eventos, no desde Google Calendar, y omite correos, entregas, configuración e inventario administrativo.
 - La vista usa `America/Cancun`, representa un evento multidiario como un bloque continuo y actualiza su texto de estado al cruzar una frontera temporal.
+- En la proyección visual, un evento cuya `fechaInicio` y `fechaFin` son distintas se presenta como bloque de fecha completa desde `fechaInicio` incluida hasta el día posterior a `fechaFin` excluido, conforme al contrato de FullCalendar. Este ajuste ocupa cada fecha institucional comprometida, pero no cambia `inicioAt`, `finAt`, horarios, estado, reservaciones ni Calendar externo; el detalle conserva el intervalo exacto.
+- En mes los eventos usan bloques de estado legibles, no filas de punto; cada celda limita las filas visibles y ofrece “más” para evitar desbordamientos. La vista incluye contexto de uso y leyenda textual de estados, con foco visible y equivalencia en lista.
+- La integración de FullCalendar 7 carga `skeleton.css`, el tema Classic y su `palette.css`. Los eventos usan las propiedades públicas `className`, `color` y `contrastColor`; no se depende de selectores internos `fc-*` retirados en v7. El panel de eventos acumulados conserva contraste, separación entre filas y desplazamiento interno cuando excede la altura disponible.
 - Carga, vacío, error y reintento del rango se muestran sin afirmar que no existen eventos cuando la consulta falló.
 
 ## Estados de interfaz
@@ -298,7 +311,7 @@ En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` co
 - Cancelación con notificaciones en proceso.
 - Calendario cargando intervalo, vacío, error recuperable y actualización de estado temporal.
 - Búsqueda con mínimo de dos caracteres, resultados paginados, sin coincidencias y error recuperable.
-- Edición guardando, conflicto de disponibilidad sin cambios parciales y reconciliación pendiente.
+- Edición guardando, conflicto de disponibilidad sin cambios parciales, cambio externo anunciado dentro del modal y reconciliación pendiente.
 - Logística confirmando cobertura o recepción y registrando demora, sin bloquear otras filas.
 
 Los estados públicos de integración son `calendarEstado` y `notificacionesEstado`. La UI puede presentar `Pendiente`, `Sincronizado/Completas`, `Error/Parciales` o `Retirado/No aplica`, pero nunca muestra códigos técnicos o destinatarios.
@@ -399,7 +412,8 @@ service-unavailable
 - EVT-D32: SMTP usa intento inmediato más worker cada 5 minutos, lote 50 y lease transaccional de 10 minutos.
 - EVT-D33: Notificaciones terminales usan TTL sobre `fechaExpiracion`; limpieza de protocolos ocurre a las 04:00 en `America/Cancun`, con lote acotado e idempotencia.
 - EVT-D34: Históricos válidos reciben instantes y términos solo mediante backfill explícito con modo seco; producción requiere autorización independiente.
-- EVT-D30: Staging usa `CALENDARIO - STAGING`, el remitente `eventos@tecplayacar.edu.mx` y una lista permitida limitada a `omar.sanchez@tecplayacar.edu.mx`.
+- EVT-D30: Staging usa el calendario institucional adicional configurado exclusivamente en backend y el remitente `eventos@tecplayacar.edu.mx`. La lista fija conserva Omar, Eventos, Víctor Yama y Lizett Méndez; los contactos institucionales con procedencia protegida de Coordinaciones se permiten sin rotar el secreto. Los eventos del calendario desechable anterior no se migran.
+- EVT-D33: La autorización dinámica de Coordinaciones se basa exclusivamente en `destinatarioTipo` y `coordinacionId` escritos por backend en la bandeja protegida, más el dominio institucional exacto; no consulta al cliente ni acepta correos libres.
 - EVT-D31: El presupuesto de staging es informativo por `100 MXN`, con avisos al primer gasto y a `50`, `80` y `100 MXN`; no sustituye límites técnicos ni detiene servicios.
 - EVT-D32: Reservaciones usa la transacción, controles por equipo e índices de ADR-009; hasta 20 tipos se confirman todos o ninguno y una concurrencia agotada falla sin estado parcial.
 

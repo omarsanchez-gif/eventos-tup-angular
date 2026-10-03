@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación funcional definida. Las decisiones `USR-D01` a `USR-D04` fueron aprobadas documentalmente. La implementación fue autorizada expresamente por el usuario el 18 de agosto de 2026, aprobó pruebas unitarias, Auth/Firestore Emulator y Security Rules, y sus cinco callables fueron desplegadas únicamente a staging. Permanecen pendientes la revisión visual autenticada, el recorrido manual completo y la aceptación antes de Hosting o producción.
+Especificación funcional definida. Las decisiones `USR-D01` a `USR-D04` fueron aprobadas documentalmente. La implementación fue autorizada expresamente el 18 de agosto de 2026, aprobó pruebas unitarias, Auth/Firestore Emulator y Security Rules, y sus cinco callables fueron desplegadas únicamente a staging. El Hosting vigente de staging incluye la ruta administrativa `/usuarios`; permanecen pendientes la revisión visual autenticada, el recorrido manual completo y la aceptación antes de producción.
 
 ## Objetivo
 
@@ -145,7 +145,7 @@ No se renombra ni agrega ningún campo. El `documentId` solo identifica el docum
 
 - Ruta: `/usuarios`.
 - Se carga de forma diferida como hija de `AdminShell`.
-- La opción Usuarios deja de mostrar “Próximamente” únicamente cuando el módulo sea implementado y aprobado.
+- La opción Usuarios está activa únicamente para `admin`; `usuario` no la ve.
 - El shell identifica Usuarios con `aria-current="page"` cuando corresponda.
 - No se agregan rutas o entradas de navegación adicionales.
 

@@ -15,7 +15,7 @@ Reemplazar Vue por Angular sin perder funcionalidad, datos, archivos, integracio
 7. Aprobar e implementar Coordinaciones.
 8. Aprobar infraestructura protegida de notificaciones.
 9. Autorizar e implementar Eventos.
-10. Autorizar e implementar Dashboard.
+10. Implementar Dashboard conforme a la autorización del 3 de octubre de 2026.
 11. Ejecutar regresión integral.
 12. Publicar en staging/preview.
 13. Ejecutar corte productivo con reversión.

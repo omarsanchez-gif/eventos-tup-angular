@@ -4,29 +4,29 @@
 
 ### LAYOUT-001 — Shell privado
 
-Una sesión autorizada que abre `/dashboard` debe ver sidebar, topbar y contenido temporal. Sin sesión, el guard debe redirigir a `/login` sin renderizar el shell.
+Una sesión autorizada que abre `/dashboard` debe ver sidebar, topbar y el Dashboard funcional. Sin sesión, el guard debe redirigir a `/login` sin renderizar el shell.
 
 ### LAYOUT-002 — Composición de ruta
 
-El shell debe contener el `router-outlet` y la vista temporal debe renderizarse dentro del área principal.
+El shell debe contener el `router-outlet` y renderizar dentro del área principal cualquiera de las rutas privadas vigentes.
 
 ## Navegación por rol
 
 ### LAYOUT-003 — Rol admin
 
-Un `admin` debe ver Dashboard, Eventos, Usuarios y Cerrar sesión. Usuarios y Eventos deben estar deshabilitadas en este incremento.
+Un `admin` debe ver y poder navegar a Dashboard, Eventos, Campus, Coordinaciones, Equipos y Usuarios, además de Cerrar sesión.
 
 ### LAYOUT-004 — Rol usuario
 
-Un `usuario` debe ver Dashboard, Eventos y Cerrar sesión; no debe ver Usuarios.
+Un `usuario` debe ver Dashboard, Eventos y Cerrar sesión; no debe ver Campus, Coordinaciones, Equipos ni Usuarios.
 
 ### LAYOUT-005 — Opción activa
 
-Dashboard debe exponer `aria-current="page"` y un estado visual distinguible sin depender solo del color.
+Cada opción activa debe exponer `aria-current="page"` al coincidir con su ruta y un estado visual distinguible sin depender solo del color.
 
-### LAYOUT-006 — Módulos no autorizados
+### LAYOUT-006 — Módulos administrativos protegidos
 
-Activar Eventos o Usuarios no debe cambiar la URL ni crear contenido o rutas provisionales.
+Las rutas Campus, Coordinaciones, Equipos y Usuarios deben exigir `adminGuard`; ocultarlas en el sidebar de `usuario` no constituye la única barrera.
 
 ## Interacción
 

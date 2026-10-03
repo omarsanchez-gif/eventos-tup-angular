@@ -9,6 +9,7 @@ export interface ProtocolBucket {
   readonly name: string;
   file(path: string): {
     getMetadata(): Promise<readonly [ProtocolMetadata, ...unknown[]]>;
+    delete(options?: { readonly ignoreNotFound?: boolean }): Promise<unknown>;
   };
 }
 
@@ -37,7 +38,7 @@ function objectPath(urlValue: string, expectedBucket: string): string {
 
 export function createProtocolValidator(bucket: ProtocolBucket) {
   return {
-    async validate(url: string): Promise<void> {
+    async validate(url: string): Promise<{ readonly path: string }> {
       const path = objectPath(url, bucket.name);
       try {
         const [metadata] = await bucket.file(path).getMetadata();
@@ -50,10 +51,15 @@ export function createProtocolValidator(bucket: ProtocolBucket) {
         ) {
           invalid();
         }
+        return { path };
       } catch (error) {
         if (error instanceof EventsError) throw error;
-        invalid();
+        return invalid();
       }
+    },
+    async remove(path: string): Promise<void> {
+      if (!/^eventos\/\d{4}\/[^/]+\.pdf$/iu.test(path) || path.includes('..')) invalid();
+      await bucket.file(path).delete({ ignoreNotFound: true });
     },
   };
 }

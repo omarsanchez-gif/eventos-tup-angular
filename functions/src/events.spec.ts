@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   checkEventAvailability,
+  buildEventSearchTerms,
   createEventRecord,
   type EventRequestIdentity,
   type EventsDependencies,
@@ -35,6 +36,12 @@ function repository(): EventsRepository {
     list: vi.fn(async () => ({ items: [], nextCursor: null, serverNow: fixedNow })),
     listRange: vi.fn(async () => []),
     create: vi.fn(async () => ({ eventId: 'event-id' })),
+    getDetail: vi.fn(),
+    update: vi.fn(),
+    cancel: vi.fn(),
+    confirmCoverage: vi.fn(),
+    confirmReception: vi.fn(),
+    reportDelay: vi.fn(),
   };
 }
 
@@ -43,7 +50,10 @@ function dependencies(eventsRepository = repository()): EventsDependencies {
     repository: eventsRepository,
     clock: { now: () => fixedNow },
     logger: { warn: vi.fn(), error: vi.fn() },
-    protocols: { validate: vi.fn(async () => undefined) },
+    protocols: {
+      validate: vi.fn(async () => ({ path: 'eventos/2026/protocolo.pdf' })),
+      remove: vi.fn(async () => undefined),
+    },
   };
 }
 
@@ -88,8 +98,8 @@ describe('casos de uso de Eventos', () => {
     await expect(createEventRecord(identity, payload(20), dependencies(repo))).resolves.toEqual({
       eventId: 'event-id',
       status: 'saved',
-      calendarStatus: 'pending',
-      notificationStatus: 'pending',
+      calendarStatus: 'pendiente',
+      notificationStatus: 'pendiente',
     });
     expect(repo.create).toHaveBeenCalledOnce();
   });
@@ -149,5 +159,28 @@ describe('casos de uso de Eventos', () => {
         },
       ],
     });
+  });
+
+  it('conserva el eventId de una previsualización de edición para validarlo en repositorio', async () => {
+    const repo = repository();
+    await checkEventAvailability(
+      identity,
+      { ...availabilityPayload(), eventId: 'event-id' },
+      dependencies(repo),
+    );
+    expect(repo.checkAvailability).toHaveBeenCalledWith(
+      identity.uid,
+      expect.objectContaining({ eventId: 'event-id' }),
+      fixedNow,
+    );
+  });
+
+  it('genera términos normalizados de evento y responsable sin duplicados', () => {
+    const terms = buildEventSearchTerms('Ceremonía Académica', 'Omar Sánchez');
+    expect(terms).toContain('ceremonia');
+    expect(terms).toContain('academica');
+    expect(terms).toContain('omar');
+    expect(terms).toContain('sanchez');
+    expect(new Set(terms).size).toBe(terms.length);
   });
 });

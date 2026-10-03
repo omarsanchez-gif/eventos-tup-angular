@@ -5,7 +5,7 @@
   display: grid;
   gap: var(--space-24);
 }
-.calendar-panel {
+.panel {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
   background: var(--color-surface);
@@ -43,17 +43,20 @@ h2 {
   margin-bottom: 0;
   color: var(--color-text-muted);
 }
-.calendar-alert {
+.alert {
   display: flex;
   justify-content: space-between;
   gap: var(--space-16);
   padding: var(--space-12) var(--space-16);
-  color: var(--color-error);
-  background: var(--color-error-soft);
-  border: 1px solid var(--color-error-border);
+  border: 1px solid;
   border-radius: var(--radius-medium);
 }
-.calendar-alert button {
+.alert--error {
+  color: var(--color-error);
+  background: var(--color-error-soft);
+  border-color: var(--color-error-border);
+}
+.alert button {
   border: 0;
   color: inherit;
   background: none;
@@ -109,9 +112,94 @@ h2 {
   background: var(--color-surface);
 }
 .calendar-container {
+  --fc-classic-background: var(--color-surface);
+  --fc-classic-faint: var(--color-surface-subtle);
+  --fc-classic-muted: var(--color-primary-soft);
+  --fc-classic-strong: var(--color-border);
+  --fc-classic-foreground: var(--color-text);
+  --fc-classic-faint-foreground: var(--color-neutral-500);
+  --fc-classic-muted-foreground: var(--color-text-muted);
+  --fc-classic-border: var(--color-border);
+  --fc-classic-strong-border: var(--color-control-border);
+  --fc-classic-button: var(--color-primary-700);
+  --fc-classic-button-border: var(--color-primary-700);
+  --fc-classic-button-strong: var(--color-primary-800);
+  --fc-classic-button-strong-border: var(--color-primary-800);
+  --fc-classic-button-outline: var(--color-info);
+  --fc-classic-button-foreground: var(--color-surface);
+  --fc-classic-primary: var(--color-primary-700);
+  --fc-classic-primary-foreground: var(--color-surface);
+  --fc-classic-today: var(--color-primary-soft);
+  --fc-classic-now: var(--color-error);
+  --calendar-event-programado-background: var(--color-primary-700);
+  --calendar-event-programado-foreground: var(--color-surface);
+  --calendar-event-en_ejecucion-background: var(--color-success);
+  --calendar-event-en_ejecucion-foreground: var(--color-surface);
+  --calendar-event-finalizado-background: var(--color-neutral-500);
+  --calendar-event-finalizado-foreground: var(--color-surface);
+  --calendar-event-cancelado-background: var(--color-error);
+  --calendar-event-cancelado-foreground: var(--color-surface);
   position: relative;
   padding: clamp(var(--space-12), 2vw, var(--space-24));
   overflow: hidden;
+}
+.calendar-overview {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-24);
+  padding: 0 0 var(--space-20);
+}
+.calendar-overview h2 {
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-heading);
+}
+.calendar-overview p {
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+.calendar-overview .calendar-guidance {
+  margin-top: var(--space-4);
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-semibold);
+}
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-8) var(--space-16);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.status-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+.status-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+}
+.status-dot--scheduled {
+  background: var(--color-primary-700);
+}
+.status-dot--active {
+  background: var(--color-success);
+}
+.status-dot--finished {
+  background: var(--color-neutral-500);
+}
+.status-dot--cancelled {
+  background: var(--color-error);
 }
 .loading-state {
   display: flex;
@@ -140,39 +228,45 @@ h2 {
     transform: rotate(360deg);
   }
 }
-:host ::ng-deep .fc {
-  --fc-border-color: var(--color-border);
-  --fc-button-bg-color: var(--color-primary-700);
-  --fc-button-border-color: var(--color-primary-700);
-  --fc-button-hover-bg-color: var(--color-primary-800);
-  --fc-button-hover-border-color: var(--color-primary-800);
-  --fc-button-active-bg-color: var(--color-primary-800);
-  --fc-button-active-border-color: var(--color-primary-800);
-  --fc-page-bg-color: var(--color-surface);
+:host ::ng-deep full-calendar {
+  display: block;
+  color: var(--color-text);
   font-family: var(--font-family-ui);
+  font-size: var(--font-size-body-small);
 }
-:host ::ng-deep .fc .fc-toolbar-title {
-  font-size: var(--font-size-heading);
+:host ::ng-deep full-calendar button {
+  min-height: 40px;
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
 }
-:host ::ng-deep .fc-event {
+:host ::ng-deep full-calendar button:focus-visible,
+:host ::ng-deep .calendar-event:focus-visible,
+:host ::ng-deep full-calendar [role='dialog']:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+:host ::ng-deep full-calendar [role='gridcell'] {
+  min-height: 118px;
+}
+:host ::ng-deep full-calendar [role='dialog'][data-date] {
+  width: min(360px, calc(100vw - var(--space-32)));
+  max-height: min(440px, calc(100dvh - var(--space-32)));
+  overflow-y: auto;
+  border-radius: var(--radius-medium);
+  box-shadow: var(--elevation-2);
+}
+:host ::ng-deep .calendar-event {
+  min-height: 28px;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 12%);
   cursor: pointer;
 }
-:host ::ng-deep .fc-event-programado {
-  background: var(--color-primary-700);
-  border-color: var(--color-primary-700);
+:host ::ng-deep .calendar-event--multiday {
+  min-height: 30px;
 }
-:host ::ng-deep .fc-event-en_ejecucion {
-  background: var(--color-success);
-  border-color: var(--color-success);
-}
-:host ::ng-deep .fc-event-finalizado {
-  color: var(--color-text);
-  background: var(--color-surface-subtle);
-  border-color: var(--color-neutral-500);
-}
-:host ::ng-deep .fc-event-cancelado {
-  background: var(--color-error);
-  border-color: var(--color-error);
+:host ::ng-deep .calendar-event--cancelado {
+  text-decoration: line-through;
 }
 .dialog-backdrop {
   position: fixed;
@@ -226,9 +320,13 @@ h2 {
 @media (max-width: 820px) {
   .page-header,
   .toolbar,
-  .filters {
+  .filters,
+  .calendar-overview {
     align-items: stretch;
     flex-direction: column;
+  }
+  .status-legend {
+    justify-content: flex-start;
   }
   .page-header .button {
     width: 100%;
@@ -240,14 +338,8 @@ h2 {
   .event-dialog dl {
     grid-template-columns: 1fr;
   }
-  :host ::ng-deep .fc .fc-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: var(--space-8);
-  }
-  :host ::ng-deep .fc .fc-toolbar-chunk {
-    display: flex;
-    justify-content: center;
+  :host ::ng-deep full-calendar [role='gridcell'] {
+    min-height: 96px;
   }
 }
 @media (max-width: 520px) {
@@ -258,9 +350,13 @@ h2 {
   .view-switch__item {
     justify-content: center;
   }
-  :host ::ng-deep .fc .fc-button {
+  :host ::ng-deep full-calendar button {
     padding: 6px 8px;
     font-size: var(--font-size-caption);
+  }
+  .status-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

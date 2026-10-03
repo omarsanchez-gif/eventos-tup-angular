@@ -174,7 +174,7 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 - [ ] USR-T112 Validar primero con Emulator Suite y después con cuentas sintéticas de staging.
 - [x] USR-T113 Confirmar que producción no fue utilizada ni modificada.
 - [x] USR-T114 Actualizar trazabilidad, decisiones pendientes y README solo después de autorizar implementación.
-- [ ] USR-T115 Obtener aceptación funcional y visual antes de habilitar Hosting de staging.
+- [ ] USR-T115 Obtener aceptación funcional y visual en staging antes de considerar producción.
 
 ## Seguimiento de búsqueda e iconografía
 

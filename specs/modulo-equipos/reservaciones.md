@@ -2,7 +2,7 @@
 
 ## Estado
 
-Decisiones funcionales documentadas, incluido el contrato multidiario aprobado el 28 de septiembre de 2026. La estrategia transaccional, índices, reservaciones y su integración con Eventos fueron autorizadas expresamente el 29 de septiembre de 2026 conforme a ADR-009. El 30 de septiembre se implementaron y verificaron localmente la consulta de disponibilidad y la creación atómica; edición, cancelación, recepción, demora, cobertura administrativa y despliegue siguen pendientes. No autoriza producción.
+Decisiones funcionales documentadas, incluido el contrato multidiario aprobado el 28 de septiembre de 2026. La estrategia transaccional, índices, reservaciones y su integración con Eventos fueron autorizadas expresamente el 29 de septiembre de 2026 conforme a ADR-009. El 30 de septiembre se implementaron, verificaron y desplegaron únicamente a staging la disponibilidad, creación y sustitución atómicas, cancelación, recepción, demora, cobertura administrativa y avisos logísticos. Los índices requeridos están `READY`; la aceptación manual sigue pendiente y producción no está autorizada.
 
 ## Principio
 
@@ -82,6 +82,7 @@ disponible = cantidadOperativa - suma(cantidades reservadas en intervalos coinci
 - Una solicitud insuficiente se rechaza completa; nunca asigna cantidades parciales.
 - Varios tipos de equipo se validan y confirman en una sola operación atómica.
 - Reintentar el mismo estado objetivo es idempotente.
+- La consulta previa de una edición excluye las reservas activas cuyo `eventoId` coincide con el evento editado, únicamente después de validar existencia, propiedad y estado no cancelado en backend. La consulta de creación no excluye ninguna reserva y una edición nunca ignora reservas de otros eventos.
 
 ## Estrategia transaccional aprobada
 
@@ -111,6 +112,7 @@ La función transaccional puede ejecutarse más de una vez. No sube PDFs, no lla
 - Después de iniciar un traslado, una edición incompatible requiere revisión administrativa y no adelanta el regreso automáticamente.
 - Después del día límite de cinco fechas se permite retirar equipo o reducir cantidades. Agregar equipo, aumentar cantidades o cambiar de campus se rechaza aunque exista disponibilidad.
 - Posponer solo permite recalcular equipo cuando la nueva fecha de inicio vuelve a cumplir cinco fechas naturales desde la fecha de servidor. Adelantar nunca puede producir una fecha inválida.
+- Abrir una edición sin modificar fechas, campus, equipos o cantidades muestra como confirmable el estado ya reservado por ese evento, salvo que capacidad adicional ajena produzca una incompatibilidad real. El guardado conserva la validación transaccional de todo o nada.
 
 ## Domingo
 
@@ -162,12 +164,16 @@ La versión es monotónica y administrada por servidor. No contiene disponibilid
 
 ## Índices aprobados
 
-- `reservasEquipo`: `equipoId ASC`, `estado ASC`, `bloqueoInicio ASC`, `bloqueoFin ASC`.
-- `eventos`: `inicioAt ASC`, `finAt ASC`.
-- `eventos` por campus: `campusId ASC`, `inicioAt ASC`, `finAt ASC`.
-- listado de `eventos`: `fechaCreacion DESC`, `__name__ DESC`.
+- `reservasEquipo`: `equipoId ASC`, `estado ASC`, `bloqueoFin ASC`, `bloqueoInicio ASC`.
+- `eventos`: `finAt ASC`, `inicioAt ASC`.
+- `eventos` por campus: `campusId ASC`, `finAt ASC`, `inicioAt ASC`.
+- listado de `eventos`: `fechaCreacion DESC`, `__name__ DESC`, atendido por el índice automático de campo único; no se declara como compuesto porque Firestore lo rechaza como redundante.
 
-Los índices se declaran en `firestore.indexes.json`, se prueban localmente y se despliegan únicamente a staging mediante autorización específica. El orden podrá optimizarse con Query Explain sin cambiar las reglas funcionales y documentando previamente cualquier ajuste.
+Los índices compuestos necesarios se declaran en `firestore.indexes.json`, se prueban localmente y se despliegan únicamente a staging mediante autorización específica. El orden podrá optimizarse con Query Explain sin cambiar las reglas funcionales y documentando previamente cualquier ajuste.
+
+El 1 de octubre de 2026 se corrigió el orden de los dos campos de rango de `reservasEquipo` después de que la consulta real de staging solicitara `bloqueoFin` antes de `bloqueoInicio`. El índice corregido quedó `READY`, la consulta remota fue satisfactoria y el índice anterior se retiró. Este ajuste no cambia intervalos, capacidad, atomicidad ni modelo de datos.
+
+Ese mismo día, la consulta real del calendario solicitó `finAt` antes de `inicioAt`, tanto en la variante general como después de `campusId` en la variante filtrada. Los dos índices corregidos quedaron `READY`, ambas consultas remotas fueron satisfactorias y los índices anteriores se retiraron. El ajuste no cambia la semántica de superposición ni el contrato de reservaciones.
 
 ## Configuración protegida objetivo
 
@@ -198,4 +204,5 @@ Solo backend y operaciones administrativas expresamente especificadas pueden mod
 - Resolver y guardar por ID canónico la Coordinación de Sistemas ya creada en staging.
 - Probar la consulta por intervalo, eventos multidiarios, límites de anticipación, traslados, demoras y edición concurrente en Emulator Suite.
 - Cargar secretos y completar pruebas controladas antes del despliegue funcional de Calendar y SMTP a staging.
-- Implementar las tres operaciones administrativas y validar carreras de recepción, demora y cobertura conforme a ADR-010.
+- Las tres operaciones administrativas están implementadas; la matriz exhaustiva de carreras de recepción, demora y cobertura continúa como aceptación técnica pendiente conforme a ADR-010.
+- Enviar alertas logísticas mediante la bandeja protegida cuando exista `cobertura_sistemas`, `inventario_reducido`, cambio incompatible posterior al traslado, demora o cancelación posterior a la salida. `versionesAvisoLogistico` conserva por causa la versión del control que la originó y la deduplicación usa evento, equipo, motivo, esa versión y destinatario de la coordinación canónica de Sistemas.

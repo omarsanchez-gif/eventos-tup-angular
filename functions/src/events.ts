@@ -1,6 +1,6 @@
 import type { FunctionsErrorCode } from 'firebase-functions/https';
 
-import { EventTimeError, validateEventWindow } from './event-time.js';
+import { EventTimeError, validateEventWindow, validateUpdatedEventWindow } from './event-time.js';
 
 export const MAX_EVENT_EQUIPMENT_TYPES = 20;
 
@@ -40,6 +40,7 @@ export interface EventMutationInput {
 }
 
 export interface EventAvailabilityInput {
+  readonly eventId: string | null;
   readonly campusId: string;
   readonly dateStart: string;
   readonly timeStart: string;
@@ -52,6 +53,7 @@ export interface EventAvailabilityInput {
 
 export interface EventListInput {
   readonly cursor: string | null;
+  readonly search: string | null;
 }
 
 export interface EventRangeInput {
@@ -61,6 +63,8 @@ export interface EventRangeInput {
 }
 
 export type EventTemporalStatus = 'programado' | 'en_ejecucion' | 'finalizado' | 'cancelado';
+export type EventCalendarStatus = 'pendiente' | 'sincronizado' | 'error' | 'retirado';
+export type EventNotificationStatus = 'pendiente' | 'completas' | 'parciales' | 'no_aplica';
 
 export interface EventSummary {
   readonly eventId: string;
@@ -81,7 +85,41 @@ export interface EventSummary {
   readonly createdAt: Date | null;
   readonly protocolUrl: string | null;
   readonly protocolName: string | null;
-  readonly calendarStatus: 'synced' | 'pending';
+  readonly calendarStatus: EventCalendarStatus;
+  readonly notificationStatus: EventNotificationStatus;
+  readonly ownedByRequester: boolean;
+}
+
+export interface EventReservationDetail {
+  readonly equipmentId: string;
+  readonly equipmentName: string;
+  readonly quantity: number;
+  readonly state: 'confirmada' | 'requiere_revision' | 'finalizada' | 'cancelada';
+  readonly reviewReasons: readonly (
+    'cobertura_sistemas' | 'inventario_reducido' | 'coordinacion_sistemas'
+  )[];
+  readonly requiresTransfer: boolean;
+  readonly blockStart: Date;
+  readonly blockEnd: Date;
+  readonly scheduledRelease: Date;
+  readonly receptionConfirmed: Date | null;
+  readonly delayReported: boolean;
+}
+
+export interface EventDetail extends EventSummary {
+  readonly observations: string;
+  readonly coordinationIds: readonly string[];
+  readonly requestedEquipment: readonly {
+    readonly equipmentId: string;
+    readonly name: string;
+    readonly quantity: number;
+    readonly baseCampusId: string;
+    readonly baseCampusName: string;
+    readonly classification: 'fijo' | 'transferible';
+  }[];
+  readonly reservations: readonly EventReservationDetail[];
+  readonly canEdit: boolean;
+  readonly canCancel: boolean;
 }
 
 export interface EventListResult {
@@ -117,7 +155,45 @@ export interface EventsRepository {
     requesterUid: string,
     input: EventMutationInput,
     now: Date,
+    protocolPath: string,
   ): Promise<{ readonly eventId: string }>;
+  getDetail(requesterUid: string, eventId: string, now: Date): Promise<EventDetail>;
+  update(
+    requesterUid: string,
+    eventId: string,
+    input: EventMutationInput,
+    now: Date,
+    protocolPath: string,
+  ): Promise<{
+    readonly eventId: string;
+    readonly previousProtocolPath: string | null;
+    readonly revision: number;
+    readonly notificationChanged: boolean;
+  }>;
+  cancel(
+    requesterUid: string,
+    eventId: string,
+    now: Date,
+  ): Promise<{ readonly eventId: string; readonly protocolPath: string | null }>;
+  confirmCoverage(
+    requesterUid: string,
+    eventId: string,
+    equipmentId: string,
+    now: Date,
+  ): Promise<void>;
+  confirmReception(
+    requesterUid: string,
+    eventId: string,
+    equipmentId: string,
+    now: Date,
+  ): Promise<void>;
+  reportDelay(
+    requesterUid: string,
+    eventId: string,
+    equipmentId: string,
+    release: Date,
+    now: Date,
+  ): Promise<void>;
 }
 
 export interface EventsDependencies {
@@ -128,7 +204,14 @@ export interface EventsDependencies {
     error(message: string, context?: Readonly<Record<string, unknown>>): void;
   };
   readonly protocols: {
-    validate(url: string): Promise<void>;
+    validate(url: string): Promise<{ readonly path: string }>;
+    remove(path: string): Promise<void>;
+  };
+  readonly integrations?: {
+    reconcile(eventId: string): Promise<{
+      readonly calendarStatus: EventCalendarStatus;
+      readonly notificationStatus: EventNotificationStatus;
+    }>;
   };
 }
 
@@ -151,6 +234,11 @@ export type EventFunctionalCode =
   | 'equipment-unavailable'
   | 'equipment-cutoff-missed'
   | 'invalid-campus-schedule'
+  | 'event-not-found'
+  | 'event-cancelled'
+  | 'event-update-restricted'
+  | 'reservation-not-found'
+  | 'reservation-state-invalid'
   | 'service-unavailable';
 
 export class EventsError extends Error {
@@ -234,18 +322,26 @@ function toEventsError(error: EventTimeError): EventsError {
   return new EventsError(error.code, functionsCode, error.message);
 }
 
-function eventWindow(data: Readonly<Record<string, unknown>>, now: Date) {
+function eventWindow(
+  data: Readonly<Record<string, unknown>>,
+  now: Date,
+  mode: 'create' | 'update',
+) {
   const dateStart = stringValue(data, 'fechaInicio', { max: 10 });
   const timeStart = stringValue(data, 'horaInicio', { max: 5 });
   const dateEnd = stringValue(data, 'fechaFin', { max: 10 });
   const timeEnd = stringValue(data, 'horaFin', { max: 5 });
-  const window = validateEventWindow(dateStart, timeStart, dateEnd, timeEnd, now);
+  const window =
+    mode === 'create'
+      ? validateEventWindow(dateStart, timeStart, dateEnd, timeEnd, now)
+      : validateUpdatedEventWindow(dateStart, timeStart, dateEnd, timeEnd, now);
   return { dateStart, timeStart, dateEnd, timeEnd, start: window.start, end: window.end };
 }
 
 function availabilityInput(data: unknown, now: Date): EventAvailabilityInput {
   const request = requireObject(data);
   requireAllowed(request, [
+    'eventId',
     'campusId',
     'fechaInicio',
     'horaInicio',
@@ -253,10 +349,14 @@ function availabilityInput(data: unknown, now: Date): EventAvailabilityInput {
     'horaFin',
     'equiposSolicitados',
   ]);
+  const eventIdValue = request['eventId'];
+  const eventId =
+    eventIdValue === undefined || eventIdValue === null ? null : documentId(eventIdValue);
   try {
     return {
+      eventId,
       campusId: documentId(request['campusId']),
-      ...eventWindow(request, now),
+      ...eventWindow(request, now, eventId ? 'update' : 'create'),
       equipment: equipment(request['equiposSolicitados']),
     };
   } catch (error) {
@@ -265,7 +365,7 @@ function availabilityInput(data: unknown, now: Date): EventAvailabilityInput {
   }
 }
 
-function mutationInput(data: unknown, now: Date): EventMutationInput {
+function mutationInput(data: unknown, now: Date, mode: 'create' | 'update'): EventMutationInput {
   const request = requireObject(data);
   requireAllowed(request, [
     'nombreEvento',
@@ -284,7 +384,7 @@ function mutationInput(data: unknown, now: Date): EventMutationInput {
     return {
       name: stringValue(request, 'nombreEvento', { max: 160 }),
       campusId: documentId(request['campusId']),
-      ...eventWindow(request, now),
+      ...eventWindow(request, now, mode),
       observations: stringValue(request, 'observaciones', { max: 2000, required: false }),
       coordinationIds: uniqueIds(request['coordinacionIds'], 500),
       equipment: equipment(request['equiposSolicitados']),
@@ -299,12 +399,90 @@ function mutationInput(data: unknown, now: Date): EventMutationInput {
 
 function listInput(data: unknown): EventListInput {
   const request = requireObject(data);
-  requireAllowed(request, ['cursor']);
+  requireAllowed(request, ['cursor', 'busqueda']);
   const cursor = request['cursor'];
   if (cursor !== undefined && cursor !== null && typeof cursor !== 'string') {
     invalid('El cursor no es válido.');
   }
-  return { cursor: typeof cursor === 'string' && cursor ? cursor : null };
+  const rawSearch = request['busqueda'];
+  if (rawSearch !== undefined && rawSearch !== null && typeof rawSearch !== 'string') {
+    invalid('La búsqueda no es válida.');
+  }
+  const normalizedSearch =
+    typeof rawSearch === 'string' ? normalizeEventSearchValue(rawSearch) : '';
+  if (normalizedSearch.length === 1 || normalizedSearch.length > 80) {
+    invalid('La búsqueda debe contener entre 2 y 80 caracteres.');
+  }
+  return {
+    cursor: typeof cursor === 'string' && cursor ? cursor : null,
+    search: normalizedSearch || null,
+  };
+}
+
+export function normalizeEventSearchValue(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/gu, '')
+    .toLocaleLowerCase('es-MX')
+    .trim()
+    .replace(/\s+/gu, ' ');
+}
+
+export function buildEventSearchTerms(name: string, responsible: string): readonly string[] {
+  const terms = new Set<string>();
+  const addPrefixes = (value: string, maximum: number) => {
+    const limit = Math.min(value.length, maximum);
+    for (let length = 2; length <= limit; length += 1) terms.add(value.slice(0, length));
+  };
+  for (const value of [name, responsible].map(normalizeEventSearchValue)) {
+    addPrefixes(value, 80);
+    value.split(' ').forEach((word) => addPrefixes(word, 30));
+  }
+  const result = [...terms];
+  if (result.length > 500) {
+    throw new EventsError(
+      'service-unavailable',
+      'internal',
+      'No fue posible preparar la búsqueda del evento.',
+    );
+  }
+  return result;
+}
+
+function eventIdInput(data: unknown): string {
+  const request = requireObject(data);
+  requireAllowed(request, ['eventId']);
+  return documentId(request['eventId']);
+}
+
+function updateInput(data: unknown, now: Date): { eventId: string; input: EventMutationInput } {
+  const request = requireObject(data);
+  const eventId = documentId(request['eventId']);
+  const mutation = Object.fromEntries(Object.entries(request).filter(([key]) => key !== 'eventId'));
+  return { eventId, input: mutationInput(mutation, now, 'update') };
+}
+
+function reservationInput(data: unknown): { eventId: string; equipmentId: string } {
+  const request = requireObject(data);
+  requireAllowed(request, ['eventId', 'equipmentId']);
+  return {
+    eventId: documentId(request['eventId']),
+    equipmentId: documentId(request['equipmentId']),
+  };
+}
+
+function delayInput(data: unknown): { eventId: string; equipmentId: string; release: Date } {
+  const request = requireObject(data);
+  requireAllowed(request, ['eventId', 'equipmentId', 'nuevaLiberacion']);
+  const rawRelease = request['nuevaLiberacion'];
+  if (typeof rawRelease !== 'string') invalid('La nueva liberación no es válida.');
+  const release = new Date(rawRelease);
+  if (Number.isNaN(release.getTime())) invalid('La nueva liberación no es válida.');
+  return {
+    eventId: documentId(request['eventId']),
+    equipmentId: documentId(request['equipmentId']),
+    release,
+  };
 }
 
 function rangeInput(data: unknown): EventRangeInput {
@@ -347,6 +525,24 @@ function serialized(summary: EventSummary) {
   };
 }
 
+function serializedDetail(detail: EventDetail) {
+  return {
+    ...serialized(detail),
+    observations: detail.observations,
+    coordinationIds: detail.coordinationIds,
+    requestedEquipment: detail.requestedEquipment,
+    reservations: detail.reservations.map((reservation) => ({
+      ...reservation,
+      blockStart: reservation.blockStart.toISOString(),
+      blockEnd: reservation.blockEnd.toISOString(),
+      scheduledRelease: reservation.scheduledRelease.toISOString(),
+      receptionConfirmed: reservation.receptionConfirmed?.toISOString() ?? null,
+    })),
+    canEdit: detail.canEdit,
+    canCancel: detail.canCancel,
+  };
+}
+
 async function requester(
   identity: EventRequestIdentity | null,
   dependencies: EventsDependencies,
@@ -365,6 +561,27 @@ async function requester(
     throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
   }
   return identity;
+}
+
+async function reconcileSafely(
+  eventId: string,
+  dependencies: EventsDependencies,
+): Promise<{
+  readonly calendarStatus: EventCalendarStatus;
+  readonly notificationStatus: EventNotificationStatus;
+}> {
+  if (!dependencies.integrations) {
+    return { calendarStatus: 'pendiente', notificationStatus: 'pendiente' };
+  }
+  try {
+    return await dependencies.integrations.reconcile(eventId);
+  } catch (error) {
+    dependencies.logger.error('La reconciliación de Eventos requiere reintento.', {
+      eventId,
+      cause: error instanceof Error ? error.name : 'unknown',
+    });
+    return { calendarStatus: 'error', notificationStatus: 'pendiente' };
+  }
 }
 
 export async function checkEventAvailability(
@@ -394,14 +611,14 @@ export async function createEventRecord(
 ) {
   const actor = await requester(identity, dependencies);
   const now = dependencies.clock.now();
-  const input = mutationInput(data, now);
-  await dependencies.protocols.validate(input.protocolUrl);
-  const result = await dependencies.repository.create(actor.uid, input, now);
+  const input = mutationInput(data, now, 'create');
+  const protocol = await dependencies.protocols.validate(input.protocolUrl);
+  const result = await dependencies.repository.create(actor.uid, input, now, protocol.path);
+  const integrations = await reconcileSafely(result.eventId, dependencies);
   return {
     ...result,
     status: 'saved' as const,
-    calendarStatus: 'pending' as const,
-    notificationStatus: 'pending' as const,
+    ...integrations,
   };
 }
 
@@ -429,4 +646,157 @@ export async function listCalendarEventRecords(
   const now = dependencies.clock.now();
   const items = await dependencies.repository.listRange(actor.uid, rangeInput(data), now);
   return { items: items.map(serialized), serverNow: now.toISOString() };
+}
+
+export async function getEventDetailRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const detail = await dependencies.repository.getDetail(
+    actor.uid,
+    eventIdInput(data),
+    dependencies.clock.now(),
+  );
+  return serializedDetail(detail);
+}
+
+export async function updateEventRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const now = dependencies.clock.now();
+  const target = updateInput(data, now);
+  const protocol = await dependencies.protocols.validate(target.input.protocolUrl);
+  const result = await dependencies.repository.update(
+    actor.uid,
+    target.eventId,
+    target.input,
+    now,
+    protocol.path,
+  );
+  if (result.previousProtocolPath && result.previousProtocolPath !== protocol.path) {
+    await dependencies.protocols.remove(result.previousProtocolPath).catch((error: unknown) => {
+      dependencies.logger.warn('No fue posible retirar el protocolo sustituido.', {
+        eventId: result.eventId,
+        cause: error instanceof Error ? error.name : 'unknown',
+      });
+    });
+  }
+  const integrations = await reconcileSafely(result.eventId, dependencies);
+  return { eventId: result.eventId, status: 'saved' as const, ...integrations };
+}
+
+export async function cancelEventRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const result = await dependencies.repository.cancel(
+    actor.uid,
+    eventIdInput(data),
+    dependencies.clock.now(),
+  );
+  if (result.protocolPath) {
+    await dependencies.protocols.remove(result.protocolPath).catch((error: unknown) => {
+      dependencies.logger.warn('No fue posible retirar el protocolo cancelado.', {
+        eventId: result.eventId,
+        cause: error instanceof Error ? error.name : 'unknown',
+      });
+    });
+  }
+  const integrations = await reconcileSafely(result.eventId, dependencies);
+  return { eventId: result.eventId, status: 'cancelled' as const, ...integrations };
+}
+
+export async function reconcileEventIntegrationsRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const eventId = eventIdInput(data);
+  const detail = await dependencies.repository.getDetail(
+    actor.uid,
+    eventId,
+    dependencies.clock.now(),
+  );
+  if (!detail.ownedByRequester && actor.role !== 'admin') {
+    throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+  }
+  if (!dependencies.integrations) {
+    throw new EventsError(
+      'service-unavailable',
+      'failed-precondition',
+      'Las integraciones no están configuradas.',
+    );
+  }
+  return dependencies.integrations.reconcile(eventId);
+}
+
+export async function confirmReservationCoverageRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  if (actor.role !== 'admin') {
+    throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+  }
+  const target = reservationInput(data);
+  await dependencies.repository.confirmCoverage(
+    actor.uid,
+    target.eventId,
+    target.equipmentId,
+    dependencies.clock.now(),
+  );
+  return { status: 'confirmed' as const };
+}
+
+export async function confirmEquipmentReceptionRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  if (actor.role !== 'admin') {
+    throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+  }
+  const target = reservationInput(data);
+  await dependencies.repository.confirmReception(
+    actor.uid,
+    target.eventId,
+    target.equipmentId,
+    dependencies.clock.now(),
+  );
+  return { status: 'received' as const };
+}
+
+export async function reportEquipmentDelayRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  if (actor.role !== 'admin') {
+    throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
+  }
+  const target = delayInput(data);
+  const now = dependencies.clock.now();
+  if (target.release.getTime() <= now.getTime()) {
+    invalid('La nueva liberación debe ser futura.');
+  }
+  await dependencies.repository.reportDelay(
+    actor.uid,
+    target.eventId,
+    target.equipmentId,
+    target.release,
+    now,
+  );
+  const integrations = await reconcileSafely(target.eventId, dependencies);
+  return { status: 'delayed' as const, ...integrations };
 }

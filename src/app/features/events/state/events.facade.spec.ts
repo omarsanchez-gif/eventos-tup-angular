@@ -29,7 +29,28 @@ const summary = {
   createdAt: '2026-09-30T17:00:00.000Z',
   protocolUrl: 'https://storage.test/protocol.pdf',
   protocolName: 'protocol.pdf',
-  calendarStatus: 'pending' as const,
+  calendarStatus: 'pendiente' as const,
+  notificationStatus: 'pendiente' as const,
+  ownedByRequester: true,
+};
+
+const detail = {
+  ...summary,
+  observations: '',
+  coordinationIds: ['systems'],
+  requestedEquipment: [
+    {
+      equipmentId: 'speaker',
+      name: 'Bocina',
+      quantity: 1,
+      baseCampusId: 'tup',
+      baseCampusName: 'Tecnológico Universitario Playacar',
+      classification: 'fijo' as const,
+    },
+  ],
+  reservations: [],
+  canEdit: true,
+  canCancel: true,
 };
 
 describe('EventsFacade', () => {
@@ -59,9 +80,29 @@ describe('EventsFacade', () => {
       create: vi.fn(async () => ({
         eventId: 'event-2',
         status: 'saved' as const,
-        calendarStatus: 'pending' as const,
-        notificationStatus: 'pending' as const,
+        calendarStatus: 'pendiente' as const,
+        notificationStatus: 'pendiente' as const,
       })),
+      detail: vi.fn(async () => detail),
+      update: vi.fn(async () => ({
+        eventId: 'event-1',
+        status: 'saved' as const,
+        calendarStatus: 'sincronizado' as const,
+        notificationStatus: 'completas' as const,
+      })),
+      cancel: vi.fn(async () => ({
+        eventId: 'event-1',
+        status: 'cancelled' as const,
+        calendarStatus: 'retirado' as const,
+        notificationStatus: 'completas' as const,
+      })),
+      reconcile: vi.fn(async () => ({
+        calendarStatus: 'sincronizado' as const,
+        notificationStatus: 'completas' as const,
+      })),
+      confirmCoverage: vi.fn(async () => undefined),
+      confirmReception: vi.fn(async () => undefined),
+      reportDelay: vi.fn(async () => undefined),
     };
     const campusesGateway = {
       listSelectable: vi.fn(async () => ({
@@ -118,17 +159,21 @@ describe('EventsFacade', () => {
     expect(facade.hasNextPage()).toBe(true);
   });
 
-  it('filtra instantáneamente la página visible', async () => {
+  it('consulta búsqueda global después del debounce y reinicia la página', async () => {
+    vi.useFakeTimers();
     await facade.load();
     facade.search('omar');
-    expect(facade.filteredRecords()).toHaveLength(1);
-    facade.search('sin coincidencia');
-    expect(facade.filteredRecords()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(301);
+    expect(eventsGateway.list).toHaveBeenLastCalledWith(null, 'omar');
+    expect(facade.page()).toBe(1);
+    facade.ngOnDestroy();
+    vi.useRealTimers();
   });
 
   it('consulta disponibilidad sin convertir la previsualización en confirmación', async () => {
     await expect(
       facade.checkAvailability({
+        eventId: 'event-1',
         campusId: 'tup',
         fechaInicio: '2026-10-06',
         horaInicio: '12:00',
@@ -137,6 +182,9 @@ describe('EventsFacade', () => {
         equiposSolicitados: [{ equipoId: 'speaker', cantidad: 1 }],
       }),
     ).resolves.toBe(true);
+    expect(eventsGateway.checkAvailability).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: 'event-1' }),
+    );
     expect(facade.availability()?.items[0]?.available).toBe(2);
   });
 

@@ -5,19 +5,25 @@
   display: grid;
   gap: var(--space-24);
 }
-.events-panel {
+.panel {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
   background: var(--color-surface);
   box-shadow: var(--elevation-1);
 }
-.page-header,
-.list-header {
+.page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-24);
   padding: clamp(var(--space-20), 3vw, var(--space-32));
+}
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  padding: var(--space-20);
 }
 h1,
 h2,
@@ -46,7 +52,7 @@ h2 {
   margin-bottom: 0;
   color: var(--color-text-muted);
 }
-.event-alert {
+.alert {
   display: flex;
   justify-content: space-between;
   gap: var(--space-16);
@@ -54,17 +60,17 @@ h2 {
   border: 1px solid;
   border-radius: var(--radius-medium);
 }
-.event-alert--error {
+.alert--error {
   color: var(--color-error);
   background: var(--color-error-soft);
   border-color: var(--color-error-border);
 }
-.event-alert--success {
+.alert--success {
   color: var(--color-success);
   background: var(--color-success-soft);
   border-color: var(--color-success-border);
 }
-.event-alert button {
+.alert button {
   border: 0;
   color: inherit;
   background: none;
@@ -83,6 +89,11 @@ h2 {
   flex: 1;
   justify-content: flex-end;
   gap: var(--space-8);
+}
+.search-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
 }
 .view-switch {
   display: inline-flex;
@@ -168,6 +179,7 @@ td small {
 .row-actions {
   display: flex;
   justify-content: flex-end;
+  gap: var(--space-8);
 }
 .event-status,
 .integration-status {
@@ -203,9 +215,13 @@ td small {
   color: var(--color-warning);
   background: var(--color-warning-soft);
 }
+.integration-status + .integration-status {
+  margin-top: var(--space-4);
+}
 .tooltip-host {
   position: relative;
   display: inline-flex;
+  border-radius: var(--radius-small);
 }
 .tooltip {
   position: absolute;
@@ -220,9 +236,11 @@ td small {
   font-size: var(--font-size-caption);
   visibility: hidden;
   opacity: 0;
+  transition: opacity 0.12s;
 }
 .tooltip-host:hover .tooltip,
-.tooltip-host:focus-within .tooltip {
+.tooltip-host:focus-within .tooltip,
+.tooltip-host:focus .tooltip {
   visibility: visible;
   opacity: 1;
 }
@@ -262,6 +280,11 @@ td small {
 .mobile-list {
   display: none;
 }
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
 .dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -279,6 +302,18 @@ td small {
   background: var(--color-surface);
   border-radius: var(--radius-large);
   box-shadow: var(--elevation-2);
+}
+.event-dialog--confirmation {
+  width: min(560px, 100%);
+}
+.confirmation-dialog {
+  display: grid;
+  gap: var(--space-20);
+  padding: var(--space-24);
+}
+.confirmation-dialog p,
+.confirmation-dialog .dialog-actions {
+  margin: 0;
 }
 .event-dialog > header {
   position: sticky;
@@ -462,6 +497,54 @@ legend span {
 .event-detail .button {
   justify-self: start;
 }
+.detail-section {
+  display: grid;
+  gap: var(--space-12);
+}
+.detail-section h3,
+.detail-section p {
+  margin: 0;
+}
+.reservation-list {
+  display: grid;
+  gap: var(--space-12);
+}
+.reservation-list article {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+.reservation-list article > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+.reservation-list article span,
+.reservation-list article p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body-small);
+}
+.reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.confirmation-panel {
+  display: grid;
+  gap: var(--space-16);
+  margin: 0 var(--space-24) var(--space-24);
+  padding: var(--space-20);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+.confirmation-panel h3,
+.confirmation-panel p,
+.confirmation-panel .dialog-actions {
+  margin: 0;
+  padding: 0;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -524,6 +607,11 @@ legend span {
   }
   .equipment-list .availability {
     grid-column: 1 / -1;
+  }
+  .reservation-list article > div:first-child,
+  .reservation-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 @media (max-width: 520px) {
