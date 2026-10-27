@@ -26,7 +26,7 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 - [x] USR-T12 Crear cuentas y documentos sintéticos definidos en `pruebas.md`.
 - [x] USR-T13 Confirmar el dominio institucional de prueba por configuración backend.
 - [ ] USR-T14 Confirmar que el volumen actual y esperado de `usuarios` permanece por debajo del límite aprobado de 500.
-- [ ] USR-T15 Inventariar índices Firestore necesarios sin desplegarlos todavía.
+- [x] USR-T15 Confirmar que Usuarios no requiere índices compuestos adicionales para su listado acotado y búsqueda local aprobada.
 - [x] USR-T16 Confirmar que las decisiones aprobadas no requieren campos, colecciones o dependencias nuevas.
 
 ## Modelos y contratos Angular
@@ -159,7 +159,7 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 
 - [x] USR-T101 Crear pruebas unitarias de normalización y validación.
 - [x] USR-T102 Crear pruebas unitarias de facade, estados y errores.
-- [ ] USR-T103 Crear pruebas de componentes, formulario, tabla, diálogos y navegación.
+- [x] USR-T103 Crear pruebas de componente para tabla, alta, validación, búsqueda, iconografía, edición, cambio de estado, eliminación y confirmaciones; guard y shell cubren navegación.
 - [x] USR-T104 Crear pruebas de las cinco callables con Auth y Firestore Emulator.
 - [x] USR-T105 Crear y aceptar pruebas de claims, revocación, ventana del ID token, fallo cerrado, reconciliación e idempotencia.
 - [x] USR-T106 Crear pruebas de concurrencia para correo único.

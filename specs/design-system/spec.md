@@ -47,6 +47,7 @@ Crear desde cero una interfaz administrativa universitaria para Angular, manteni
 --color-success-border:    #a8ddbd
 --color-warning:           #9a6700
 --color-warning-soft:      #fff7d6
+--color-warning-border:    #eacb7b
 --color-info:              #175cd3
 ```
 
@@ -183,7 +184,15 @@ Las vistas de catálogo y operación conservan este orden visual cuando el bloqu
 | Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
 | Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
 
-La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. El Hosting vigente de staging incorpora estas primitivas; la comparación autenticada en escritorio, tableta y 320 px, junto con el recorrido de teclado y foco, quedó aceptada manualmente el 3 de octubre de 2026.
+La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`. Desde el 27 de octubre de 2026 la guardia protege botones, paneles, encabezados, `eyebrow`, badges, estados, alertas, tooltips, overlays, acciones de diálogo, campos, spinners, estados de carga/vacío y utilidades accesibles, además de rechazar la paleta obsoleta y colores semánticos duplicados. El Hosting vigente de staging conserva la aceptación visual previa; esta estabilización no se despliega sin autorización separada.
+
+### Consolidación técnica — 27 de octubre de 2026
+
+- `src/styles.scss` contiene paneles, encabezados, búsqueda, tablas, badges/estados, acciones, tooltips, paginación, carga/vacío, alertas, diálogos, formularios, controles móviles y utilidades accesibles.
+- Usuarios, Coordinaciones, Campus, Equipos, Eventos, Calendario y Dashboard conservan en su SCSS únicamente distribución o contenido específico.
+- Campus y Equipos consumen la misma clase global `.search-field`; no mantienen una variante local de campo.
+- El mayor estilo encapsulado queda por debajo del límite de error de 8 kB y el build usa advertencia en 6 kB.
+- `npm run lint:visual` falla si un módulo vuelve a declarar una primitiva protegida o un color semántico ya tokenizado.
 
 ### Verificación obligatoria de normalización
 

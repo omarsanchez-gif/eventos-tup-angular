@@ -41,3 +41,26 @@ Si instalación, compilación, pruebas, emuladores o auditoría detectan incompa
 ## Evidencia de ejecución
 
 El 30 de septiembre de 2026 se aplicó la migración coordinada de Angular `22.1` a `22.2`, Firebase Web `12.19.0`, Firebase Admin `14.5.0`, Firebase Functions `7.4.0`, Rules Unit Testing `5.0.2` y gRPC `1.14.5` mediante el override acotado. La auditoría completa terminó con cero vulnerabilidades altas o críticas y 15 moderadas; `npm audit --omit=dev` terminó con cero altas o críticas y 3 moderadas. Aprobaron 183 pruebas, lint, formato y builds de Angular staging y Functions. No se utilizó `npm audit fix --force`.
+
+## Estabilización vigente — 27 de octubre de 2026
+
+Una nueva auditoría detectó vulnerabilidades corregibles en dependencias de ejecución y desarrollo. Se actualizaron versiones compatibles y el lockfile, incluyendo Angular `22.2.x`, Firebase CLI `15.34.1`, Vitest `4.1.12`, Nodemailer `10.2.1`, las dependencias Google compatibles y sus transitivas. Se agregaron overrides reproducibles para `zod 4.6.7` y `vite 8.3.5`, además del override previo y acotado de gRPC.
+
+Resultado obligatorio:
+
+- `npm audit --omit=dev`: cero vulnerabilidades informativas, bajas, moderadas, altas o críticas.
+- `npm audit` completo: cero altas o críticas; cinco entradas moderadas, todas transitivas y exclusivas de `firebase-tools`.
+- Build de producción limpio dentro de 750 kB/1 MB para el bundle inicial y 6 kB/8 kB por estilo encapsulado.
+- Build de staging, compilación de Functions, lint Angular/Functions/visual, formato y regresión automatizada aprobados.
+- No se utilizó `npm audit fix --force`, no se degradó Firebase y no se desplegó ningún servicio.
+
+### Aceptación acotada del riesgo de herramienta
+
+Las cinco entradas moderadas residuales proceden de `firebase-tools` mediante `@google-cloud/pubsub`, `@opentelemetry/core`, `gaxios` y `uuid`. La propia versión estable vigente de Firebase CLI no publica una ruta compatible para eliminarlas; la corrección automática propone una degradación mayor de la CLI o sustituciones mayores no soportadas.
+
+- Superficie: CLI local de desarrollo y despliegue; no forma parte del bundle Angular, Cloud Functions ni dependencias de ejecución auditadas con `--omit=dev`.
+- Mitigación: usar la CLI solo contra aliases conocidos, no procesar entradas no confiables con esas rutas, conservar cero vulnerabilidades de ejecución y repetir la auditoría antes de cada publicación.
+- Vigencia: hasta que Firebase publique una versión compatible corregida o antes de autorizar producción, lo que ocurra primero.
+- Responsable: mantenimiento técnico del Sistema Institucional de Eventos TUP.
+
+Esta aceptación no cubre vulnerabilidades altas/críticas ni autoriza `--force` o una degradación automática.

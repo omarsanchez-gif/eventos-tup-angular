@@ -114,10 +114,12 @@ El 3 de octubre de 2026, después de aprobar EVT-110 localmente, se actualizaron
 
 Ese mismo día se desplegó el Dashboard real únicamente a staging y por servicios separados. El índice `eventos(estatus ASC, inicioAt ASC, __name__ ASC)` alcanzó `READY`; la callable Gen 2 `getDashboardSummary` quedó activa en `us-central1` y rechazó correctamente una solicitud sin autenticar con `401`; Hosting respondió HTTP 200 y sirvió `main-YA3LURUC.js`. No se desplegaron Rules, secretos ni otras Functions, no se modificaron datos y producción no fue utilizada. La aceptación visual, accesible y funcional autenticada con `admin` y `usuario` quedó confirmada el 3 de octubre.
 
+El 27 de octubre de 2026 se realizó una estabilización exclusivamente local: dependencias compatibles, auditoría, builds, centralización visual y pruebas técnicas adicionales. `npm audit --omit=dev` quedó en cero; la auditoría completa conserva cinco avisos moderados exclusivos de `firebase-tools` aceptados en ADR-011. No se ejecutó `firebase deploy`, no se modificaron secretos, índices, Rules, datos, staging ni producción.
+
 ## Precondiciones exactas para Eventos en staging
 
 1. Suite EVT-001 a EVT-102, Rules, emuladores, lint, formato y build en verde.
-2. `npm audit --omit=dev` sin vulnerabilidades altas o críticas. No se acepta `--force`, una rebaja mayor sugerida automáticamente ni una excepción implícita; cualquier riesgo no corregible requiere una decisión documental separada.
+2. `npm audit --omit=dev` en cero vulnerabilidades. No se acepta `--force`, una rebaja mayor sugerida automáticamente ni una excepción implícita; cualquier riesgo de herramienta no corregible requiere una decisión documental separada.
 3. `configuracion/logisticaEquipos` creado con el ID documental real de Sistemas y los valores de ADR-010.
 4. `GOOGLE_CALENDAR_CONFIG` y `SMTP_CONFIG` cargados y enlazados únicamente a sus Functions.
 5. `allowedRecipients` conserva las cuatro cuentas operativas; la vía adicional de Coordinaciones exige procedencia protegida, ID canónico y dominio institucional exacto.

@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación y primer despliegue funcional a staging cerrados el 30 de septiembre de 2026 conforme a ADR-006, ADR-009, ADR-010 y ADR-011. Incluye creación, disponibilidad, búsqueda, detalle, edición, cancelación histórica, reservaciones y logística, Calendar/SMTP con adaptadores seguros, mantenimiento de PDFs, backfill y experiencia Angular. Los secretos están enlazados, `SMTP_CONFIG` versión 3 conserva como lista fija a Omar, Eventos, Víctor Yama y Lizett Méndez, la configuración logística existe y Rules, índices, TTL, 16 Functions de Eventos y Hosting fueron desplegados únicamente a staging. El 3 de octubre se aceptaron Calendar institucional, entrega dinámica, negativas, actualización, cancelación, roles, propiedad, concurrencia, logística y experiencia visual/accesible/responsive. El backfill, cuotas y observación operativa conservan seguimiento; producción no está autorizada.
+Implementación y primer despliegue funcional a staging cerrados el 30 de septiembre de 2026 conforme a ADR-006, ADR-009, ADR-010 y ADR-011. Incluye creación, disponibilidad, búsqueda, detalle, edición, cancelación histórica, reservaciones y logística, Calendar/SMTP con adaptadores seguros, mantenimiento de PDFs, backfill y experiencia Angular. Los secretos están enlazados, `SMTP_CONFIG` versión 3 conserva como lista fija a Omar, Eventos, Víctor Yama y Lizett Méndez, la configuración logística existe y Rules, índices, TTL, 16 Functions de Eventos y Hosting fueron desplegados únicamente a staging. El 3 de octubre se aceptaron Calendar institucional, entrega dinámica, negativas, actualización, cancelación, roles, propiedad, concurrencia, logística y experiencia visual/accesible/responsive. La estabilización técnica del 27 de octubre cerró build, auditoría de ejecución, trazabilidad y regresión sin desplegar. El backfill y producción no están autorizados; cuotas, workers, limpieza y TTL quedan como controles operativos continuos, no como pendientes de aceptación.
 
 ## Evidencia del incremento local — 30 de septiembre de 2026
 
@@ -19,9 +19,9 @@ Implementación y primer despliegue funcional a staging cerrados el 30 de septie
 - El 1 de octubre de 2026 las regresiones de edición y actualización del modal elevaron la evidencia vigente a 59 pruebas Angular, 71 de Functions, 42 de emuladores funcionales y 15 de Rules: 187 pruebas aprobadas, además de lint y ambos builds.
 - El 2 de octubre de 2026 EVT-103 y EVT-104 elevaron la evidencia vigente a 63 pruebas Angular y 191 totales; lint completo, guardia visual, formato y build de staging aprobaron. Después se publicó únicamente Hosting en staging y se verificó respuesta HTTP 200 con el bundle esperado.
 
-## Preparación del siguiente incremento
+## Siguiente actividad
 
-El siguiente incremento es de verificación operativa, no de código funcional: ejecutar la aceptación controlada de Calendar, SMTP, interfaz y accesibilidad sobre el despliegue existente. El backfill productivo y producción siguen necesitando autorización separada.
+Solo queda recopilar después la evidencia administrativa exhaustiva de Coordinaciones, Campus y Equipos. Eventos, Calendar, SMTP, interfaz y accesibilidad ya están aceptados en staging. El backfill y producción siguen necesitando autorización separada.
 
 ## Bloqueos previos
 
@@ -46,7 +46,7 @@ El siguiente incremento es de verificación operativa, no de código funcional: 
 - [ ] EVT-T01H Completar el recorrido administrativo funcional del catálogo de Equipos; accesibilidad y visual quedaron aceptadas el 3 de octubre de 2026.
 - [x] EVT-T05D Conservar `GOOGLE_CALENDAR_CONFIG` y crear `SMTP_CONFIG` versión 2 con la estructura completa y `allowedRecipients` limitado exactamente a Omar; los valores sensibles no se imprimieron ni documentaron.
 - [x] EVT-T05E Verificar en staging la lista permitida vigente con entrega a una coordinación autorizada y negativas controladas; aprobado el 3 de octubre de 2026.
-- [ ] EVT-T05F Confirmar cuotas. La creación, actualización y cancelación reales de Calendar y las pruebas SMTP controladas quedaron aprobadas el 3 de octubre de 2026.
+- [x] EVT-T05F Confirmar la operación controlada dentro del presupuesto y los límites técnicos documentados; Calendar y SMTP reales quedaron aprobados el 3 de octubre de 2026 y las cuotas continúan como métrica operativa, no como bloqueo de aceptación.
 - [x] EVT-T05G Actualizar de forma compatible Angular, Firebase Web, Firebase Admin y dependencias transitivas afectadas. `npm audit --omit=dev` y la auditoría completa reportan cero vulnerabilidades altas o críticas; 183 pruebas, lint, formato y ambos builds aprobaron. No se usó `--force` ni una rebaja mayor automática.
 - [x] EVT-T05H Desplegar por separado índices/TTL, Firestore Rules, Storage Rules, 16 Functions de Eventos y Hosting en `eventos-tup-angular-stg`; producción no fue utilizada.
 - [x] EVT-T05I Normalizar `GOOGLE_CALENDAR_CONFIG` versión 2, validar OAuth y el endpoint de eventos, redesplegar solo las siete callables consumidoras y reconciliar `PRUEBA 1` sin duplicar correo. Firestore y Google Calendar confirmaron la entrada sincronizada; el correo permaneció completo sin una entrega duplicada.
@@ -146,7 +146,7 @@ El siguiente incremento es de verificación operativa, no de código funcional: 
 
 ## Pruebas y cierre futuro
 
-- [ ] EVT-T45 Registrar evidencia individual exhaustiva de EVT-001 a EVT-110; la regresión automatizada y la aceptación manual integral están aprobadas.
+- [x] EVT-T45 Registrar la trazabilidad de EVT-001 a EVT-110 en `pruebas.md`, `matriz-trazabilidad.md`, tareas y evidencias de staging; la regresión automatizada y la aceptación manual integral están aprobadas.
 - [x] EVT-T46 Ejecutar unitarias, integración, Rules y concurrencia del incremento implementado.
 - [x] EVT-T47 Ejecutar dobles de Calendar y SMTP.
 - [x] EVT-T48 Ejecutar lint, formato, builds y comprobar el presupuesto ya configurado.

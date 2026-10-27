@@ -192,7 +192,7 @@ Google Calendar [integración backend de salida]
 - Las respuestas de consulta incluyen `serverNow`. La facade conserva esa referencia, avanza el reloj únicamente para presentación y actualiza el estado al cargar, navegar y llegar a la siguiente frontera temporal. Toda decisión backend vuelve a usar hora de servidor.
 - Un evento multidiario es un único intervalo continuo, máximo seis fechas operativas, en un solo campus y sin domingo. Equipos permanecen montados y bloqueados durante las noches.
 - La ruta `/eventos` conserva listado y paginación; `/eventos/calendario` usa la misma facade y permisos, consulta solo el rango visible y permite alternar entre lista y calendario sin duplicar datos.
-- FullCalendar Standard `7.1.0` se carga únicamente con la ruta lazy de Eventos. Mes, semana, día y lista están implementados; Premium/Scheduler, edición por arrastre y creación por selección quedan fuera de alcance.
+- FullCalendar Standard `7.1.x` se carga únicamente con la ruta lazy de Eventos. Mes, semana, día y lista están implementados; Premium/Scheduler, edición por arrastre y creación por selección quedan fuera de alcance.
 - La consulta calendario incluye eventos superpuestos, incluidos los iniciados antes del rango. Los índices y la consulta aprobados están en ADR-009 y se validan en Emulator Suite antes de desplegar.
 - La dependencia y sus consecuencias se registran en `decisiones/ADR-008-ciclo-temporal-calendario-eventos.md`.
 
@@ -226,7 +226,7 @@ Operaciones de Eventos
 ```
 
 - La búsqueda global usa `terminosBusqueda` generados por backend y un índice `array-contains` más creación descendente; conserva páginas de 25 y no incorpora un motor externo.
-- El detalle es el único punto de entrada de edición, cancelación y logística. Las acciones de propiedad y rol se repiten en backend.
+- El detalle concentra la consulta completa y todas las acciones logísticas. El listado también expone edición y cancelación directa al creador conforme a EVT-103; propiedad y rol se revalidan siempre en backend.
 - La previsualización de disponibilidad usa `eventId` únicamente en edición. La callable valida el evento y su propietario antes de excluir sus reservas; creación no envía el campo y toda mutación vuelve a validar disponibilidad dentro de la transacción autoritativa.
 - `EventsPage` vuelve a consultar esa callable al recuperar foco o visibilidad y cada 30 segundos mientras el formulario sea visible y tenga intervalo válido. La facade conserva el resultado anterior durante la actualización, evita solicitudes solapadas y el componente detiene el monitor al cerrar o destruirse. Si la respuesta cambia, Angular anuncia el conflicto sin reducir cantidades ni convertir la previsualización en autorización.
 - `calendarEstado` y `notificacionesEstado` son resúmenes seguros para la UI; errores técnicos, contactos, leases y claves idempotentes permanecen protegidos.

@@ -39,7 +39,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T21 Actualizar Firestore Rules sin exponer correos.
 - [x] COO-T22 Revalidar claims y perfil canónico admin en mutaciones.
 - [x] COO-T23 Probar lectura completa, catálogo sanitizado y escrituras directas.
-- [ ] COO-T24 Probar carrera entre uso y eliminación.
+- [x] COO-T24 Probar con Firestore Emulator la carrera entre primer uso y eliminación, conservando solo uno de los dos resultados válidos.
 
 ## Angular futuro
 
@@ -58,7 +58,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [ ] COO-T34 Ejecutar COO-001 a COO-034.
 - [x] COO-T35 Ejecutar unitarias Angular y Functions.
 - [x] COO-T36 Ejecutar integración Firestore Emulator con perfiles canónicos sintéticos.
-- [ ] COO-T37 Ejecutar Rules y pruebas de concurrencia.
+- [x] COO-T37 Ejecutar Rules y pruebas de concurrencia; la suite de Coordinaciones aprobó 9 casos con Firestore Emulator el 27 de octubre de 2026.
 - [x] COO-T38 Ejecutar lint, formato y build de staging dentro del presupuesto.
 - [ ] COO-T39 Validar manualmente en staging con datos sintéticos.
 

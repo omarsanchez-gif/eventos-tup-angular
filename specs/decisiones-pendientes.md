@@ -43,36 +43,23 @@
 | Autorización de Eventos   | Eventos y reservaciones autorizados el 29 de septiembre de 2026                   | `AGENTS.md`, ADR-009                                          |
 | Cierre operativo Eventos  | Búsqueda, mutaciones, logística, workers, limpieza e históricos                   | `decisiones/ADR-010-cierre-operativo-eventos.md`              |
 
-## Pendientes transversales de aceptación
+## Único pendiente de aceptación: evidencia administrativa
 
-- Confirmar límites y cuotas aplicables del proyecto Firebase y conservar activo el presupuesto de `100 MXN` con sus alertas.
-- Mantener la auditoría de dependencias sin vulnerabilidades altas o críticas; no usar `npm audit fix --force` ni aceptar cambios mayores automáticos.
-- Dar seguimiento a las tres vulnerabilidades moderadas de ejecución reportadas por `npm audit --omit=dev` y resolverlas mediante una actualización compatible y nueva regresión.
-- Producción permanece fuera de alcance hasta definir su configuración, migración, reversión y autorización expresa, aunque staging ya cuente con aceptación integral.
+El cierre técnico está completo. Solo queda registrar evidencia administrativa autenticada de los catálogos; esta evidencia se realizará después y no autoriza producción:
 
-## Pendientes para aceptar Autenticación y Usuarios
+- Usuarios: confirmar formalmente que el volumen esperado permanece por debajo de 500 y registrar alta, edición, activación, suspensión y eliminación, conservando dos administradores activos.
+- Coordinaciones: registrar alta, edición, suspensión, activación y eliminación permitida/bloqueada.
+- Campus: registrar alta, edición, suspensión, activación y eliminación condicionada.
+- Equipos: registrar alta, edición, suspensión, activación y eliminación condicionada.
 
-- Confirmar que el volumen esperado de `usuarios` permanece por debajo de 500; si lo supera, actualizar la estrategia de búsqueda antes de producción.
-- Conservar al menos dos administradores activos antes de probar operaciones que reduzcan privilegios.
-- Completar, si aún no existe evidencia separada, el recorrido administrativo completo de alta, edición, activación, suspensión y eliminación de Usuarios.
-- Seleccionar los archivos finales de logotipo e iconografía y confirmar la familia tipográfica institucional licenciada.
+No quedan pendientes técnicos de build, seguridad de ejecución, concurrencia, índices, Rules, Calendar, SMTP, cuotas de aceptación, TTL, limpieza, pruebas automatizadas o trazabilidad de Eventos. El backfill histórico y cualquier migración siguen fuera de alcance y solo se ejecutan con autorización separada.
 
-## Pendientes para aceptar Coordinaciones
+## Controles operativos continuos — no son pendientes de aceptación
 
-- Completar la prueba de carrera entre el primer uso de una coordinación y un intento concurrente de eliminación.
-- Ejecutar el recorrido funcional autenticado de alta, edición, suspensión, activación y eliminación condicionada.
-
-## Pendientes para aceptar Campus y Equipos
-
-- Agregar o confirmar las direcciones oficiales de TUP y FCS y validar la búsqueda por ubicación.
-- Confirmar que el inventario de staging continúa representando únicamente unidades utilizables.
-- Ejecutar los recorridos administrativos de alta, edición, suspensión, activación y eliminación condicionada para Campus y Equipos.
-
-## Seguimiento de Eventos e integraciones
-
-- Verificar manualmente eventos históricos incompletos y conservar el backfill como comando explícito; no ejecutarlo sin autorización separada.
-- Observar worker SMTP, limpieza de protocolos y TTL sin bucles, duplicados o crecimiento inesperado.
-- Confirmar cuotas reales de Gmail SMTP, Calendar API y Functions con una carga representativa.
+- Mantener activo el presupuesto informativo de `100 MXN` y observar cuotas, workers, limpieza y TTL mediante las métricas ya definidas.
+- Ejecutar `npm audit --omit=dev` antes de publicar; no usar `npm audit fix --force` ni aceptar cambios mayores automáticos.
+- Las cinco alertas moderadas residuales pertenecen exclusivamente al árbol de `firebase-tools`; no forman parte del runtime desplegado y se revisan cuando Firebase publique una ruta compatible.
+- Producción permanece fuera de alcance hasta definir configuración, migración, reversión y autorización expresa.
 
 ## Dashboard aceptado en staging
 
@@ -95,6 +82,7 @@
 - El 3 de octubre de 2026 se aceptaron el ciclo integral de Eventos, reservaciones concurrentes, logística, Calendar institucional, SMTP HTML, autorización dinámica de contactos, negativas, roles, propiedad y revocación.
 - La aceptación visual, accesible y responsive quedó confirmada en 320 px, tableta y escritorio para Login, shell, Dashboard, catálogos, listado y calendario.
 - Dashboard tiene índice `READY`, callable Gen 2 activa en `us-central1`, Hosting verificado con HTTP 200 y aceptación autenticada con ambos roles.
-- La regresión automatizada vigente aprobó 212 pruebas, además de compilación de Functions, lint Angular/Functions/visual, formato y build de staging.
-- La línea base funcional aceptada quedó versionada y publicada en `desarrollo` mediante `0ad7bae`; esta reconciliación documental posterior deberá incluirse en el siguiente commit sin reabrir la aceptación funcional.
+- La estabilización del 27 de octubre de 2026 agregó pruebas técnicas de bootstrap, carrera de Coordinaciones y flujos de Usuarios. La regresión completa vigente aprobó 215 pruebas y quedó desglosada en `matriz-trazabilidad.md`.
+- Build de producción y staging aplican el mismo presupuesto, las primitivas compartidas están centralizadas y `npm audit --omit=dev` reporta cero vulnerabilidades.
+- La evidencia de cada estabilización queda registrada en el historial Git de `desarrollo`; no se usan identificadores anticipados de commits.
 - Producción no fue utilizada ni modificada.

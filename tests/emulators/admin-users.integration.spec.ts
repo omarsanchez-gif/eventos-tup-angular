@@ -13,7 +13,9 @@ import {
   type AdminRequestIdentity,
   type AdminUsersDependencies,
 } from '../../functions/src/admin-users.js';
+import { bootstrapAuthorization } from '../../functions/src/bootstrap-authorization.js';
 import { createFirestoreAdminUsersRepository } from '../../functions/src/firestore-admin-users.repository.js';
+import { createFirestoreAuthorizationRepository } from '../../functions/src/firestore-authorization.repository.js';
 
 const projectId = 'demo-eventos-tup';
 const domain = 'institucion.test';
@@ -157,6 +159,41 @@ describe('Usuarios con Auth y Firestore Emulator', () => {
       'pending-a',
       'user-a',
     ]);
+  });
+
+  it('ejecuta el núcleo de bootstrap con Auth y Firestore Emulator', async () => {
+    const uid = 'pending-auth-uid';
+    const email = `pendiente.a@${domain}`;
+    await auth.createUser({ uid, email, emailVerified: true, displayName: 'Pendiente A' });
+
+    const result = await bootstrapAuthorization(
+      { uid, email, emailVerified: true },
+      {
+        repository: createFirestoreAuthorizationRepository(firestore),
+        claims: {
+          async getClaims(targetUid) {
+            return (await auth.getUser(targetUid)).customClaims ?? {};
+          },
+          async setClaims(targetUid, claims) {
+            await auth.setCustomUserClaims(targetUid, claims);
+          },
+          async revokeRefreshTokens(targetUid) {
+            await auth.revokeRefreshTokens(targetUid);
+          },
+        },
+        logger: { warn() {}, error() {} },
+        institutionalDomain: domain,
+      },
+    );
+
+    expect(result).toMatchObject({ uid, correo: email, rol: 'usuario', claimsUpdated: true });
+    const canonical = (await firestore.doc('usuarios/pending-a').get()).data();
+    expect(canonical?.['uid']).toBe(uid);
+    expect(canonical?.['ultimoAcceso']).toBeInstanceOf(Timestamp);
+    expect((await auth.getUser(uid)).customClaims).toEqual({
+      authorized: true,
+      role: 'usuario',
+    });
   });
 
   it('crea solo el documento canónico con fechas administradas por servidor', async () => {

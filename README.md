@@ -99,7 +99,7 @@ npm run deploy:staging:auth
 
 Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 3 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
 
-La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. Permanecen como seguimiento las cuotas, la observación prolongada de workers/limpieza/TTL y las vulnerabilidades moderadas reportadas por `npm audit`; ninguna autoriza producción.
+La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. La estabilización local del 27 de octubre dejó el build limpio, `npm audit --omit=dev` en cero y la auditoría completa sin altas/críticas; los cinco avisos moderados exclusivos de Firebase CLI están aceptados y mitigados en ADR-011. Solo queda registrar la evidencia administrativa exhaustiva de Usuarios, Coordinaciones, Campus y Equipos; nada de ello autoriza producción.
 
 ## Calidad
 

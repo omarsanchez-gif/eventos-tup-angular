@@ -24,6 +24,7 @@
 - Carga diferida de rutas funcionales.
 - Evitar importar módulos completos cuando existan imports específicos.
 - Presupuesto inicial de build: advertencia en 750 kB y error en 1 MB para el bundle inicial, sujeto a medición después del primer módulo.
+- Presupuesto por estilo de componente: advertencia en 6 kB y error en 8 kB. Producción y staging heredan ambos presupuestos desde la configuración base de Angular.
 - Objetivos en staging representativo: LCP ≤ 2.5 s, INP ≤ 200 ms y CLS ≤ 0.1.
 - Imágenes optimizadas y sin recursos decorativos innecesarios.
 - FullCalendar y sus vistas se cargan únicamente con la ruta lazy de Eventos; la consulta limita el rango visible y no descarga el historial completo.
@@ -37,6 +38,7 @@
 - Sesión gestionada exclusivamente por Firebase Authentication.
 - Autorización backend mediante claims y reglas aprobadas.
 - Dependencias con versiones soportadas y revisión de vulnerabilidades antes de publicar.
+- El árbol de ejecución debe conservar `npm audit --omit=dev` en cero. Los avisos exclusivos de herramientas pueden aceptarse solo de forma explícita, sin alertas altas/críticas y sin forzar versiones mayores incompatibles.
 
 ## Confiabilidad
 

@@ -62,7 +62,7 @@
 
 - [x] AUTH-T41 Crear pruebas unitarias de mapeo de errores y estado.
 - [x] AUTH-T42 Crear pruebas de integración de Login, sesión y destino autenticado.
-- [ ] AUTH-T43 Crear pruebas de callable con emuladores.
+- [x] AUTH-T43 Probar el núcleo de `bootstrapAuthorization` con Auth y Firestore Emulator usando el repositorio Firestore real extraído; aprobado el 27 de octubre de 2026.
 - [x] AUTH-T44 Crear pruebas de Rules basadas en claims.
 - [x] AUTH-T45 Ejecutar los casos funcionales, de roles y rechazo aplicables de `pruebas.md` en staging; aceptación confirmada el 3 de octubre de 2026.
 - [x] AUTH-T46 Validar visualmente en staging antes de producción; aceptación accesible y responsive confirmada el 3 de octubre de 2026.
@@ -71,4 +71,4 @@
 
 - [x] AUTH-T47 Actualizar matriz de trazabilidad.
 - [x] AUTH-T48 Confirmar que no se implementaron módulos fuera de alcance.
-- [ ] AUTH-T49 Cumplir `definicion-terminado.md`.
+- [x] AUTH-T49 Cumplir `definicion-terminado.md`; cierre técnico verificado el 27 de octubre de 2026 con regresión, builds, lint, formato y auditoría de ejecución en cero.

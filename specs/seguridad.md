@@ -159,6 +159,8 @@ La evidencia del 30 de septiembre cubre creación, disponibilidad, edición, can
 
 Evidencia del 30 de septiembre de 2026: Angular quedó en `22.2.x`, Firebase Web en `12.19.0`, Firebase Admin en `14.5.0`, Firebase Functions en `7.4.0` y el override acotado de ADR-011 resolvió gRPC. La auditoría completa y `npm audit --omit=dev` reportaron cero vulnerabilidades altas o críticas; permanecen 15 moderadas totales y 3 moderadas de ejecución para seguimiento. Las 183 pruebas, lint, formato y ambos builds aprobaron antes del despliegue, sin `--force`.
 
+Evidencia vigente del 27 de octubre de 2026: la actualización compatible y los overrides acotados de ADR-011 dejaron `npm audit --omit=dev` en cero vulnerabilidades de cualquier severidad. La auditoría completa quedó sin altas o críticas; sus cinco avisos moderados pertenecen exclusivamente a `firebase-tools` y cuentan con aceptación acotada de herramienta, mitigación, vigencia y responsable. Los builds, lint, formato y regresión aprobaron sin `--force` y sin despliegue.
+
 ## Criterio de aceptación
 
 Una sesión Firebase sin claim autorizado no obtiene acceso a Firestore o Storage protegidos. Un usuario autorizado solo puede ejecutar las operaciones correspondientes a su rol y propiedad.
