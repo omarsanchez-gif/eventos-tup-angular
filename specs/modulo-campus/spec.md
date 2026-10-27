@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. El Hosting vigente incorpora la normalización visual compartida y el catálogo TUP/FCS con sus horarios canónicos. La comparación visual autenticada, el recorrido manual completo y la aceptación permanecen pendientes. Producción no está autorizada.
+Implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. El Hosting vigente incorpora la normalización visual compartida y el catálogo TUP/FCS con sus horarios canónicos. La comparación visual, accesible y responsive quedó aceptada el 3 de octubre de 2026. El recorrido administrativo completo y las direcciones oficiales conservan seguimiento separado; producción no está autorizada.
 
 ## Objetivo
 
@@ -129,7 +129,7 @@ La aplicación no crea semillas automáticas. El administrador podrá capturar:
 
 La normalización local del 21 de agosto de 2026 retiró de Campus las redefiniciones de botones e icon-buttons y sustituyó colores, alturas, radios, tipografía, foco, estados y superficies compartidos por tokens globales. La hoja encapsulada conserva únicamente composición y distribución propias de Campus.
 
-`npm run lint:visual` impide reintroducir selectores compartidos o la paleta anterior. La corrección forma parte del Hosting vigente de staging; permanece pendiente la comparación visual autenticada con los demás catálogos.
+`npm run lint:visual` impide reintroducir selectores compartidos o la paleta anterior. La corrección forma parte del Hosting vigente de staging; la comparación visual autenticada con los demás catálogos quedó confirmada el 3 de octubre de 2026.
 
 ## Fuera de alcance
 

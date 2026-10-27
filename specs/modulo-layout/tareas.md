@@ -19,7 +19,7 @@
 ## Calidad
 
 - [x] LAYOUT-T11 Crear pruebas unitarias de rol, navegación, toggle y logout.
-- [ ] LAYOUT-T12 Validar manualmente teclado, semántica y ancho de 320 px con sesión autorizada.
+- [x] LAYOUT-T12 Validar manualmente teclado, semántica y ancho de 320 px con sesión autorizada; aprobado el 3 de octubre de 2026.
 - [x] LAYOUT-T13 Ejecutar lint, pruebas y build de staging.
 - [x] LAYOUT-T14 Actualizar trazabilidad y documentación final.
-- [ ] LAYOUT-T15 Realizar aceptación visual autenticada en staging.
+- [x] LAYOUT-T15 Realizar aceptación visual autenticada en staging; aprobada el 3 de octubre de 2026.

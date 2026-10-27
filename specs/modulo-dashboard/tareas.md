@@ -27,6 +27,6 @@
 ## Calidad y entrega
 
 - [x] DASH-T16 Aprobar pruebas Angular y Functions, Firestore Emulator, lint, guardia visual, formato y builds.
-- [ ] DASH-T17 Realizar aceptación visual y accesible manual.
+- [x] DASH-T17 Realizar aceptación visual y accesible manual; aprobada el 3 de octubre de 2026.
 - [x] DASH-T18 Desplegar índice, Function y Hosting únicamente con autorización separada de staging.
-- [ ] DASH-T19 Verificar datos reales en staging para ambos roles sin usar producción.
+- [x] DASH-T19 Verificar datos reales en staging para ambos roles sin usar producción; aprobado el 3 de octubre de 2026.

@@ -1,5 +1,9 @@
 # Spec: Layout administrativo
 
+## Estado
+
+Implementado y publicado únicamente en Hosting de staging. La navegación por rol, teclado, foco, semántica y presentación en 320 px, tableta y escritorio quedaron aceptadas manualmente el 3 de octubre de 2026. Producción no está autorizada.
+
 ## Objetivo
 
 Proporcionar la estructura privada, institucional y responsive que aparece después de autorizar la sesión y aloja los módulos funcionales vigentes sin incorporar su lógica de negocio.

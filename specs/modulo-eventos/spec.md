@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables, ampliada el 21 de agosto de 2026 con Campus y Equipos dinámicos, actualizada el 28 de septiembre de 2026 con eventos multidiarios, anticipación, estados derivados y calendario administrativo, y autorizada para implementación el 29 de septiembre de 2026 conforme a ADR-009. Desde el 30 de septiembre están implementados y desplegados únicamente a staging creación, consultas, búsqueda, detalle, edición, cancelación, reservaciones, logística, PDF, Calendar/SMTP, mantenimiento, backfill y experiencia Angular. El calendario institucional y la entrega SMTP permitida tienen evidencia real; la autorización dinámica de contactos de Coordinaciones está desplegada. Permanecen pendientes las pruebas reales de actualización y cancelación, la entrega positiva fuera de la lista fija, las negativas controladas y la aceptación manual. Producción continúa fuera de alcance.
+Especificación redefinida documentalmente el 19 de agosto de 2026 para incorporar Coordinaciones y notificaciones confiables, ampliada el 21 de agosto de 2026 con Campus y Equipos dinámicos, actualizada el 28 de septiembre de 2026 con eventos multidiarios, anticipación, estados derivados y calendario administrativo, y autorizada para implementación el 29 de septiembre de 2026 conforme a ADR-009. Desde el 30 de septiembre están implementados y desplegados únicamente a staging creación, consultas, búsqueda, detalle, edición, cancelación, reservaciones, logística, PDF, Calendar/SMTP, mantenimiento, backfill y experiencia Angular. El 3 de octubre se aceptaron el ciclo institucional completo, correos dinámicos y negativos, propiedad, roles, concurrencia, logística y experiencia visual, accesible y responsive. Permanecen como seguimiento el backfill explícito, cuotas y observación prolongada de workers, limpieza y TTL. Producción continúa fuera de alcance.
 
 ## Objetivo
 
@@ -35,7 +35,7 @@ Antes de integrar Eventos deben existir:
 
 La creación del calendario institucional, la habilitación de la API, el consentimiento OAuth, la comprobación del buzón SMTP y la configuración de los secretos ya están realizadas en staging. Sus valores no se documentan. Las Functions consumidoras están enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3.
 
-La aceptación manual pendiente de los catálogos y de Eventos no invalida la evidencia automatizada ni el despliegue técnico existente, pero debe concluir antes de declarar staging aceptado o promover a producción.
+La aceptación manual integral de Eventos quedó confirmada el 3 de octubre de 2026. Los recorridos administrativos completos de algunos catálogos conservan seguimiento propio y producción requiere autorización separada.
 
 ## Alcance
 
@@ -417,13 +417,10 @@ service-unavailable
 - EVT-D31: El presupuesto de staging es informativo por `100 MXN`, con avisos al primer gasto y a `50`, `80` y `100 MXN`; no sustituye límites técnicos ni detiene servicios.
 - EVT-D32: Reservaciones usa la transacción, controles por equipo e índices de ADR-009; hasta 20 tipos se confirman todos o ninguno y una concurrencia agotada falla sin estado parcial.
 
-## Pendiente operativo
+## Seguimiento operativo
 
-- Resolver y guardar el ID canónico de la Coordinación de Sistemas ya creada en staging antes de activar notificaciones logísticas reales. La implementación local puede obtenerlo mediante configuración sintética.
-
-No bloquean iniciar desarrollo local, pero sí el primer despliegue funcional de integraciones a staging:
-
-- Completar la aceptación funcional, accesible y visual pendiente de Coordinaciones, Campus y Equipos.
-- Cargar `GOOGLE_CALENDAR_CONFIG` y `SMTP_CONFIG` en Secret Manager.
-- Implementar y comprobar la lista permitida de SMTP.
-- Confirmar cuotas aplicables y ejecutar pruebas reales de creación, actualización y cancelación de Calendar y de envío SMTP.
+- El ID canónico de la Coordinación de Sistemas, los secretos, la lista fija y la autorización dinámica están configurados en staging.
+- El ciclo real de Calendar/SMTP, reservaciones, logística, roles y aceptación visual quedó confirmado el 3 de octubre de 2026.
+- Completar los recorridos administrativos pendientes de Coordinaciones, Campus y Equipos; su aceptación visual ya está cerrada.
+- Confirmar cuotas aplicables de Calendar, SMTP y Functions y observar workers, limpieza y TTL con carga representativa.
+- Mantener el backfill como operación explícita; staging o producción requieren autorización separada para ejecutarlo.

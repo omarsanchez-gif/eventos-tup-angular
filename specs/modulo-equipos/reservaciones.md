@@ -2,7 +2,7 @@
 
 ## Estado
 
-Decisiones funcionales documentadas, incluido el contrato multidiario aprobado el 28 de septiembre de 2026. La estrategia transaccional, índices, reservaciones y su integración con Eventos fueron autorizadas expresamente el 29 de septiembre de 2026 conforme a ADR-009. El 30 de septiembre se implementaron, verificaron y desplegaron únicamente a staging la disponibilidad, creación y sustitución atómicas, cancelación, recepción, demora, cobertura administrativa y avisos logísticos. Los índices requeridos están `READY`; la aceptación manual sigue pendiente y producción no está autorizada.
+Decisiones funcionales documentadas, incluido el contrato multidiario aprobado el 28 de septiembre de 2026. La estrategia transaccional, índices, reservaciones y su integración con Eventos fueron autorizadas expresamente el 29 de septiembre de 2026 conforme a ADR-009. El 30 de septiembre se implementaron, verificaron y desplegaron únicamente a staging la disponibilidad, creación y sustitución atómicas, cancelación, recepción, demora, cobertura administrativa y avisos logísticos. Los índices requeridos están `READY`; la aceptación manual de concurrencia, horarios, multidiarios, traslados, cobertura, recepción y demora quedó confirmada el 3 de octubre. Producción no está autorizada.
 
 ## Principio
 
@@ -199,10 +199,9 @@ Solo backend y operaciones administrativas expresamente especificadas pueden mod
 - La UI se ubica en el detalle de Eventos, sección “Logística de equipos”; no se crea un módulo o ruta adicional.
 - Las causas independientes viven en `motivosRevision`, por lo que confirmar cobertura no borra una revisión por inventario o coordinación.
 
-## Pendientes operativos
+## Seguimiento operativo
 
-- Resolver y guardar por ID canónico la Coordinación de Sistemas ya creada en staging.
-- Probar la consulta por intervalo, eventos multidiarios, límites de anticipación, traslados, demoras y edición concurrente en Emulator Suite.
-- Cargar secretos y completar pruebas controladas antes del despliegue funcional de Calendar y SMTP a staging.
-- Las tres operaciones administrativas están implementadas; la matriz exhaustiva de carreras de recepción, demora y cobertura continúa como aceptación técnica pendiente conforme a ADR-010.
+- La Coordinación de Sistemas, secretos, consulta por intervalo y contratos logísticos están configurados en staging.
+- Eventos multidiarios, anticipación, traslados, demoras, recepción, cobertura y edición concurrente quedaron aceptados mediante evidencia automatizada y manual el 3 de octubre de 2026.
+- Observar workers, avisos logísticos, limpieza y TTL con carga representativa antes de producción.
 - Enviar alertas logísticas mediante la bandeja protegida cuando exista `cobertura_sistemas`, `inventario_reducido`, cambio incompatible posterior al traslado, demora o cancelación posterior a la salida. `versionesAvisoLogistico` conserva por causa la versión del control que la originó y la deduplicación usa evento, equipo, motivo, esa versión y destinatario de la coordinación canónica de Sistemas.

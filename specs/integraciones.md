@@ -87,7 +87,7 @@ La lista fija es una defensa de staging para creadores y cuentas operativas. Los
 
 La primera creación real confirmó Firestore y SMTP, pero dejó `calendarEstado: error`. La inspección segura de `GOOGLE_CALENDAR_CONFIG` versión 1 detectó dos objetos JSON completos, idénticos y concatenados. Se creó la versión 2 con una sola copia, se validaron el refresh token y el endpoint de eventos de `CALENDARIO - STAGING`, y las siete callables enlazadas quedaron `ACTIVE` consumiendo explícitamente la versión 2.
 
-La reconciliación autenticada posterior completó `PRUEBA 1` sin repetir el correo: Firestore quedó con `calendarEstado: sincronizado`, `calendarEventId` presente y `notificacionesEstado: completas`. La bandeja protegida conservó exactamente un trabajo `creacion/enviado`, cuya actualización era anterior a la reconciliación. Una consulta de solo lectura a Google Calendar confirmó una única entrada activa con resumen `PRUEBA 1`, estado `confirmed` y horario del 6 de octubre de 2026 de 09:37 a 10:00 en la zona aprobada. No se regeneraron credenciales, no se modificó producción y las pruebas reales de actualización y cancelación siguen pendientes.
+La reconciliación autenticada posterior completó `PRUEBA 1` sin repetir el correo: Firestore quedó con `calendarEstado: sincronizado`, `calendarEventId` presente y `notificacionesEstado: completas`. La bandeja protegida conservó exactamente un trabajo `creacion/enviado`, cuya actualización era anterior a la reconciliación. Una consulta de solo lectura a Google Calendar confirmó una única entrada activa con resumen `PRUEBA 1`, estado `confirmed` y horario del 6 de octubre de 2026 de 09:37 a 10:00 en la zona aprobada. El 3 de octubre se aceptaron también actualización y cancelación reales; no se regeneraron credenciales ni se modificó producción.
 
 El 1 de octubre de 2026, `PRUEBA 2` revisión 3 confirmó el cierre seguro de la lista anterior: el aviso al creador se envió y el de coordinación terminó como `recipient-not-allowed`, por lo que el estado visible fue `parciales`. Después de la autorización expresa se creó `SMTP_CONFIG` versión 3 con las cuatro cuentas permitidas y se enlazó a las ocho Functions consumidoras. El trabajo fallido permanece terminal e idempotente; cambiar el secreto no lo reabre ni lo duplica y la entrega nueva requiere otra revisión funcional del evento.
 
@@ -97,7 +97,7 @@ La integración inicial utilizó `calendar.events.owned` para el calendario dese
 
 Se autorizó que staging deje de escribir en `CALENDARIO - STAGING` y use el calendario institucional adicional. Los eventos creados durante las pruebas son desechables y no se copian, recrean ni reconcilian en el nuevo calendario. El calendario anterior no se elimina mediante esta migración; simplemente deja de ser el destino configurado.
 
-La activación se ejecutó en este orden: se verificó el permiso concedido a `eventos@tecplayacar.edu.mx`, se obtuvo consentimiento OAuth con `calendar.events`, se comprobó mediante lectura el endpoint de eventos del calendario institucional, se creó `GOOGLE_CALENDAR_CONFIG` versión 3 conservando la estructura aprobada y se redesplegaron exclusivamente las siete Functions consumidoras. Todas quedaron `ACTIVE` en `us-central1`. Permanece pendiente ejecutar una creación sintética nueva; no se reutilizan `calendarEventId` pertenecientes al calendario anterior.
+La activación se ejecutó en este orden: se verificó el permiso concedido a `eventos@tecplayacar.edu.mx`, se obtuvo consentimiento OAuth con `calendar.events`, se comprobó mediante lectura el endpoint de eventos del calendario institucional, se creó `GOOGLE_CALENDAR_CONFIG` versión 3 conservando la estructura aprobada y se redesplegaron exclusivamente las siete Functions consumidoras. Todas quedaron `ACTIVE` en `us-central1`. La creación sintética nueva y su ciclo posterior quedaron aceptados el 3 de octubre; no se reutilizan `calendarEventId` pertenecientes al calendario anterior.
 
 ## Notificaciones logísticas de Equipos — implementación autorizada
 
@@ -209,7 +209,7 @@ La clave idempotente incluye evento, equipo, motivo, versión de origen de esa c
 
 Entrada: inicio y fin exclusivos del intervalo visible. Valida autorización, zona, orden y duración máxima; consulta eventos superpuestos y devuelve `serverNow` y la proyección sanitizada con estado temporal calculado a hora de servidor. No acepta filtros que amplíen permisos ni obtiene datos desde Google Calendar.
 
-Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill están implementados y desplegados únicamente a staging. Calendar y SMTP cuentan con evidencia real de creación/reconciliación y entrega permitida en el calendario de prueba; la configuración del calendario institucional fue validada en lectura y permanece pendiente su creación sintética controlada, junto con actualización, cancelación y negativas. Ninguna evidencia autoriza producción.
+Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill están implementados y desplegados únicamente a staging. El 3 de octubre de 2026 se aceptaron la creación, actualización y cancelación sobre una sola entrada del calendario institucional, la entrega permitida a contactos canónicos de Coordinaciones, las negativas controladas, la deduplicación y la presentación HTML. Ninguna evidencia autoriza producción.
 
 ## Búsqueda y compatibilidad histórica
 
@@ -232,13 +232,12 @@ Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill e
 - `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3 están enlazados a las Functions consumidoras correspondientes. Calendar usa el calendario institucional compartido y OAuth `calendar.events`; la comprobación de lectura aprobó sin exponer credenciales.
 - La lista fija conserva Omar, Eventos, Víctor Yama y Lizett Méndez. Los contactos institucionales fotografiados como `coordinacion` o `sistemas` se autorizan dinámicamente sin rotar `SMTP_CONFIG`; cualquier otra dirección continúa bloqueada.
 - El 2 de octubre de 2026 la plantilla institucional HTML y su alternativa de texto quedaron desplegadas en las ocho Functions consumidoras de SMTP de staging. El contenido usa únicamente datos fotografiados de la revisión, estilos inline, escape de valores y recursos locales al propio mensaje; Firebase confirmó las ocho actualizaciones sin modificar secretos, Hosting, Rules, índices, datos o producción.
-- El 3 de octubre de 2026 se implementó y validó la autorización dinámica de contactos de Coordinaciones definida por RN-082. Con autorización separada se actualizaron únicamente las ocho Functions consumidoras de SMTP en staging y Firebase confirmó las ocho operaciones. `SMTP_CONFIG` versión 3 se conservó sin rotación; no se modificaron Hosting, Rules, índices, datos o producción. La prueba real de un contacto fuera de la lista fija continúa pendiente.
+- El 3 de octubre de 2026 se implementó y validó la autorización dinámica de contactos de Coordinaciones definida por RN-082. Con autorización separada se actualizaron únicamente las ocho Functions consumidoras de SMTP en staging y Firebase confirmó las ocho operaciones. `SMTP_CONFIG` versión 3 se conservó sin rotación; la prueba real positiva fuera de la lista fija y las negativas controladas quedaron aceptadas ese mismo día. No se modificaron Hosting, Rules, índices, datos o producción.
 
-## Pendientes antes de aceptar las integraciones de staging
+## Seguimiento operativo después de aceptar staging
 
-- Verificar una entrega a un contacto canónico de Coordinaciones fuera de la lista fija, un creador institucional fuera de esa lista rechazado y un correo externo rechazado antes de SMTP.
 - Confirmar las cuotas reales de Gmail SMTP, Calendar API y del worker con la carga esperada.
-- Ejecutar creación, actualización y cancelación contra Calendar, además de envío, bloqueo fuera de lista, reintentos y deduplicación SMTP.
-- Validar visualmente en Gmail una notificación nueva o una actualización posterior al despliegue; los trabajos ya enviados conservan el cuerpo histórico y no se reenvían.
+- Observar durante un periodo representativo los reintentos, jobs, logs sanitizados, presupuesto, limpieza y TTL para detectar crecimiento o bucles inesperados.
+- Resolver mediante actualización compatible las vulnerabilidades moderadas de ejecución; no usar `npm audit fix --force`.
 
-La prueba real sigue este orden: dependencias de ejecución sin vulnerabilidades altas o críticas; configuración logística canónica; Rules; Storage Rules; Functions enlazadas a los secretos; creación sintética; actualización; cancelación; bloqueo fuera de lista; revisión de jobs, logs y presupuesto. Un fallo detiene la secuencia y no se compensa borrando el evento canónico de Firestore.
+La aceptación manual del 3 de octubre siguió el orden aprobado: configuración canónica, Rules, Functions enlazadas, creación, actualización, cancelación, entrega dinámica, negativas, deduplicación y revisión visual. Un fallo futuro detiene la secuencia y no se compensa borrando el evento canónico de Firestore.

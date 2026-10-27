@@ -19,7 +19,7 @@ Migración del frontend institucional a Angular 22, guiada exclusivamente por la
 - Integraciones backend idempotentes con Google Calendar institucional y correo HTML mediante secretos de staging.
 - Reglas y pruebas de autorización para Firestore y Storage, índices compuestos y TTL de notificaciones.
 
-Todo el alcance anterior está desplegado únicamente a staging. La aceptación manual transversal y varias pruebas operativas de Calendar/SMTP continúan pendientes; producción no está autorizada.
+Todo el alcance anterior está desplegado únicamente a staging. El 3 de octubre de 2026 se completó la aceptación funcional, operativa, visual, accesible y responsive definida para staging, incluidos Calendar, SMTP, roles, concurrencia y logística. Producción no está autorizada.
 
 ## Requisitos locales
 
@@ -99,7 +99,7 @@ npm run deploy:staging:auth
 
 Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 3 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
 
-Continúan pendientes antes de aceptar staging: creación sintética en el calendario institucional vigente, actualización y cancelación reales, entrega a un contacto de Coordinaciones fuera de la lista fija, negativas controladas y revisión manual accesible y responsive con ambos roles.
+La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. Permanecen como seguimiento las cuotas, la observación prolongada de workers/limpieza/TTL y las vulnerabilidades moderadas reportadas por `npm audit`; ninguna autoriza producción.
 
 ## Calidad
 

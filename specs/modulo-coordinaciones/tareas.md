@@ -51,7 +51,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T30 Crear edición, activación, suspensión y eliminación.
 - [x] COO-T31 Implementar estados loading, vacío, error y éxito.
 - [x] COO-T32 Implementar explicación de eliminación bloqueada.
-- [x] COO-T33 Completar responsive y accesibilidad en código; revisión manual pendiente.
+- [x] COO-T33 Completar responsive y accesibilidad en código y aceptar la revisión manual el 3 de octubre de 2026.
 
 ## Pruebas futuras
 
@@ -64,7 +64,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 
 ## Cierre futuro
 
-- [ ] COO-T40 Obtener aceptación funcional y visual.
+- [ ] COO-T40 Completar la aceptación funcional del recorrido administrativo; la aceptación visual quedó aprobada el 3 de octubre de 2026.
 - [x] COO-T41 Autorizar explícitamente el inicio de Eventos el 29 de septiembre de 2026.
 - [x] COO-T42 Confirmar que producción no fue utilizada ni modificada.
 - [x] COO-T44 Desplegar las seis callables de Coordinaciones únicamente a staging con alcance explícito.

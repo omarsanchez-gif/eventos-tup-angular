@@ -2,7 +2,7 @@
 
 ## Estado
 
-Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de septiembre de 2026 con anticipación, eventos multidiarios, estados derivados y FullCalendar. El 30 de septiembre se obtuvo evidencia local de creación, disponibilidad, búsqueda, detalle, edición, cancelación, logística administrativa, integraciones con dobles, leases, limpieza, backfill, concurrencia, Rules y experiencia Angular; además se desplegaron secretos, configuración, Rules, Functions y Hosting únicamente a staging. El 1 de octubre se verificaron una entrega SMTP permitida y la creación/reconciliación real de `PRUEBA 1` en Calendar sin duplicar el correo. La aceptación manual, la actualización y cancelación externas, el rechazo SMTP fuera de lista y la ejecución exhaustiva de toda la matriz EVT-001 a EVT-102 continúan pendientes.
+Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de septiembre de 2026 con anticipación, eventos multidiarios, estados derivados y FullCalendar. El 30 de septiembre se obtuvo evidencia local de creación, disponibilidad, búsqueda, detalle, edición, cancelación, logística administrativa, integraciones con dobles, leases, limpieza, backfill, concurrencia, Rules y experiencia Angular; además se desplegaron secretos, configuración, Rules, Functions y Hosting únicamente a staging. El 3 de octubre se completó la aceptación manual del ciclo institucional, Calendar/SMTP, roles, concurrencia, logística y experiencia visual/accesible/responsive. La ejecución exhaustiva individual de toda la matriz EVT-001 a EVT-110 conserva seguimiento documental separado.
 
 ### Evidencia automatizada disponible
 
@@ -11,7 +11,7 @@ Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de sept
 - 15 pruebas de Firestore y Storage Rules aprobadas; el cliente no escribe Eventos ni lee reservas, controles, notificaciones o configuración.
 - 63 pruebas Angular aprobadas, incluidas la transición temporal automática, la propagación del `eventId` al abrir una edición, la actualización anunciada al recuperar foco y las acciones/visibilidad por rol del listado; compilación TypeScript de Functions, lint completo, formato y build Angular de staging aprobados.
 - La evidencia automatizada vigente suma 191 pruebas aprobadas: 63 Angular, 71 Functions, 42 de emuladores funcionales y 15 de Rules.
-- Las pruebas no acreditan todavía aceptación visual, teclado, lector de pantalla, integraciones reales ni despliegue; edición y cancelación sí cuentan con evidencia automatizada local.
+- La evidencia automatizada se complementa con la aceptación manual del 3 de octubre de 2026 para visual, teclado, lector de pantalla, integraciones reales y comportamiento desplegado en staging.
 
 ## Acceso y propiedad
 
@@ -401,7 +401,7 @@ Evidencia de staging del 1 de octubre de 2026: las siete callables consumidoras 
 
 En `eventos-tup-angular-stg`, `omar.sanchez@tecplayacar.edu.mx`, `eventos@tecplayacar.edu.mx`, `victor.yama@tecplayacar.edu.mx` y `lizett.mendez@tecplayacar.edu.mx` forman la lista fija para creadores y cuentas operativas. Además, puede recibir un contacto fuera de esa lista cuando el backend lo resolvió desde Coordinaciones, el trabajo protegido conserva `destinatarioTipo: coordinacion | sistemas` y `coordinacionId` canónico, y el correo pertenece exactamente al dominio institucional. Cualquier otro destinatario se bloquea antes de SMTP, no se redirige y no se marca como enviado. Una configuración sin `allowedRecipients`, con tipo inválido, vacía o duplicada falla antes de crear el transporte; la prueba negativa inspecciona estado y logs sanitizados sin contactar cuentas no autorizadas.
 
-Evidencia histórica del 1 de octubre de 2026: bajo la versión 2, `PRUEBA 2` revisión 3 envió el trabajo del creador y terminó el trabajo de coordinación con `recipient-not-allowed`, produciendo `parciales`. La versión 3 se creó con las cuatro direcciones exactas y las ocho Functions consumidoras se verificaron `ACTIVE` y enlazadas a esa versión. EVT-110 sustituyó esa restricción absoluta por la procedencia protegida descrita arriba, sin rotar el secreto, y el 3 de octubre se desplegaron las ocho Functions consumidoras en staging. Falta comprobar una entrega real a un contacto de Coordinaciones fuera de la lista fija; el trabajo terminal anterior no se reintenta automáticamente.
+Evidencia histórica del 1 de octubre de 2026: bajo la versión 2, `PRUEBA 2` revisión 3 envió el trabajo del creador y terminó el trabajo de coordinación con `recipient-not-allowed`, produciendo `parciales`. La versión 3 se creó con las cuatro direcciones exactas y las ocho Functions consumidoras se verificaron `ACTIVE` y enlazadas a esa versión. EVT-110 sustituyó esa restricción absoluta por la procedencia protegida descrita arriba, sin rotar el secreto. El 3 de octubre se aceptaron una entrega real a un contacto canónico fuera de la lista fija y las negativas controladas; el trabajo terminal anterior no se reintenta automáticamente.
 
 ### EVT-090 — Configuración local no versionada
 
@@ -425,13 +425,13 @@ Editar fecha, campus o equipos bloquea la unión ordenada de equipos anteriores 
 
 Abrir un evento con equipos ya reservados consulta disponibilidad con su `eventId`: las reservas activas propias no se descuentan, las reservas superpuestas de otros eventos sí y el formulario permite conservar cantidades válidas sin mostrar una indisponibilidad falsa. Crear no envía `eventId`. Un ID inexistente, ajeno o cancelado se rechaza y nunca permite ignorar capacidad; `updateEvent` vuelve a calcular el estado dentro de su transacción.
 
-Evidencia del 1 de octubre de 2026: aprobaron la regresión Angular, las pruebas unitarias de Functions y la prueba con Firestore Emulator; `checkEventAvailability` y Hosting se desplegaron por separado únicamente a staging. Falta la aceptación autenticada en navegador abriendo un evento existente con equipo reservado.
+Evidencia del 1 de octubre de 2026: aprobaron la regresión Angular, las pruebas unitarias de Functions y la prueba con Firestore Emulator; `checkEventAvailability` y Hosting se desplegaron por separado únicamente a staging. La aceptación autenticada abriendo un evento existente con equipo reservado quedó confirmada el 3 de octubre.
 
 ### EVT-093B — Actualización del formulario abierto
 
 Con un intervalo y equipos válidos, el formulario vuelve a consultar al recuperar foco o visibilidad y cada 30 segundos mientras la pestaña esté visible. Si otra pestaña consume capacidad, conserva las cantidades capturadas, actualiza “Disponibles”, marca el resumen no confirmable y anuncia el cambio mediante región viva. Durante la consulta conserva el resultado anterior, no solapa llamadas, no consulta con el documento oculto y detiene temporizadores al cerrar o destruir el componente. La confirmación backend continúa rechazando cualquier carrera posterior.
 
-Evidencia del 1 de octubre de 2026: la prueba de componente simula una segunda respuesta que reduce la capacidad al recuperar foco, confirma la actualización a `Disponibles: 0`, el anuncio accesible y la conservación de la cantidad capturada. Las 59 pruebas Angular, lint completo, guardia visual, formato y build de staging aprobaron; después se publicó únicamente Hosting en staging. Falta la aceptación manual en dos pestañas.
+Evidencia del 1 de octubre de 2026: la prueba de componente simula una segunda respuesta que reduce la capacidad al recuperar foco, confirma la actualización a `Disponibles: 0`, el anuncio accesible y la conservación de la cantidad capturada. Las 59 pruebas Angular, lint completo, guardia visual, formato y build de staging aprobaron; después se publicó únicamente Hosting en staging. La aceptación manual en dos pestañas quedó confirmada el 3 de octubre.
 
 ### EVT-094 — Índices declarativos
 
@@ -481,13 +481,13 @@ El creador de un evento no cancelado ve en la columna `Acciones` los controles a
 
 Con rol canónico `usuario`, el listado no renderiza el encabezado `Integración`, estados de Calendar ni estados de correo. Con rol `admin`, la columna y sus estados públicos sí aparecen. Cambiar el rol reactivo actualiza la vista sin depender de ocultamiento por CSS ni exponer datos técnicos.
 
-Evidencia del 2 de octubre de 2026: los 6 casos del componente de listado y la regresión Angular completa de 63 pruebas aprobaron. También aprobaron lint Angular/Functions/visual, formato y build de staging. Después se publicó únicamente Hosting en staging y la URL respondió HTTP 200 con el bundle esperado; falta la aceptación autenticada por rol.
+Evidencia del 2 de octubre de 2026: los 6 casos del componente de listado y la regresión Angular completa de 63 pruebas aprobaron. También aprobaron lint Angular/Functions/visual, formato y build de staging. Después se publicó únicamente Hosting en staging y la URL respondió HTTP 200 con el bundle esperado; la aceptación autenticada por rol quedó confirmada el 3 de octubre.
 
 ### EVT-105 — Composición visual administrativa normalizada
 
 El listado de Eventos conserva el orden común de encabezado, alertas, controles, listado y diálogos. Sus superficies usan las primitivas compartidas `panel` y `alert`; el encabezado del listado usa separación de 16 px y relleno de 20 px; las tarjetas móviles agrupan acciones en `card-actions`; cada encabezado de tabla declara `scope="col"`; y los tooltips de acciones aparecen con puntero, `focus-within` o foco directo. El selector `Listado`/`Calendario` permanece como extensión funcional dentro del panel de controles y no altera colores, tipografía, radios, tamaños o estados compartidos. Debe aprobar `npm run lint:visual`, lint, formato, pruebas Angular y build de staging sin introducir cambios funcionales.
 
-Evidencia del 2 de octubre de 2026: aprobaron la guardia visual, lint Angular/Functions, formato, build de staging y la regresión completa de 63 pruebas Angular en 17 archivos. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó el bundle esperado `main-ACLYBD7D.js`. No se desplegaron servicios backend ni producción; la revisión visual autenticada y responsive permanece pendiente.
+Evidencia del 2 de octubre de 2026: aprobaron la guardia visual, lint Angular/Functions, formato, build de staging y la regresión completa de 63 pruebas Angular en 17 archivos. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó el bundle esperado `main-ACLYBD7D.js`. La revisión visual autenticada y responsive quedó confirmada el 3 de octubre; no se desplegaron servicios backend ni producción.
 
 ### EVT-106 — Ocupación multidiaria y presentación del calendario
 
@@ -495,7 +495,7 @@ Un evento del 12 al 15 de octubre se proyecta en FullCalendar como fecha complet
 
 En vista mensual todos los eventos usan `display: block`, muestran nombre y estado, aplican el color semántico correspondiente y limitan filas por celda con acceso “más”. La cuadrícula, controles, día actual, leyenda, foco y vistas responsive consumen tokens del sistema de diseño y deben aprobar `npm run lint:visual`. Seleccionar por puntero o teclado conserva el mismo detalle con fechas y horas exactas.
 
-Evidencia del 2 de octubre de 2026: tres pruebas nuevas aprobaron inicio inclusivo, fin exclusivo, conservación del evento horario y cruce de mes. La regresión completa quedó en 66 pruebas Angular distribuidas en 18 archivos; también aprobaron lint Angular/Functions, guardia visual, formato y build de staging. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó `main-6DTMESSF.js`. No se desplegaron servicios backend ni producción; la aceptación visual autenticada permanece pendiente.
+Evidencia del 2 de octubre de 2026: tres pruebas nuevas aprobaron inicio inclusivo, fin exclusivo, conservación del evento horario y cruce de mes. La regresión completa quedó en 66 pruebas Angular distribuidas en 18 archivos; también aprobaron lint Angular/Functions, guardia visual, formato y build de staging. Después se publicó únicamente Hosting en staging; la URL respondió HTTP 200 y entregó `main-6DTMESSF.js`. La aceptación visual autenticada quedó confirmada el 3 de octubre; no se desplegaron servicios backend ni producción.
 
 ### EVT-107 — Compatibilidad visual con FullCalendar 7
 
@@ -509,7 +509,7 @@ El calendario institucional adicional está compartido con `eventos@tecplayacar.
 
 Los eventos de prueba y `calendarEventId` del calendario desechable no se migran ni se reconcilian. La aceptación final crea un evento nuevo desde la aplicación y confirma exactamente una entrada en el calendario institucional; actualizar y cancelar deben operar sobre esa misma entrada. Producción, Hosting, Rules, índices, Firestore, Storage y SMTP permanecen sin cambios.
 
-Evidencia del 2 de octubre de 2026: OAuth `calendar.events`, estructura del secreto, coincidencia del calendario objetivo y lectura del endpoint aprobaron. `GOOGLE_CALENDAR_CONFIG` versión 3 quedó `ENABLED` y las siete Functions quedaron `ACTIVE` en `us-central1`. La creación nueva desde la aplicación permanece pendiente.
+Evidencia del 2 de octubre de 2026: OAuth `calendar.events`, estructura del secreto, coincidencia del calendario objetivo y lectura del endpoint aprobaron. `GOOGLE_CALENDAR_CONFIG` versión 3 quedó `ENABLED` y las siete Functions quedaron `ACTIVE` en `us-central1`. La creación, actualización y cancelación sobre una sola entrada institucional quedaron aceptadas el 3 de octubre.
 
 ### EVT-109 — Correos HTML institucionales
 
@@ -519,7 +519,7 @@ Valores con `<`, `>`, `&`, comillas o saltos de línea no pueden inyectar etique
 
 La fotografía de una revisión nueva conserva los datos canónicos y el resumen de campos modificados. Reintentar el trabajo produce el mismo contenido; no vuelve a leer nombres o cantidades modificados posteriormente. El adaptador SMTP entrega simultáneamente `html` y `text` después de validar la allowlist.
 
-Evidencia del 2 de octubre de 2026: aprobaron 75 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator, además de lint Angular/Functions/visual, formato, `git diff --check` y compilación TypeScript de Functions. Las pruebas cubren los cinco tipos de notificación, texto alternativo, datos opcionales, fotografía histórica, resumen de cambios, escape de HTML y asuntos sin saltos de línea. Después se desplegaron únicamente `createEvent`, `updateEvent`, `cancelEvent`, `reportEquipmentDelay`, `reconcileEventIntegrations`, `processEventIntegrations`, `syncUpdatedEventIntegrations` y `processEventNotifications` en staging; Firebase confirmó las ocho actualizaciones. La entrega visual real queda pendiente de aceptar mediante una revisión nueva, porque los correos ya enviados no se regeneran.
+Evidencia del 2 de octubre de 2026: aprobaron 75 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator, además de lint Angular/Functions/visual, formato, `git diff --check` y compilación TypeScript de Functions. Las pruebas cubren los cinco tipos de notificación, texto alternativo, datos opcionales, fotografía histórica, resumen de cambios, escape de HTML y asuntos sin saltos de línea. Después se desplegaron únicamente las ocho Functions consumidoras en staging. La entrega visual real de una revisión nueva quedó aceptada el 3 de octubre de 2026.
 
 ### EVT-110 — Autorización dinámica de contactos de Coordinaciones
 
@@ -527,7 +527,11 @@ Un destinatario fuera de `allowedRecipients` se entrega cuando el trabajo proteg
 
 Un creador institucional fuera de la lista fija, un correo externo aunque se etiquete como coordinación, un trabajo de coordinación sin ID, un tipo desconocido o un correo libre continúan fallando con `recipient-not-allowed` antes de crear el transporte SMTP. Angular no aporta los metadatos de autorización. La lista fija continúa operativa y `SMTP_CONFIG` no requiere una versión nueva.
 
-Evidencia del 3 de octubre de 2026: aprobaron 78 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator. Se verificaron contacto institucional fuera de la lista fija, creador fuera de lista, dominio externo, coordinación sin ID, ausencia de apertura SMTP en rechazos y preferencia de procedencia de Coordinación cuando el mismo correo también es el creador. Aprobaron además compilación TypeScript de Functions, lint Angular/Functions/visual, formato y `git diff --check`. Después se actualizaron únicamente `createEvent`, `updateEvent`, `cancelEvent`, `reportEquipmentDelay`, `reconcileEventIntegrations`, `processEventIntegrations`, `syncUpdatedEventIntegrations` y `processEventNotifications` en staging; Firebase confirmó las ocho operaciones. No se modificaron secretos, Hosting, Rules, índices, datos o producción. La entrega real positiva y las negativas controladas permanecen pendientes.
+Evidencia del 3 de octubre de 2026: aprobaron 78 pruebas unitarias de Functions en 10 archivos y 14 pruebas de Eventos con Firestore Emulator. Se verificaron contacto institucional fuera de la lista fija, creador fuera de lista, dominio externo, coordinación sin ID, ausencia de apertura SMTP en rechazos y preferencia de procedencia de Coordinación cuando el mismo correo también es el creador. Aprobaron además compilación TypeScript de Functions, lint Angular/Functions/visual, formato y `git diff --check`. Después se actualizaron únicamente las ocho Functions consumidoras en staging y se aceptaron la entrega real positiva y las negativas controladas. No se modificaron secretos, Hosting, Rules, índices, datos o producción.
+
+### Aceptación manual integral — 3 de octubre de 2026
+
+El responsable confirmó el ciclo de creación, actualización y cancelación en una sola entrada del calendario institucional; correos HTML al creador y contactos canónicos; negativas fuera de autorización; propiedad y visibilidad por rol; dos pestañas sobre la última unidad; equipos locales y transferidos; multidiarios; cobertura, recepción anticipada, demora y cancelación posterior al traslado; y el recorrido visual, accesible y responsive en 320 px, tableta y escritorio.
 
 ## Evidencia requerida
 

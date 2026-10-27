@@ -1,5 +1,9 @@
 # Spec: Autenticación
 
+## Estado
+
+Implementado y desplegado únicamente a staging. El 3 de octubre de 2026 se aceptaron Google Sign-In, `bootstrapAuthorization`, perfiles `admin`, `usuario`, inactivo y no autorizado, revocación de sesión y el recorrido visual, accesible y responsive. Producción no está autorizada.
+
 ## Objetivo
 
 Permitir acceso exclusivamente a usuarios institucionales previamente autorizados y activos, con autorización aplicable en Firebase Security Rules.

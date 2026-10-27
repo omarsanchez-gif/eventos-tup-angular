@@ -2,7 +2,7 @@
 
 ## Estado
 
-El catálogo fue implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. Reservaciones, disponibilidad y operación logística fueron autorizadas después mediante ADR-009, se integraron con Eventos y están desplegadas únicamente a staging. El Hosting vigente incorpora la normalización visual compartida. La aceptación manual continúa pendiente y producción no está autorizada.
+El catálogo fue implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. Reservaciones, disponibilidad y operación logística fueron autorizadas después mediante ADR-009, se integraron con Eventos y están desplegadas únicamente a staging. El 3 de octubre se aceptaron la presentación visual, accesibilidad, concurrencia, disponibilidad, traslados, cobertura, recepción, demora y cancelación posterior a traslado. El recorrido administrativo completo del catálogo conserva seguimiento separado; producción no está autorizada.
 
 ## Objetivo
 
@@ -145,7 +145,7 @@ El catálogo sanitizado contiene solo `equipoId`, nombre, campus base, clasifica
 
 La normalización local del 21 de agosto de 2026 eliminó de Equipos las declaraciones privadas de `.button`, sus variantes, `.icon-button` y sus estados. Encabezados, paneles, campos, badges, alertas, tooltips, diálogos y spinners consumen tokens globales cuando comparten semántica con los demás catálogos.
 
-La hoja encapsulada conserva únicamente distribución del listado y formulario de Equipos. `npm run lint:visual` impide reintroducir selectores compartidos o los colores `#3c108e`, `#2e0a70` y `#321070`. La corrección forma parte del Hosting vigente de staging; la comparación visual autenticada continúa pendiente.
+La hoja encapsulada conserva únicamente distribución del listado y formulario de Equipos. `npm run lint:visual` impide reintroducir selectores compartidos o los colores `#3c108e`, `#2e0a70` y `#321070`. La corrección forma parte del Hosting vigente de staging y la comparación visual autenticada quedó confirmada el 3 de octubre de 2026.
 
 ## Reglas de edición e históricos
 
@@ -211,9 +211,10 @@ service-unavailable
 - EQP-D08: La disponibilidad se calcula y nunca se persiste como contador mutable.
 - EQP-D09: El catálogo se implementa antes que las reservaciones.
 
-## Pendientes de aceptación
+## Estado de aceptación
 
-- Capturar y aceptar manualmente TUP y FCS en staging.
-- Confirmar el inventario utilizable inicial por campus para pruebas sintéticas o institucionales controladas.
-- Ejecutar el recorrido funcional y visual con sesión `admin` después de implementar.
-- Autorizar por separado cualquier despliegue posterior de Functions, Rules o Hosting, incluida la futura corrección visual.
+- TUP y FCS están capturados en staging con horarios canónicos.
+- El inventario utilizado en las pruebas representa unidades operativas y los traslados vigentes son TUP → FCS.
+- La logística y el recorrido visual/accesible/responsive quedaron aceptados el 3 de octubre de 2026.
+- El recorrido administrativo exhaustivo del catálogo conserva seguimiento separado.
+- Cualquier despliegue posterior y toda promoción a producción requieren autorización independiente.

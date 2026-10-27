@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado, validado y desplegado únicamente a staging el 3 de octubre de 2026. Sustituyó el incremento temporal autenticado sin cambiar la ruta `/dashboard` ni los permisos de acceso. La aceptación visual, accesible y funcional con ambos roles continúa pendiente; producción no está autorizada.
+Implementado, validado y desplegado únicamente a staging el 3 de octubre de 2026. Sustituyó el incremento temporal autenticado sin cambiar la ruta `/dashboard` ni los permisos de acceso. Ese mismo día se aceptaron datos, vacíos, error parcial, tabla, tarjetas móviles, accesibilidad y ambos roles. Producción no está autorizada.
 
 ## Objetivo
 

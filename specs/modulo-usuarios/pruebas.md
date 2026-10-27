@@ -2,7 +2,7 @@
 
 ## Estado
 
-Casos definidos conforme a las decisiones aprobadas USR-D01 a USR-D04. Java 21, pruebas unitarias, Auth/Firestore Emulator y Security Rules están aprobados. La ejecución manual integral de USR-001 a USR-069 y la revisión visual autenticada permanecen pendientes antes de Hosting o producción.
+Casos definidos conforme a las decisiones aprobadas USR-D01 a USR-D04. Java 21, pruebas unitarias, Auth/Firestore Emulator y Security Rules están aprobados. Roles, revocación, negativas y revisión visual autenticada quedaron aceptados el 3 de octubre de 2026; la ejecución individual exhaustiva de USR-001 a USR-069 conserva seguimiento documental antes de producción.
 
 ## Datos base
 

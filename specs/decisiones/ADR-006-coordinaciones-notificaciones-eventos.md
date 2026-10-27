@@ -71,7 +71,9 @@ Descartado en esta versión porque generaría invitaciones, RSVP, inserción en 
 
 Descartado porque el flujo histórico no puede recuperar de forma confiable un correo fallido después de crear Calendar.
 
-## Pendientes bloqueantes
+## Estado de los bloqueos
 
-- Antes de implementar Eventos: aprobar estrategia transaccional e índices, seleccionar la Coordinación de Sistemas por ID, aceptar contratos vigentes y autorizar expresamente el incremento.
-- Calendar, API, datos OAuth, buzón SMTP, contraseña de aplicación y presupuesto ya fueron provisionados. Antes del primer despliegue funcional de integraciones a staging aún se deben cargar secretos en Secret Manager, aplicar la lista permitida, confirmar cuotas y ejecutar pruebas reales controladas.
+- Estrategia transaccional, índices, Coordinación de Sistemas, contratos y autorización de Eventos quedaron resueltos mediante ADR-009 y ADR-010.
+- Calendar, API, OAuth, SMTP, secretos, lista fija, autorización dinámica y presupuesto quedaron provisionados únicamente en staging.
+- Las pruebas reales controladas de creación, actualización, cancelación, entrega dinámica y negativas quedaron aceptadas el 3 de octubre de 2026.
+- Confirmar cuotas con carga representativa permanece como seguimiento operativo y no autoriza producción.

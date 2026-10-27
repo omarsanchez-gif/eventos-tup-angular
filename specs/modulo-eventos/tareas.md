@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación y primer despliegue funcional a staging cerrados el 30 de septiembre de 2026 conforme a ADR-006, ADR-009, ADR-010 y ADR-011. Incluye creación, disponibilidad, búsqueda, detalle, edición, cancelación histórica, reservaciones y logística, Calendar/SMTP con adaptadores seguros, mantenimiento de PDFs, backfill y experiencia Angular. Los secretos están enlazados, `SMTP_CONFIG` versión 3 conserva como lista fija a Omar, Eventos, Víctor Yama y Lizett Méndez, la configuración logística existe y Rules, índices, TTL, 16 Functions de Eventos y Hosting fueron desplegados únicamente a staging. EVT-110 añade autorización dinámica para contactos institucionales con procedencia protegida de Coordinaciones sin rotar el secreto; sus ocho Functions consumidoras quedaron actualizadas en staging el 3 de octubre. La creación real de Calendar, la entrega SMTP permitida y la reconciliación idempotente quedaron verificadas con `PRUEBA 1`; continúan pendientes la entrega de una revisión nueva a una coordinación fuera de la lista fija, actualización y cancelación reales, las negativas de seguridad y la aceptación manual. Producción no está autorizada.
+Implementación y primer despliegue funcional a staging cerrados el 30 de septiembre de 2026 conforme a ADR-006, ADR-009, ADR-010 y ADR-011. Incluye creación, disponibilidad, búsqueda, detalle, edición, cancelación histórica, reservaciones y logística, Calendar/SMTP con adaptadores seguros, mantenimiento de PDFs, backfill y experiencia Angular. Los secretos están enlazados, `SMTP_CONFIG` versión 3 conserva como lista fija a Omar, Eventos, Víctor Yama y Lizett Méndez, la configuración logística existe y Rules, índices, TTL, 16 Functions de Eventos y Hosting fueron desplegados únicamente a staging. El 3 de octubre se aceptaron Calendar institucional, entrega dinámica, negativas, actualización, cancelación, roles, propiedad, concurrencia, logística y experiencia visual/accesible/responsive. El backfill, cuotas y observación operativa conservan seguimiento; producción no está autorizada.
 
 ## Evidencia del incremento local — 30 de septiembre de 2026
 
@@ -41,18 +41,18 @@ El siguiente incremento es de verificación operativa, no de código funcional: 
 
 ## No bloquea desarrollo local; requerido antes de aceptar staging
 
-- [ ] EVT-T01F Completar aceptación funcional, accesible y visual de Coordinaciones.
-- [ ] EVT-T01G Completar aceptación funcional, accesible y visual de Campus.
-- [ ] EVT-T01H Completar aceptación funcional, accesible y visual del catálogo de Equipos.
+- [ ] EVT-T01F Completar el recorrido administrativo funcional de Coordinaciones; accesibilidad y visual quedaron aceptadas el 3 de octubre de 2026.
+- [ ] EVT-T01G Completar el recorrido administrativo funcional de Campus; accesibilidad y visual quedaron aceptadas el 3 de octubre de 2026.
+- [ ] EVT-T01H Completar el recorrido administrativo funcional del catálogo de Equipos; accesibilidad y visual quedaron aceptadas el 3 de octubre de 2026.
 - [x] EVT-T05D Conservar `GOOGLE_CALENDAR_CONFIG` y crear `SMTP_CONFIG` versión 2 con la estructura completa y `allowedRecipients` limitado exactamente a Omar; los valores sensibles no se imprimieron ni documentaron.
-- [ ] EVT-T05E Verificar en staging la lista permitida vigente con una entrega a la coordinación recién autorizada y un rechazo fuera de las cuatro cuentas; la entrega a Omar y el cierre seguro de la lista anterior ya tienen evidencia.
-- [ ] EVT-T05F Confirmar cuotas y ejecutar creación, actualización y cancelación reales de Calendar y las pruebas SMTP controladas.
+- [x] EVT-T05E Verificar en staging la lista permitida vigente con entrega a una coordinación autorizada y negativas controladas; aprobado el 3 de octubre de 2026.
+- [ ] EVT-T05F Confirmar cuotas. La creación, actualización y cancelación reales de Calendar y las pruebas SMTP controladas quedaron aprobadas el 3 de octubre de 2026.
 - [x] EVT-T05G Actualizar de forma compatible Angular, Firebase Web, Firebase Admin y dependencias transitivas afectadas. `npm audit --omit=dev` y la auditoría completa reportan cero vulnerabilidades altas o críticas; 183 pruebas, lint, formato y ambos builds aprobaron. No se usó `--force` ni una rebaja mayor automática.
 - [x] EVT-T05H Desplegar por separado índices/TTL, Firestore Rules, Storage Rules, 16 Functions de Eventos y Hosting en `eventos-tup-angular-stg`; producción no fue utilizada.
 - [x] EVT-T05I Normalizar `GOOGLE_CALENDAR_CONFIG` versión 2, validar OAuth y el endpoint de eventos, redesplegar solo las siete callables consumidoras y reconciliar `PRUEBA 1` sin duplicar correo. Firestore y Google Calendar confirmaron la entrada sincronizada; el correo permaneció completo sin una entrega duplicada.
 - [x] EVT-T05J Crear `SMTP_CONFIG` versión 3 con las cuatro cuentas autorizadas y verificar que las ocho Functions consumidoras estén `ACTIVE` y enlazadas a esa versión, sin exponer credenciales ni modificar producción.
 - [x] EVT-T05K Sustituir en staging el calendario desechable por el calendario institucional compartido: OAuth `calendar.events` autorizado, lectura validada, `GOOGLE_CALENDAR_CONFIG` versión 3 `ENABLED` y siete Functions consumidoras `ACTIVE`. No se migraron eventos de prueba ni se modificó producción.
-- [ ] EVT-T05L Crear un evento sintético nuevo desde la aplicación y comprobar una sola entrada en el calendario institucional, sin reconciliar IDs pertenecientes al calendario anterior.
+- [x] EVT-T05L Crear un evento sintético nuevo desde la aplicación y comprobar una sola entrada en el calendario institucional, sin reconciliar IDs pertenecientes al calendario anterior; aprobado el 3 de octubre de 2026.
 
 ## Documentación
 
@@ -108,7 +108,7 @@ El siguiente incremento es de verificación operativa, no de código funcional: 
 - [x] EVT-T30E Corregir en staging los índices de calendario con `finAt` antes de `inicioAt`; ambos quedaron `READY`, las consultas remotas general y por campus aprobaron sin `FAILED_PRECONDITION` y se retiraron los dos índices anteriores. No se desplegaron Functions, Rules, Hosting ni producción.
 - [x] EVT-T30C Implementar avisos logísticos idempotentes a la coordinación canónica de Sistemas sin alterar la revisión funcional del evento.
 - [x] EVT-T30G Implementar y desplegar en staging el correo HTML institucional con texto alternativo, fotografía ampliada, resumen seguro de cambios, escape de contenido y pruebas EVT-109. El 2 de octubre de 2026 aprobaron 75 pruebas unitarias de Functions, 14 pruebas de Eventos con Firestore Emulator, lint, guardia visual, formato y build de Functions; se actualizaron exclusivamente las ocho Functions consumidoras de SMTP en staging. No se modificaron frontend, Hosting, Rules, índices, secretos, datos ni producción.
-- [x] EVT-T30H Implementar la autorización SMTP dinámica para contactos institucionales cuya procedencia `coordinacion` o `sistemas` esté fotografiada en la bandeja protegida, conservando la lista fija para creadores y bloqueando correos libres, externos o sin ID canónico. El 3 de octubre de 2026 aprobaron EVT-110, 78 pruebas unitarias de Functions, 14 pruebas de Eventos con Firestore Emulator, lint, guardia visual, formato y build de Functions; después se actualizaron únicamente las ocho Functions consumidoras en staging y Firebase confirmó las ocho operaciones. No se modificaron Hosting, Rules, índices, secretos, datos ni producción. La aceptación real positiva y negativa continúa pendiente.
+- [x] EVT-T30H Implementar la autorización SMTP dinámica para contactos institucionales cuya procedencia `coordinacion` o `sistemas` esté fotografiada en la bandeja protegida, conservando la lista fija para creadores y bloqueando correos libres, externos o sin ID canónico. El 3 de octubre de 2026 aprobaron EVT-110, regresión y despliegue; la aceptación real positiva y las negativas controladas quedaron confirmadas ese mismo día.
 
 ## Storage
 
@@ -130,28 +130,28 @@ El siguiente incremento es de verificación operativa, no de código funcional: 
 - [x] EVT-T41 Crear detalle inicial con fotografías de coordinaciones, campus y equipos.
 - [x] EVT-T42 Crear edición y cancelación histórica por propietario.
 - [x] EVT-T43 Crear estados completos y parciales de integraciones.
-- [ ] EVT-T44 Completar accesibilidad y responsive. Las validaciones automatizadas pasan; falta aceptación manual con teclado, lector y tamaños objetivo.
+- [x] EVT-T44 Completar accesibilidad y responsive; aceptación manual con teclado, lector y tamaños objetivo aprobada el 3 de octubre de 2026.
 - [x] EVT-T44A Incorporar FullCalendar Standard `7.1.0`, licencia MIT y sin Premium.
 - [x] EVT-T44B Crear vistas mes, semana, día y lista; priorizar lista en móvil.
 - [x] EVT-T44C Implementar consulta por rango, filtros de campus/estado y apertura del detalle.
 - [x] EVT-T44D Mantener calendario de solo lectura, sin selección para crear, arrastre o redimensionado.
-- [ ] EVT-T44E Completar nombres accesibles. La actualización automática al cruzar inicio y fin usando `serverNow` ya está implementada y probada.
+- [x] EVT-T44E Completar y aceptar nombres accesibles; la actualización automática al cruzar inicio y fin usa `serverNow`.
 - [x] EVT-T44F Crear sección logística en detalle y acciones exclusivas de `admin` con confirmaciones y anuncios accesibles.
 - [x] EVT-T44G Corregir la previsualización de disponibilidad al editar para excluir solo las reservas del evento propio, con validación backend de propiedad y regresión Angular/Functions/Emulator; `checkEventAvailability` y Hosting quedaron desplegados por separado únicamente a staging el 1 de octubre de 2026.
-- [x] EVT-T44H Actualizar automáticamente la disponibilidad del formulario abierto al recuperar foco/visibilidad y cada 30 segundos visibles, preservando la captura, anunciando cambios y evitando consultas solapadas. Implementado, validado y publicado únicamente en Hosting de staging el 1 de octubre de 2026; aceptación manual pendiente.
-- [x] EVT-T44I Llevar `Editar evento` y `Cancelar evento` a las acciones directas del listado para el propietario, conservar `Ver detalle` para todos y restringir la columna `Integración` al rol canónico `admin`, con equivalencia móvil, tooltips y pruebas de renderizado. Implementado, validado y publicado únicamente en Hosting de staging el 2 de octubre de 2026; aceptación autenticada por rol pendiente.
-- [x] EVT-T44J Normalizar la composición visual del listado de Eventos con las primitivas, encabezado de listado, acciones móviles, alcance de columnas y tooltips compartidos, conservando como única extensión el selector `Listado`/`Calendario`. Implementado, validado y publicado únicamente en Hosting de staging el 2 de octubre de 2026; aceptación visual autenticada y responsive pendiente.
-- [x] EVT-T44K Corregir la proyección multidiaria de FullCalendar para cubrir todas las fechas ocupadas y mejorar la presentación de cuadrícula, bloques, leyenda, controles, acumulación por día, foco y responsive conforme a EVT-106. Implementado, validado y publicado únicamente en Hosting de staging el 2 de octubre de 2026; aceptación visual autenticada pendiente.
+- [x] EVT-T44H Actualizar automáticamente la disponibilidad del formulario abierto al recuperar foco/visibilidad y cada 30 segundos visibles; la aceptación manual en dos pestañas quedó confirmada el 3 de octubre de 2026.
+- [x] EVT-T44I Llevar `Editar evento` y `Cancelar evento` al listado según propiedad y restringir Integración a `admin`; la aceptación por rol quedó confirmada el 3 de octubre de 2026.
+- [x] EVT-T44J Normalizar la composición visual del listado de Eventos; la aceptación autenticada y responsive quedó confirmada el 3 de octubre de 2026.
+- [x] EVT-T44K Corregir la proyección multidiaria y presentación del calendario; la aceptación visual autenticada quedó confirmada el 3 de octubre de 2026.
 - [x] EVT-T44L Corregir la integración visual de FullCalendar 7 mediante la paleta Classic y propiedades públicas, eliminar dependencias de selectores internos v6 y validar franjas, estados y panel de acumulación conforme a EVT-107. Implementado, validado y publicado únicamente en Hosting de staging el 2 de octubre de 2026; backend y producción no fueron modificados.
 
 ## Pruebas y cierre futuro
 
-- [ ] EVT-T45 Ejecutar EVT-001 a EVT-106.
+- [ ] EVT-T45 Registrar evidencia individual exhaustiva de EVT-001 a EVT-110; la regresión automatizada y la aceptación manual integral están aprobadas.
 - [x] EVT-T46 Ejecutar unitarias, integración, Rules y concurrencia del incremento implementado.
 - [x] EVT-T47 Ejecutar dobles de Calendar y SMTP.
 - [x] EVT-T48 Ejecutar lint, formato, builds y comprobar el presupuesto ya configurado.
-- [ ] EVT-T49 Validar en staging con cuentas, calendario y buzones sintéticos.
-- [ ] EVT-T50 Obtener aceptación funcional y visual.
+- [x] EVT-T49 Validar en staging con cuentas institucionales aprobadas, calendario y buzones controlados; aprobado el 3 de octubre de 2026.
+- [x] EVT-T50 Obtener aceptación funcional, visual, accesible y responsive; aprobada el 3 de octubre de 2026.
 - [x] EVT-T51 Confirmar que producción no fue utilizada ni modificada en este incremento.
 
 ## Secuencia de secretos

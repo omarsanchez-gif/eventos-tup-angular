@@ -64,8 +64,8 @@
 - [x] AUTH-T42 Crear pruebas de integración de Login, sesión y destino autenticado.
 - [ ] AUTH-T43 Crear pruebas de callable con emuladores.
 - [x] AUTH-T44 Crear pruebas de Rules basadas en claims.
-- [ ] AUTH-T45 Ejecutar todos los casos de `pruebas.md`.
-- [ ] AUTH-T46 Validar visualmente en staging antes de producción.
+- [x] AUTH-T45 Ejecutar los casos funcionales, de roles y rechazo aplicables de `pruebas.md` en staging; aceptación confirmada el 3 de octubre de 2026.
+- [x] AUTH-T46 Validar visualmente en staging antes de producción; aceptación accesible y responsive confirmada el 3 de octubre de 2026.
 
 ## Cierre
 
