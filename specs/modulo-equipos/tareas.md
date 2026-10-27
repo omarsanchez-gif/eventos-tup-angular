@@ -2,7 +2,7 @@
 
 ## Estado
 
-Incremento A del catálogo implementado y desplegado únicamente a staging el 21 de agosto de 2026. Desde el 30 de septiembre, staging también incorpora reservaciones, sustitución/cancelación, cobertura, recepción, demora, revisión y notificaciones logísticas desde Eventos. La aceptación visual y logística quedó confirmada el 3 de octubre; el recorrido administrativo del catálogo conserva seguimiento separado y producción continúa fuera de alcance.
+Incremento A del catálogo implementado y desplegado únicamente a staging el 21 de agosto de 2026. Desde el 30 de septiembre, staging también incorpora reservaciones, sustitución/cancelación, cobertura, recepción, demora, revisión y notificaciones logísticas desde Eventos. La aceptación visual y logística quedó confirmada el 3 de octubre; el recorrido administrativo completo del catálogo fue aceptado por el responsable el 27 de octubre de 2026 y producción continúa fuera de alcance.
 
 ## Documentación
 
@@ -15,7 +15,7 @@ Incremento A del catálogo implementado y desplegado únicamente a staging el 21
 - [x] EQP-T07 Crear spec, reservaciones, pruebas y tareas.
 - [x] EQP-T08 Actualizar modelo, reglas, seguridad, arquitectura, diseño, Eventos y trazabilidad.
 
-## Pendientes antes del código
+## Preparación previa al código
 
 - [x] EQP-T09 Capturar TUP/FCS con horarios canónicos en staging; aceptación visual integral continúa en EQP-T23.
 - [x] EQP-T10 Confirmar el inventario utilizable inicial: equipo transferible parte de TUP hacia FCS conforme a los registros aprobados.
@@ -33,7 +33,7 @@ Incremento A del catálogo implementado y desplegado únicamente a staging el 21
 - [x] EQP-T19 Crear formulario y mutaciones administrativas.
 - [x] EQP-T20 Ejecutar pruebas unitarias y Firestore Emulator.
 - [x] EQP-T21 Ejecutar lint, formato y builds.
-- [ ] EQP-T22 Validar manualmente en local con datos sintéticos.
+- [x] EQP-T22 Validar manualmente con datos sintéticos; el recorrido equivalente autenticado en staging fue confirmado por el responsable el 27 de octubre de 2026.
 
 ## Reservaciones autorizadas
 
@@ -50,7 +50,7 @@ Incremento A del catálogo implementado y desplegado únicamente a staging el 21
 
 ## Despliegue
 
-- [ ] EQP-T23 Completar la aceptación funcional del recorrido administrativo del catálogo; la aceptación visual quedó aprobada el 3 de octubre de 2026.
+- [x] EQP-T23 Completar la aceptación funcional del recorrido administrativo del catálogo; aceptación funcional confirmada el 27 de octubre de 2026 y aceptación visual aprobada el 3 de octubre de 2026.
 - [x] EQP-T24 Autorizar y desplegar por separado Functions, Rules y Hosting de staging.
 - [x] EQP-T25 Confirmar que producción no fue utilizada.
 
@@ -68,3 +68,15 @@ Incremento A del catálogo implementado y desplegado únicamente a staging el 21
 - Suite completa aprobada: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules.
 - Build de staging aprobado con bundle inicial de 468.25 kB y `equipment-page` diferido de 34.77 kB.
 - El incremento que originó esta evidencia no modificó Eventos, reservaciones, Functions, Rules ni datos. La corrección visual fue incorporada después al Hosting de staging y su aceptación autenticada quedó confirmada el 3 de octubre de 2026.
+
+## Incremento de consistencia — 27 de octubre de 2026
+
+- [x] Implementar y probar las cinco correcciones autorizadas: inventario y avisos, pico simultáneo, demora extensiva, identidad Calendar y revisión SMTP.
+- [x] Validar build, lint y regresión local; registrar resultados en matriz-trazabilidad.md (198 pruebas del alcance afectado).
+- [x] Despliegue a staging autorizado y completado el 27 de octubre de 2026 junto con las tres correcciones adicionales; evidencia técnica en `../matriz-trazabilidad.md`.
+
+## Tres correcciones adicionales — publicadas en staging
+
+- [x] Implementar Calendar serializado, recepción por etapa y retiro por transición; documentación actualizada y regresión local aprobada (222 pruebas del alcance afectado).
+- [x] Publicar el conjunto de ocho correcciones con autorización expresa: Firestore Rules, 12 Functions y Hosting, verificados el 27 de octubre de 2026.
+- [ ] Validar con sesión iniciada los ocho escenarios del incremento en staging; la aceptación de la versión anterior no sustituye esta regresión.

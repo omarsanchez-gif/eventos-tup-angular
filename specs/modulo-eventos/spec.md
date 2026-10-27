@@ -35,7 +35,7 @@ Antes de integrar Eventos deben existir:
 
 La creación del calendario institucional, la habilitación de la API, el consentimiento OAuth, la comprobación del buzón SMTP y la configuración de los secretos ya están realizadas en staging. Sus valores no se documentan. Las Functions consumidoras están enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3.
 
-La aceptación manual integral de Eventos quedó confirmada el 3 de octubre de 2026. Los recorridos administrativos completos de algunos catálogos conservan seguimiento propio y producción requiere autorización separada.
+La aceptación manual integral de Eventos quedó confirmada el 3 de octubre de 2026. Los recorridos administrativos de los catálogos fueron aceptados por el responsable el 27 de octubre; las ocho correcciones de consistencia fueron publicadas y verificadas técnicamente en staging el 27 de octubre; queda pendiente su aceptación funcional autenticada. Producción requiere autorización separada.
 
 ## Alcance
 
@@ -421,6 +421,23 @@ service-unavailable
 
 - El ID canónico de la Coordinación de Sistemas, los secretos, la lista fija y la autorización dinámica están configurados en staging.
 - El ciclo real de Calendar/SMTP, reservaciones, logística, roles y aceptación visual quedó confirmado el 3 de octubre de 2026.
-- Completar los recorridos administrativos pendientes de Coordinaciones, Campus y Equipos; su aceptación visual ya está cerrada.
+- Los recorridos administrativos de Coordinaciones, Campus y Equipos fueron aceptados el 27 de octubre; conservar esa evidencia histórica y validar el incremento posterior de consistencia.
 - Confirmar cuotas aplicables de Calendar, SMTP y Functions y observar workers, limpieza y TTL con carga representativa.
 - Mantener el backfill como operación explícita; staging o producción requieren autorización separada para ejecutarlo.
+
+## Correcciones de consistencia publicadas en staging — 27 de octubre de 2026
+
+Disponibilidad por pico simultáneo, demoras estrictamente extensivas, Calendar con identidad determinista y resumen SMTP vinculado a la revisión vigente, conforme a reservaciones.md e integraciones.md. La reducción administrativa de inventario encola avisos de Sistemas sin modificar fechas o cantidades de eventos. Este incremento fue desplegado únicamente a staging el 27 de octubre de 2026.
+
+## Segundo incremento publicado en staging
+
+Serialización y versión vigente de Calendar (RN-083), recepción por etapa logística (RN-RES-025) y avisos de retiro por transición (RN-084), conforme a integraciones.md, modelo-datos.md y reservaciones.md. Desplegado en staging el 27 de octubre de 2026; verificación técnica aprobada y aceptación funcional autenticada pendiente.
+
+## Acceso, consultas y catálogos publicados en staging — 27 de octubre de 2026
+
+- EVT-116: syncUpdatedEventIntegrations valida sesión, claims y perfil canónico antes de consultar el evento. Valida ID documental, propiedad o rol administrador antes de comparar revisionEsperada; un solicitante no autorizado no recibe información de revisión. Conserva contratos y permisos vigentes.
+- EVT-117: listado, búsqueda, calendario y detalle aceptan únicamente la última solicitud vigente de su ámbito. Respuestas, errores y finalizaciones anteriores no reemplazan datos ni estados de carga actuales. Escribir un nuevo término invalida inmediatamente la consulta anterior, incluso durante debounce o con un carácter. Cerrar detalle o destruir la vista invalida las solicitudes pendientes.
+- EVT-118: el detalle del calendario no se reabre después de cerrar ni reemplaza una selección posterior. Clic y teclado usan la misma protección; destruir la vista impide aplicar respuestas pendientes.
+- EVT-119: separar listado y catálogos sanitizados. Cargar catálogos una vez por instancia de la vista y compartir una solicitud concurrente; buscar, paginar y recargar tras mutaciones solo consultan eventos. Actualizar catálogos al abrir creación/edición, conservando la selección capturada; al salir y entrar a la ruta se cargan otra vez. Un fallo permite reintentar, no descarta el listado correcto ni se guarda como carga exitosa. No hay caché persistente ni cambio de disponibilidad: backend sigue validando la confirmación.
+
+Las cuatro correcciones fueron desplegadas con autorización expresa únicamente a staging el 27 de octubre de 2026. Se actualizaron syncUpdatedEventIntegrations y Hosting; la verificación técnica remota aprobó. Queda pendiente aceptación funcional autenticada. No cambia el modelo de datos, Rules, índices, secretos ni primitivas visuales.

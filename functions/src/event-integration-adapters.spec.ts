@@ -64,11 +64,9 @@ describe('adaptadores externos de Eventos', () => {
           headers: { 'content-type': 'application/json' },
         }),
       )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: 'calendar-id' }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
+      .mockImplementationOnce(
+        async (_url: string, init: RequestInit) =>
+          new Response(JSON.stringify({ id: JSON.parse(String(init.body)).id }), { status: 200 }),
       );
     vi.stubGlobal('fetch', fetchMock);
     const client = createGoogleCalendarClient(() =>
@@ -80,7 +78,7 @@ describe('adaptadores externos de Eventos', () => {
       }),
     );
 
-    await expect(client.upsert(event, null)).resolves.toBe('calendar-id');
+    await expect(client.upsert(event, null)).resolves.toMatch(/^[a-f0-9]{64}$/);
     const body = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as Record<string, unknown>;
     expect(body).not.toHaveProperty('attendees');
     expect(body['start']).toEqual({
@@ -98,7 +96,10 @@ describe('adaptadores externos de Eventos', () => {
         }),
       )
       .mockResolvedValueOnce(new Response('', { status: 404 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'recreated' }), { status: 200 }));
+      .mockImplementationOnce(
+        async (_url: string, init: RequestInit) =>
+          new Response(JSON.stringify({ id: JSON.parse(String(init.body)).id }), { status: 200 }),
+      );
     vi.stubGlobal('fetch', fetchMock);
     const client = createGoogleCalendarClient(() =>
       JSON.stringify({
@@ -109,7 +110,7 @@ describe('adaptadores externos de Eventos', () => {
       }),
     );
 
-    await expect(client.upsert(event, 'missing')).resolves.toBe('recreated');
+    await expect(client.upsert(event, 'missing')).resolves.toMatch(/^[a-f0-9]{64}$/);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
@@ -167,5 +168,93 @@ describe('adaptadores externos de Eventos', () => {
       permanent: true,
     });
     expect(smtp.createTransport).not.toHaveBeenCalled();
+  });
+
+  function calendarFixture(
+    options: { loseFirstResponse?: boolean; foreignConflict?: boolean } = {},
+  ) {
+    const resources = new Map<string, Record<string, unknown>>();
+    let lose = options.loseFirstResponse === true;
+    const requests: { method: string; id: string }[] = [];
+    const fetchMock = vi.fn(async (url: string, init: RequestInit) => {
+      if (url === 'https://oauth2.googleapis.com/token')
+        return Response.json({ access_token: 'mock-token' });
+      const body = init.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+      const id = init.method === 'POST' ? String(body['id']) : url.split('/').at(-1)!;
+      requests.push({ method: init.method!, id });
+      if (init.method === 'POST') {
+        if (options.foreignConflict)
+          resources.set(id, {
+            id,
+            extendedProperties: { private: { eventosTupId: 'someone-else' } },
+          });
+        if (resources.has(id)) return new Response('', { status: 409 });
+        resources.set(id, { ...body, status: 'confirmed' });
+        if (lose) {
+          lose = false;
+          throw new Error('simulated-response-lost');
+        }
+        return Response.json({ id });
+      }
+      if (!resources.has(id)) return new Response('', { status: 404 });
+      if (init.method === 'PUT') resources.set(id, { ...body, id, status: 'confirmed' });
+      return Response.json(resources.get(id));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = createGoogleCalendarClient(() =>
+      JSON.stringify({
+        clientId: 'mock',
+        clientSecret: 'mock',
+        refreshToken: 'mock',
+        calendarId: 'mock',
+      }),
+    );
+    return { client, resources, requests };
+  }
+
+  it('dos creaciones simultáneas convergen al mismo recurso de Calendar', async () => {
+    const { client, resources, requests } = calendarFixture();
+    const ids = await Promise.all([client.upsert(event, null), client.upsert(event, null)]);
+    expect(new Set(ids).size).toBe(1);
+    expect(resources.size).toBe(1);
+    expect(requests.some((request) => request.method === 'GET')).toBe(true);
+  });
+
+  it('recupera la misma entrada tras perder la respuesta de creación', async () => {
+    const { client, resources } = calendarFixture({ loseFirstResponse: true });
+    await expect(client.upsert(event, null)).rejects.toThrow('simulated-response-lost');
+    const id = await client.upsert(event, null);
+    expect([...resources.keys()]).toEqual([id]);
+  });
+
+  it('no sobrescribe un recurso ajeno ante 409', async () => {
+    const { client, requests } = calendarFixture({ foreignConflict: true });
+    await expect(client.upsert(event, null)).rejects.toThrow();
+    expect(requests.some((request) => request.method === 'PUT')).toBe(false);
+  });
+
+  it('conserva el ID histórico y recrea de forma determinista si desaparece', async () => {
+    const { client, resources } = calendarFixture();
+    resources.set('legacy-id', { id: 'legacy-id' });
+    expect(await client.upsert(event, 'legacy-id')).toBe('legacy-id');
+    resources.delete('legacy-id');
+    const ids = await Promise.all([
+      client.upsert(event, 'legacy-id'),
+      client.upsert(event, 'legacy-id'),
+    ]);
+    expect(new Set(ids).size).toBe(1);
+    expect(resources.size).toBe(1);
+  });
+
+  it('reintenta un sucesor estable cuando la entrada anterior quedó cancelada', async () => {
+    const { client, resources } = calendarFixture();
+    const first = await client.upsert(event, null);
+    resources.set(first, { id: first, status: 'cancelled' });
+    const ids = await Promise.all([client.upsert(event, null), client.upsert(event, null)]);
+    expect(ids[0]).not.toBe(first);
+    expect(ids[0]).toBe(ids[1]);
+    expect([...resources.values()].filter((item) => item['status'] !== 'cancelled')).toHaveLength(
+      1,
+    );
   });
 });

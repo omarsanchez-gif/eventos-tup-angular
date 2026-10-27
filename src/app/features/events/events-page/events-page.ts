@@ -107,6 +107,7 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected openCreate(): void {
+    void this.events.loadCatalogs(true);
     this.listCancellationTarget.set(null);
     this.eventForm.reset({
       nombreEvento: '',
@@ -174,6 +175,7 @@ export class EventsPage implements OnInit, OnDestroy {
 
   protected openEdit(detail: EventDetail): void {
     if (!detail.canEdit) return;
+    void this.events.loadCatalogs(true);
     this.eventForm.reset({
       nombreEvento: detail.name,
       campusId: detail.campusId ?? '',
@@ -215,6 +217,7 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.events.clearDetail();
     if (this.availabilityTimer) clearTimeout(this.availabilityTimer);
     this.stopAvailabilityMonitoring();
   }

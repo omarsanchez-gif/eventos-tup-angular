@@ -1,5 +1,9 @@
 # Ambientes
 
+**Publicación vigente en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Pendiente aceptación funcional autenticada sobre esta versión. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; queda pendiente la aceptación funcional autenticada de este incremento. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
+
 ## Local
 
 Objetivo: desarrollo y pruebas automatizadas sin tocar servicios productivos.
@@ -43,7 +47,7 @@ Cuenta autorizada para la validación inicial:
 
 Las cinco callables administrativas de Usuarios fueron aprobadas con datos sintéticos en Auth y Firestore Emulator y desplegadas en `us-central1` para staging el 18 de agosto de 2026. La callable pública exige sesión autorizada y las mutaciones revalidan el perfil canónico `admin`.
 
-Las seis callables de Coordinaciones (`listCoordinations`, `listSelectableCoordinations`, `createCoordination`, `updateCoordination`, `setCoordinationStatus` y `deleteCoordination`) fueron desplegadas por alcance explícito en `us-central1` para staging el 19 de agosto de 2026. Firestore Rules se publicaron en un despliegue separado después de aprobar la automatización. La verificación remota confirmó las seis Functions y el rechazo `401` de una llamada anónima a `listCoordinations`. El Hosting se publicó posteriormente con el incremento de Campus; la revisión visual, accesible y responsive de Coordinaciones quedó aceptada el 3 de octubre, mientras la carrera administrativa uso/eliminación conserva seguimiento separado.
+Las seis callables de Coordinaciones (`listCoordinations`, `listSelectableCoordinations`, `createCoordination`, `updateCoordination`, `setCoordinationStatus` y `deleteCoordination`) fueron desplegadas por alcance explícito en `us-central1` para staging el 19 de agosto de 2026. Firestore Rules se publicaron en un despliegue separado después de aprobar la automatización. La verificación remota confirmó las seis Functions y el rechazo `401` de una llamada anónima a `listCoordinations`. El Hosting se publicó posteriormente con el incremento de Campus; la revisión visual, accesible y responsive de Coordinaciones quedó aceptada el 3 de octubre, la carrera uso/eliminación fue cubierta por Emulator Suite y el recorrido administrativo completo fue aceptado el 27 de octubre de 2026.
 
 Las seis callables de Campus (`listCampuses`, `listSelectableCampuses`, `createCampus`, `updateCampus`, `setCampusStatus` y `deleteCampus`) fueron desplegadas por alcance explícito en `us-central1` para staging el 21 de agosto de 2026. Firestore Rules se publicaron después de aprobar 12 pruebas de Rules y bloquean las escrituras directas a `campus`. El Hosting Angular se publicó en `https://eventos-tup-angular-stg.web.app`; la verificación remota confirmó respuesta `200`, presencia de las seis Functions y rechazo `401` de una llamada anónima a `listCampuses`. Producción no fue utilizada ni modificada.
 
@@ -116,6 +120,8 @@ Ese mismo día se desplegó el Dashboard real únicamente a staging y por servic
 
 El 27 de octubre de 2026 se realizó una estabilización de dependencias compatibles, auditoría, builds, centralización visual y pruebas técnicas adicionales. `npm audit --omit=dev` quedó en cero; la auditoría completa conserva cinco avisos moderados exclusivos de `firebase-tools` aceptados en ADR-011. Después de aprobar lint, formato, builds y 215 pruebas, se desplegaron desde el commit `a3d31d2` por separado y con autorización expresa únicamente `bootstrapAuthorization` y Hosting a `eventos-tup-angular-stg`. Hosting respondió `200` con `main-CAAEIP5O.js` y `styles-ENSU7VMN.css`; `bootstrapAuthorization` quedó `ACTIVE` en Node 22 y una solicitud anónima fue rechazada con `401`. Los 41 exports locales coincidieron con las 41 Functions activas de staging. No se desplegaron otras Functions, Rules, índices o secretos, no se modificaron datos y producción permaneció intacta.
 
+Sobre esa versión, el 27 de octubre de 2026 el responsable confirmó satisfactoriamente los recorridos administrativos completos de Usuarios, Coordinaciones, Campus y Equipos, incluidos los bloqueos de seguridad y eliminación condicionada acordados. No quedan pendientes de aceptación en staging; esta confirmación no autoriza producción, backfill ni migraciones.
+
 ## Precondiciones exactas para Eventos en staging
 
 1. Suite EVT-001 a EVT-102, Rules, emuladores, lint, formato y build en verde.
@@ -153,3 +159,25 @@ El 27 de octubre de 2026 se realizó una estabilización de dependencias compati
 - No se despliega a producción sin solicitud expresa, revisión de cambios y evidencia aprobada en staging.
 - Preview Channels se consideran URLs públicas y no deben exponer datos productivos.
 - La versión Vue se conserva como reversión hasta completar la migración.
+
+## Preparación local del primer incremento — evidencia histórica
+
+El 27 de octubre se compilaron localmente backend, frontend y configuración staging. El build local de staging produjo main-RNOMKTWH.js y styles-ENSU7VMN.css. En ese momento todavía no se había desplegado: Hosting servía main-CAAEIP5O.js y las Functions remotas no habían recibido el incremento. La autorización y publicación posteriores del conjunto consolidado se registran más abajo. La matriz registra 198 pruebas del alcance afectado.
+
+## Preparación local del conjunto consolidado — evidencia histórica
+
+El build consolidado produjo main-YXUZKP35.js y styles-ENSU7VMN.css y sustituyó al candidato RNOMKTWH. Durante la preparación local no se modificaron servicios remotos. Tras la autorización expresa se publicó el conjunto siguiendo el orden Firestore Rules, Functions y Hosting; no requirió índices nuevos ni cambios de secretos.
+
+## Publicación anterior del conjunto de ocho correcciones
+
+El 27 de octubre de 2026, con autorización expresa, se publicaron por separado Firestore Rules, las 12 Functions afectadas y Hosting únicamente en staging. Las Functions quedaron ACTIVE; los 20 archivos remotos coinciden con el build local, incluido main-YXUZKP35.js y styles-ENSU7VMN.css. La regla de control de integraciones coincide con la versión local y cuatro callables rechazaron solicitudes anónimas con 401. No se desplegaron índices, Storage Rules ni secretos; producción no fue modificada.
+
+La evidencia técnica, hashes y alcance están en [matriz de trazabilidad](matriz-trazabilidad.md). Pendiente: aceptación funcional autenticada de las ocho correcciones en esta versión; no queda pendiente su despliegue.
+
+## Preparación local de EVT-116 a EVT-119 — evidencia histórica
+
+Local incorpora las cuatro correcciones posteriores, validadas con 240 pruebas. Se generó main-3W3UNOGZ.js con build:staging y main-OE2QS2OH.js con build predeterminado; ambos conservan styles-ENSU7VMN.css. Durante esa preparación no se publicaron servicios y staging conservaba main-YXUZKP35.js. Tras la autorización expresa se reconstruyó el bundle con configuración staging y se publicaron syncUpdatedEventIntegrations y Hosting según la evidencia siguiente; no se requirieron Rules, índices ni secretos nuevos.
+
+## Publicación vigente de EVT-116 a EVT-119
+
+El 27 de octubre de 2026 se actualizaron por separado syncUpdatedEventIntegrations y Hosting en eventos-tup-angular-stg, con --only y --project staging. Function ACTIVE, solicitudes anónimas rechazadas con 401 y 20 archivos remotos coincidentes con el build local; Hosting sirve main-3W3UNOGZ.js y styles-ENSU7VMN.css. No se modificaron Rules, índices, secretos ni producción. La evidencia exacta está en [matriz de trazabilidad](matriz-trazabilidad.md). Pendiente aceptación funcional autenticada del incremento; el despliegue ya está completado.

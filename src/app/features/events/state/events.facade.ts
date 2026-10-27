@@ -42,6 +42,13 @@ export class EventsFacade implements OnDestroy {
   private readonly detailLoadingState = signal(false);
   private readonly actionLoadingState = signal<string | null>(null);
   private requestVersion = 0;
+  private listVersion = 0;
+  private calendarVersion = 0;
+  private detailVersion = 0;
+  private destroyed = false;
+  private catalogsLoaded = false;
+  private catalogsRequest: Promise<void> | null = null;
+  private readonly catalogErrorState = signal<string | null>(null);
   private serverClockOffsetMs: number | null = null;
   private temporalTimer: ReturnType<typeof setTimeout> | null = null;
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -58,7 +65,7 @@ export class EventsFacade implements OnDestroy {
   readonly mutating = this.mutatingState.asReadonly();
   readonly availabilityLoading = this.availabilityLoadingState.asReadonly();
   readonly availability = this.availabilityState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly error = computed(() => this.errorState() ?? this.catalogErrorState());
   readonly notice = this.noticeState.asReadonly();
   readonly calendarItems = this.calendarItemsState.asReadonly();
   readonly calendarLoading = this.calendarLoadingState.asReadonly();
@@ -71,39 +78,72 @@ export class EventsFacade implements OnDestroy {
   );
 
   async load(): Promise<void> {
+    await Promise.all([this.loadRecords(), this.loadCatalogs()]);
+  }
+
+  loadCatalogs(refresh = false): Promise<void> {
+    if (this.destroyed) return Promise.resolve();
+    if (this.catalogsRequest) return this.catalogsRequest;
+    if (this.catalogsLoaded && !refresh) return Promise.resolve();
+    this.catalogErrorState.set(null);
+    this.catalogsRequest = Promise.all([
+      this.campusesGateway.listSelectable(),
+      this.coordinationsGateway.listSelectable(),
+      this.equipmentGateway.listSelectable(),
+    ])
+      .then(([campuses, coordinations, equipment]) => {
+        if (this.destroyed) return;
+        this.campusesState.set(campuses.items);
+        this.coordinationsState.set(coordinations.items);
+        this.equipmentState.set(equipment.items);
+        this.catalogsLoaded = true;
+      })
+      .catch((error: unknown) => {
+        if (this.destroyed) return;
+        this.catalogsLoaded = false;
+        this.catalogErrorState.set(mapEventsError(error));
+      })
+      .finally(() => {
+        this.catalogsRequest = null;
+      });
+    return this.catalogsRequest;
+  }
+
+  async loadRecords(): Promise<void> {
+    if (this.destroyed) return;
+    const version = ++this.listVersion;
     this.loadingState.set(true);
     this.errorState.set(null);
     try {
       const cursor = this.cursorStackState()[this.pageState() - 1] ?? null;
-      const [events, campuses, coordinations, equipment] = await Promise.all([
-        this.gateway.list(cursor, this.backendSearch()),
-        this.campusesGateway.listSelectable(),
-        this.coordinationsGateway.listSelectable(),
-        this.equipmentGateway.listSelectable(),
-      ]);
+      const events = await this.gateway.list(cursor, this.backendSearch());
+      if (version !== this.listVersion) return;
       this.synchronizeServerClock(events.serverNow);
       this.recordsState.set(this.withTemporalStatuses(events.items));
       this.scheduleTemporalRefresh();
       this.nextCursorState.set(events.nextCursor);
-      this.campusesState.set(campuses.items);
-      this.coordinationsState.set(coordinations.items);
-      this.equipmentState.set(equipment.items);
     } catch (error) {
-      this.errorState.set(mapEventsError(error));
+      if (version === this.listVersion) this.errorState.set(mapEventsError(error));
     } finally {
-      this.loadingState.set(false);
+      if (version === this.listVersion) this.loadingState.set(false);
     }
   }
 
   search(term: string): void {
+    if (this.destroyed) return;
+    this.listVersion += 1;
+    this.loadingState.set(false);
+    this.recordsState.set([]);
+    this.errorState.set(null);
     const normalized = term.trim().replace(/\s+/gu, ' ');
+    this.loadingState.set(normalized.length !== 1);
     this.searchState.set(normalized);
     this.pageState.set(1);
     this.cursorStackState.set([null]);
     this.nextCursorState.set(null);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     if (normalized.length === 1) return;
-    this.searchTimer = setTimeout(() => void this.load(), 300);
+    this.searchTimer = setTimeout(() => void this.loadRecords(), 300);
   }
 
   async nextPage(): Promise<void> {
@@ -113,13 +153,13 @@ export class EventsFacade implements OnDestroy {
     stack[this.pageState()] = cursor;
     this.cursorStackState.set(stack);
     this.pageState.update((page) => page + 1);
-    await this.load();
+    await this.loadRecords();
   }
 
   async previousPage(): Promise<void> {
     if (this.pageState() <= 1 || this.loadingState()) return;
     this.pageState.update((page) => page - 1);
-    await this.load();
+    await this.loadRecords();
   }
 
   async checkAvailability(
@@ -165,7 +205,7 @@ export class EventsFacade implements OnDestroy {
       this.noticeState.set(this.integrationNotice('Evento guardado.', result));
       this.pageState.set(1);
       this.cursorStackState.set([null]);
-      await this.load();
+      await this.loadRecords();
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -176,22 +216,29 @@ export class EventsFacade implements OnDestroy {
   }
 
   async loadDetail(eventId: string): Promise<EventDetail | null> {
+    if (this.destroyed) return null;
+    const version = ++this.detailVersion;
+    this.detailState.set(null);
     this.detailLoadingState.set(true);
     this.errorState.set(null);
     try {
       const detail = await this.gateway.detail(eventId);
+      if (version !== this.detailVersion) return null;
       this.detailState.set(detail);
       return detail;
     } catch (error) {
+      if (version !== this.detailVersion) return null;
       this.errorState.set(mapEventsError(error));
       this.detailState.set(null);
       return null;
     } finally {
-      this.detailLoadingState.set(false);
+      if (version === this.detailVersion) this.detailLoadingState.set(false);
     }
   }
 
   clearDetail(): void {
+    this.detailVersion += 1;
+    this.detailLoadingState.set(false);
     this.detailState.set(null);
   }
 
@@ -214,7 +261,7 @@ export class EventsFacade implements OnDestroy {
         protocoloNombre: replacement?.name ?? currentProtocol.name,
       });
       this.noticeState.set(this.integrationNotice('Evento actualizado.', result));
-      await Promise.all([this.load(), this.loadDetail(eventId)]);
+      await Promise.all([this.loadRecords(), this.loadDetail(eventId)]);
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -231,8 +278,8 @@ export class EventsFacade implements OnDestroy {
     try {
       const result = await this.gateway.cancel(eventId);
       this.noticeState.set(this.integrationNotice('Evento cancelado.', result));
-      await this.load();
-      this.detailState.set(await this.gateway.detail(eventId));
+      await this.loadRecords();
+      await this.loadDetail(eventId);
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -246,7 +293,7 @@ export class EventsFacade implements OnDestroy {
     await this.runAction(`reconcile:${eventId}`, async () => {
       const result = await this.gateway.reconcile(eventId);
       this.noticeState.set(this.integrationNotice('Reconciliación ejecutada.', result));
-      await Promise.all([this.load(), this.loadDetail(eventId)]);
+      await Promise.all([this.loadRecords(), this.loadDetail(eventId)]);
     });
   }
 
@@ -275,22 +322,28 @@ export class EventsFacade implements OnDestroy {
   }
 
   async loadCalendar(start: string, end: string, campusId: string | null): Promise<void> {
+    if (this.destroyed) return;
+    const version = ++this.calendarVersion;
+    this.calendarItemsState.set([]);
     this.calendarLoadingState.set(true);
     this.errorState.set(null);
     try {
       const result = await this.gateway.listCalendar({ inicio: start, fin: end, campusId });
+      if (version !== this.calendarVersion) return;
       this.synchronizeServerClock(result.serverNow);
       this.calendarItemsState.set(this.withTemporalStatuses(result.items));
       this.scheduleTemporalRefresh();
     } catch (error) {
+      if (version !== this.calendarVersion) return;
       this.errorState.set(mapEventsError(error));
       this.calendarItemsState.set([]);
     } finally {
-      this.calendarLoadingState.set(false);
+      if (version === this.calendarVersion) this.calendarLoadingState.set(false);
     }
   }
 
   clearError(): void {
+    this.catalogErrorState.set(null);
     this.errorState.set(null);
   }
 
@@ -299,6 +352,11 @@ export class EventsFacade implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.listVersion += 1;
+    this.calendarVersion += 1;
+    this.detailVersion += 1;
+    this.requestVersion += 1;
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
     if (this.searchTimer) clearTimeout(this.searchTimer);
   }

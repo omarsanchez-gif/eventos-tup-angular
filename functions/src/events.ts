@@ -104,6 +104,7 @@ export interface EventReservationDetail {
   readonly scheduledRelease: Date;
   readonly receptionConfirmed: Date | null;
   readonly delayReported: boolean;
+  readonly canConfirmReception: boolean;
 }
 
 export interface EventDetail extends EventSummary {
@@ -158,6 +159,7 @@ export interface EventsRepository {
     protocolPath: string,
   ): Promise<{ readonly eventId: string }>;
   getDetail(requesterUid: string, eventId: string, now: Date): Promise<EventDetail>;
+  getNotificationRevision(eventId: string): Promise<number | null>;
   update(
     requesterUid: string,
     eventId: string,
@@ -239,6 +241,7 @@ export type EventFunctionalCode =
   | 'event-update-restricted'
   | 'reservation-not-found'
   | 'reservation-state-invalid'
+  | 'reception-not-available'
   | 'service-unavailable';
 
 export class EventsError extends Error {
@@ -713,13 +716,11 @@ export async function cancelEventRecord(
   return { eventId: result.eventId, status: 'cancelled' as const, ...integrations };
 }
 
-export async function reconcileEventIntegrationsRecord(
-  identity: EventRequestIdentity | null,
-  data: unknown,
+async function authorizeIntegrationTarget(
+  actor: EventRequestIdentity,
+  eventId: string,
   dependencies: EventsDependencies,
-) {
-  const actor = await requester(identity, dependencies);
-  const eventId = eventIdInput(data);
+): Promise<void> {
   const detail = await dependencies.repository.getDetail(
     actor.uid,
     eventId,
@@ -728,6 +729,9 @@ export async function reconcileEventIntegrationsRecord(
   if (!detail.ownedByRequester && actor.role !== 'admin') {
     throw new EventsError('permission-denied', 'permission-denied', 'No tiene permisos.');
   }
+}
+
+function configuredIntegrations(dependencies: EventsDependencies) {
   if (!dependencies.integrations) {
     throw new EventsError(
       'service-unavailable',
@@ -735,7 +739,42 @@ export async function reconcileEventIntegrationsRecord(
       'Las integraciones no están configuradas.',
     );
   }
-  return dependencies.integrations.reconcile(eventId);
+  return dependencies.integrations;
+}
+
+export async function reconcileEventIntegrationsRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const eventId = eventIdInput(data);
+  await authorizeIntegrationTarget(actor, eventId, dependencies);
+  return configuredIntegrations(dependencies).reconcile(eventId);
+}
+
+export async function syncUpdatedEventIntegrationsRecord(
+  identity: EventRequestIdentity | null,
+  data: unknown,
+  dependencies: EventsDependencies,
+) {
+  const actor = await requester(identity, dependencies);
+  const request = requireObject(data);
+  requireAllowed(request, ['eventId', 'revisionEsperada']);
+  const eventId = documentId(request['eventId']);
+  if (!Number.isInteger(request['revisionEsperada'])) {
+    throw new EventsError('invalid-argument', 'invalid-argument', 'La solicitud no es válida.');
+  }
+  await authorizeIntegrationTarget(actor, eventId, dependencies);
+  const revision = await dependencies.repository.getNotificationRevision(eventId);
+  if (revision !== request['revisionEsperada']) {
+    throw new EventsError(
+      'invalid-argument',
+      'failed-precondition',
+      'La revisión del evento cambió.',
+    );
+  }
+  return configuredIntegrations(dependencies).reconcile(eventId);
 }
 
 export async function confirmReservationCoverageRecord(
@@ -787,9 +826,6 @@ export async function reportEquipmentDelayRecord(
   }
   const target = delayInput(data);
   const now = dependencies.clock.now();
-  if (target.release.getTime() <= now.getTime()) {
-    invalid('La nueva liberación debe ser futura.');
-  }
   await dependencies.repository.reportDelay(
     actor.uid,
     target.eventId,

@@ -1,5 +1,9 @@
 # Sistema de Eventos TUP — Angular
 
+**Publicación vigente en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Pendiente aceptación funcional autenticada sobre esta versión. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; queda pendiente la aceptación funcional autenticada de este incremento. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](specs/matriz-trazabilidad.md).
+
 Migración del frontend institucional a Angular 22, guiada exclusivamente por las especificaciones de [`/specs`](./specs).
 
 ## Alcance implementado
@@ -99,7 +103,7 @@ npm run deploy:staging:auth
 
 Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 3 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
 
-La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. La estabilización del 27 de octubre dejó el build limpio, `npm audit --omit=dev` en cero y la auditoría completa sin altas/críticas; los cinco avisos moderados exclusivos de Firebase CLI están aceptados y mitigados en ADR-011. Ese mismo día se publicaron únicamente Hosting y `bootstrapAuthorization` en staging y se verificaron contra el build y los contratos locales. Solo queda registrar la evidencia administrativa exhaustiva de Usuarios, Coordinaciones, Campus y Equipos; nada de ello autoriza producción.
+La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. La estabilización del 27 de octubre dejó el build limpio, `npm audit --omit=dev` en cero y la auditoría completa sin altas/críticas; los cinco avisos moderados exclusivos de Firebase CLI están aceptados y mitigados en ADR-011. Ese mismo día se publicaron únicamente Hosting y `bootstrapAuthorization` en staging, se verificaron contra el build y los contratos locales y el responsable aceptó los recorridos administrativos exhaustivos de Usuarios, Coordinaciones, Campus y Equipos. El cierre de staging no autoriza producción.
 
 ## Calidad
 

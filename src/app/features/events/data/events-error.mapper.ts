@@ -23,6 +23,8 @@ const messages: Readonly<Record<string, string>> = {
   'event-update-restricted':
     'El cambio solicitado no está permitido dentro del límite de anticipación.',
   'reservation-not-found': 'La reservación de equipo ya no existe.',
+  'reception-not-available':
+    'Aún no puede confirmar la recepción. Espere al fin del evento o al inicio del regreso y actualice el detalle.',
   'reservation-state-invalid': 'La reservación ya no admite esta acción.',
   'service-unavailable': 'El servicio de eventos no está disponible. Intente nuevamente.',
 };

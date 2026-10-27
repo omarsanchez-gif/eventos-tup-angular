@@ -547,3 +547,29 @@ El responsable confirmó el ciclo de creación, actualización y cancelación en
 - Pruebas de integración de FullCalendar Standard sin arrastre ni escritura directa.
 - Recorrido manual accesible y responsive.
 - Staging con calendario y SMTP sintéticos; nunca producción.
+
+## Regresión de integraciones local
+
+- EVT-111: dos creaciones simultáneas de Calendar y un reintento tras respuesta perdida convergen al mismo ID; 409 ajeno falla sin sobreescribir; IDs históricos se conservan y recreación tras 404/410 es determinista.
+- EVT-112: un correo antiguo que termina después de una edición no sobrescribe el estado de la revisión actual; finalización concurrente de trabajos actuales mantiene el resumen correcto.
+- EVT-113: integración de disponibilidad con reservas sucesivas permite capacidad realmente libre y mantiene rechazo atómico de solicitudes que exceden el pico; demora no puede acortar bloqueo.
+
+Resultado local del 27 de octubre: EVT-111 a EVT-113 cubiertos por event-integration-adapters.spec.ts y events-reservations.integration.spec.ts. Aprobaron 95 pruebas unitarias de Functions y 25 pruebas de Eventos con Firestore Emulator; Calendar y SMTP simulados, sin envíos reales. Publicado en staging el 27 de octubre de 2026; pendiente la aceptación funcional autenticada de este incremento.
+
+## Regresión adicional
+
+- EVT-114: dos reconciliaciones, dos ediciones fuera de orden y edición contra cancelación convergen a la última versión; errores antiguos no publican éxito y leases expirados se recuperan sin liberar el de otro procesador.
+- EVT-115: retirar, editar de nuevo, reagregar y volver a retirar notifica una vez por transición. Funciona sin historial SMTP; trabajos obsoletos no se crean.
+
+Resultado local de EVT-114 y EVT-115: 39 pruebas de Eventos con Firestore Emulator, 95 unitarias de Functions, 73 Angular y 15 Rules aprobadas. Incluye evidencia previa de los cinco primeros hallazgos. No equivale a aceptación en staging.
+
+## Regresión local EVT-116 a EVT-119
+
+- EVT-116: anónimo, claims no autorizados, perfil inactivo o rol divergente no consultan el evento ni revisión; usuario ajeno no consulta revisión ni integra; propietario y admin válidos sí; revisión distinta, campos extra e ID malformado fallan sin integrar.
+- EVT-117: resolver solicitudes de listado/calendario/detalle en orden inverso; ignorar errores antiguos, conservar loading vigente, invalidar durante debounce y al cerrar/destruir.
+- EVT-118: cerrar detalle antes de respuesta, elegir otro evento, reabrir el mismo y destruir la vista; cubrir también entrada por teclado.
+- EVT-119: contar llamadas a los tres catálogos durante carga inicial, búsqueda, paginación y refresco; compartir carga concurrente; actualizar al abrir formulario; permitir reintento tras fallo sin perder listado.
+
+Resultados del 27 de octubre de 2026: 240 pruebas aprobadas = 92 Angular + 108 unitarias de Functions + 40 Eventos con Firestore Emulator. Incluyen 33 casos nuevos: 19 Angular, 13 Functions y uno con el repositorio real en Emulator. Lint de Angular/Functions, guardia visual, builds frontend predeterminado y staging, y compilación de Functions aprobados. Las suites ajenas al alcance conservan su evidencia previa; no se afirma haber repetido Rules ni toda la batería histórica. Calendar/SMTP simulados, sin datos reales ni despliegue.
+
+Publicación posterior del 27 de octubre de 2026: syncUpdatedEventIntegrations y Hosting desplegados con autorización expresa. Verificación técnica: Function ACTIVE, rechazo anónimo 401, /login HTTP 200 y los 20 archivos publicados coinciden con el build local. Evidencia en matriz-trazabilidad.md. La aceptación funcional autenticada de EVT-116 a EVT-119 sigue pendiente; no se repitieron las 240 pruebas durante el despliegue.

@@ -4,6 +4,8 @@ const messages: Readonly<Record<string, string>> = {
   'invalid-argument': 'Revise los datos capturados.',
   'equipment-name-exists': 'Ya existe un equipo con ese nombre en el campus base.',
   'equipment-not-found': 'El equipo ya no existe.',
+  'reservation-review-required':
+    'No se guardó la reducción. Revise las reservaciones y la configuración de Sistemas antes de reintentar.',
   'equipment-in-use': 'El equipo ya tiene uso histórico y solo puede suspenderse.',
   'equipment-base-campus-immutable':
     'El campus base no puede cambiar porque el equipo ya tiene uso histórico.',

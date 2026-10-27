@@ -1,5 +1,9 @@
 # Decisiones y pendientes
 
+**Publicación vigente en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Pendiente aceptación funcional autenticada sobre esta versión. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; queda pendiente la aceptación funcional autenticada de este incremento. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
+
 ## Decisiones resueltas
 
 | Tema                      | Decisión                                                                          | Referencia                                                    |
@@ -43,16 +47,16 @@
 | Autorización de Eventos   | Eventos y reservaciones autorizados el 29 de septiembre de 2026                   | `AGENTS.md`, ADR-009                                          |
 | Cierre operativo Eventos  | Búsqueda, mutaciones, logística, workers, limpieza e históricos                   | `decisiones/ADR-010-cierre-operativo-eventos.md`              |
 
-## Único pendiente de aceptación: evidencia administrativa
+## Cierre de aceptación administrativa — 27 de octubre de 2026
 
-El cierre técnico está completo. Solo queda registrar evidencia administrativa autenticada de los catálogos; esta evidencia se realizará después y no autoriza producción:
+El responsable confirmó satisfactoriamente en staging todos los recorridos administrativos acordados:
 
-- Usuarios: confirmar formalmente que el volumen esperado permanece por debajo de 500 y registrar alta, edición, activación, suspensión y eliminación, conservando dos administradores activos.
-- Coordinaciones: registrar alta, edición, suspensión, activación y eliminación permitida/bloqueada.
-- Campus: registrar alta, edición, suspensión, activación y eliminación condicionada.
-- Equipos: registrar alta, edición, suspensión, activación y eliminación condicionada.
+- Usuarios: volumen actual y esperado por debajo de 500; alta, edición, activación, suspensión y eliminación, conservando la continuidad administrativa.
+- Coordinaciones: alta, edición, suspensión, activación y eliminación permitida o bloqueada por uso.
+- Campus: alta, edición, horarios, suspensión, activación y eliminación condicionada.
+- Equipos: alta fija y transferible, edición, destinos, cantidad, suspensión, activación y eliminación condicionada.
 
-No quedan pendientes técnicos de build, seguridad de ejecución, concurrencia, índices, Rules, Calendar, SMTP, cuotas de aceptación, TTL, limpieza, pruebas automatizadas o trazabilidad de Eventos. El backfill histórico y cualquier migración siguen fuera de alcance y solo se ejecutan con autorización separada.
+No quedan pendientes de aceptación técnica o administrativa en staging. Tampoco quedan pendientes de build, seguridad de ejecución, concurrencia, índices, Rules, Calendar, SMTP, cuotas de aceptación, TTL, limpieza, pruebas automatizadas o trazabilidad de Eventos. El backfill histórico, cualquier migración y producción siguen fuera de alcance y solo se ejecutan con autorización separada.
 
 ## Controles operativos continuos — no son pendientes de aceptación
 
@@ -86,3 +90,20 @@ No quedan pendientes técnicos de build, seguridad de ejecución, concurrencia, 
 - Build de producción y staging aplican el mismo presupuesto, las primitivas compartidas están centralizadas y `npm audit --omit=dev` reporta cero vulnerabilidades.
 - La evidencia de cada estabilización queda registrada en el historial Git de `desarrollo`; no se usan identificadores anticipados de commits.
 - Producción no fue utilizada ni modificada.
+
+## Seguimiento del incremento de consistencia desplegado
+
+- Las cinco correcciones autorizadas están implementadas y probadas; no quedan decisiones funcionales necesarias para este incremento.
+- Despliegue autorizado y completado únicamente en staging el 27 de octubre de 2026. Pendiente la comprobación funcional autenticada de inventario/avisos, disponibilidad, demora, Calendar y estado de correo sobre esta versión.
+- La lectura de 400 reservas activas y el presupuesto de 450 escrituras son límites técnicos defensivos para reducción de inventario. Un exceso falla completo y requiere revisión administrativa; nunca aplica resultados parciales.
+- Las evidencias administrativas ya aceptadas se conservan como históricas. No se ejecuta migración ni reparación automática de reservas o duplicados Calendar anteriores.
+
+## Cierre técnico del segundo incremento
+
+Los tres hallazgos adicionales están corregidos y documentados junto con los cinco anteriores. La regresión del alcance afectado aprobó 222 pruebas. Las reglas temporales de recepción, la transición canónica de coordinaciones y el lease de Calendar quedan definidos en sus specs.
+
+El conjunto de ocho correcciones ya está publicado y verificado técnicamente en staging. Queda pendiente su aceptación funcional autenticada, incluidos recepción por etapa y avisos de retiro por transición. Un proceso Calendar interrumpido puede dejar el evento pendiente hasta vencer su lease y ejecutar una nueva reconciliación; no se anuncia éxito ni se ejecuta una reparación masiva de datos anteriores.
+
+## Seguimiento de EVT-116 a EVT-119
+
+Las cuatro correcciones ya están publicadas y verificadas técnicamente en staging. No queda pendiente autorización ni despliegue de este incremento. Falta la aceptación funcional autenticada sobre la versión actual; las pruebas locales y el rechazo anónimo remoto no sustituyen ese recorrido. Producción requiere autorización independiente.

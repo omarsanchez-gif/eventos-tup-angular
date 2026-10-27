@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. El Hosting vigente incorpora la normalización visual compartida y el catálogo TUP/FCS con sus horarios canónicos. La comparación visual, accesible y responsive quedó aceptada el 3 de octubre de 2026. El recorrido administrativo completo y las direcciones oficiales conservan seguimiento separado; producción no está autorizada.
+Implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. El Hosting vigente incorpora la normalización visual compartida y el catálogo TUP/FCS con sus horarios canónicos. La comparación visual, accesible y responsive quedó aceptada el 3 de octubre de 2026. El 27 de octubre de 2026 el responsable aceptó el recorrido administrativo completo, incluidos horarios y eliminación condicionada; direcciones y referencias permanecen como datos editables del catálogo, no como pendientes de aceptación. Producción no está autorizada.
 
 ## Objetivo
 
@@ -122,8 +122,8 @@ fechaActualizacion: Timestamp
 
 La aplicación no crea semillas automáticas. El administrador podrá capturar:
 
-- `Tecnológico Universitario Playacar`, clave `TUP`, dirección pendiente, lunes a viernes 08:00–20:00, sábado 08:00–18:00 y domingo inactivo.
-- `Facultad de Ciencias de la Salud`, clave `FCS`, dirección pendiente, lunes a viernes 09:00–18:00, sábado 09:00–14:00 y domingo inactivo.
+- `Tecnológico Universitario Playacar`, clave `TUP`, dirección `Av. Universidades, 77724 Playa del Carmen, Q.R.`, lunes a viernes 08:00–20:00, sábado 08:00–18:00 y domingo inactivo.
+- `Facultad de Ciencias de la Salud`, clave `FCS`, dirección `Humana Works Center, Col. Fracc. La Gran Plaza, Av. Paseo Central`, lunes a viernes 09:00–18:00, sábado 09:00–14:00 y domingo inactivo.
 
 ## Conformidad visual
 

@@ -311,3 +311,15 @@ Cloud Storage de staging utiliza el bucket predeterminado `eventos-tup-angular-s
 - `npm run lint:visual` bloquea redefiniciones encapsuladas de botones/icon-buttons y colores institucionales obsoletos.
 - Presupuestos definidos en `criterios-no-funcionales.md`.
 - Definición de terminado transversal.
+
+## Consistencia de inventario e integraciones — corrección local
+
+La reducción administrativa de inventario y Eventos comparten cálculo de ocupación por intervalos y documento de control. Equipos encola avisos logísticos dentro de su transacción; el worker SMTP existente conserva envío, lease, reintentos y retención. Calendar usa identidad determinista para reintentar creación sin duplicar. El resumen de correo se calcula transaccionalmente sobre la revisión vigente. No hay cambios de rutas, dependencias externas, permisos ni primitivas visuales. Publicado únicamente en staging el 27 de octubre de 2026 como parte del conjunto de ocho correcciones.
+
+## Serialización de integración y recepción válida
+
+event-calendar-sync.ts coordina Calendar con lease Firestore por evento y publicación condicional de resultados; usa la identidad determinista compartida. La reserva expone un permiso temporal de recepción calculado por backend, validado de nuevo al ejecutar. La transición de coordinaciones se fotografía en la transacción del evento y el generador de avisos ignora preparaciones obsoletas. No se crean Functions, índices, dependencias ni tareas programadas nuevas. El conjunto fue desplegado con autorización expresa únicamente a staging el 27 de octubre de 2026: Rules, 12 Functions y Hosting. La colección protegida se crea al reconciliar cada evento; no se ejecutó una migración masiva.
+
+## Consultas de Eventos — incremento publicado en staging
+
+EVT-116 a EVT-119: mover validación de sincronización al caso de uso; el repositorio ofrece lectura interna de revisión sin exponerla en el read model público. EventsFacade separa carga del listado y catálogos con caché exclusivamente en memoria por vista, solicitud compartida y refresco al abrir formulario. Contadores independientes invalidan consultas de listado, calendario y detalle; ninguna respuesta obsoleta puede cambiar datos, error o loading de su ámbito. El calendario invalida también la selección pendiente al cerrar o destruir. No se agregan dependencias, rutas ni almacenamiento persistente. Este incremento fue publicado con autorización expresa únicamente en staging el 27 de octubre de 2026, mediante syncUpdatedEventIntegrations y Hosting.

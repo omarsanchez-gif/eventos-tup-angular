@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   checkEventAvailability,
+  syncUpdatedEventIntegrationsRecord,
+  type EventDetail,
   buildEventSearchTerms,
   createEventRecord,
   type EventRequestIdentity,
@@ -37,6 +39,7 @@ function repository(): EventsRepository {
     listRange: vi.fn(async () => []),
     create: vi.fn(async () => ({ eventId: 'event-id' })),
     getDetail: vi.fn(),
+    getNotificationRevision: vi.fn(async () => 1),
     update: vi.fn(),
     cancel: vi.fn(),
     confirmCoverage: vi.fn(),
@@ -182,5 +185,111 @@ describe('casos de uso de Eventos', () => {
     expect(terms).toContain('omar');
     expect(terms).toContain('sanchez');
     expect(new Set(terms).size).toBe(terms.length);
+  });
+
+  describe('sincronización de revisión autorizada antes de consultar', () => {
+    function setup(owned = true) {
+      const repo = repository();
+      vi.mocked(repo.getDetail).mockResolvedValue({ ownedByRequester: owned } as EventDetail);
+      const deps = {
+        ...dependencies(repo),
+        integrations: {
+          reconcile: vi.fn(async () => ({
+            calendarStatus: 'sincronizado' as const,
+            notificationStatus: 'completas' as const,
+          })),
+        },
+      };
+      return { repo, deps };
+    }
+    const request = { eventId: 'event-1', revisionEsperada: 1 };
+
+    it.each([null, { ...identity, authorized: false }, { ...identity, role: 'otro' }])(
+      'rechaza identidad %j sin leer evento ni revisión',
+      async (actor) => {
+        const { repo, deps } = setup();
+        await expect(
+          syncUpdatedEventIntegrationsRecord(actor, request, deps),
+        ).rejects.toBeDefined();
+        expect(repo.findCanonicalRequester).not.toHaveBeenCalled();
+        expect(repo.getDetail).not.toHaveBeenCalled();
+        expect(repo.getNotificationRevision).not.toHaveBeenCalled();
+        expect(deps.integrations.reconcile).not.toHaveBeenCalled();
+      },
+    );
+    it.each(['inactivo', 'rol divergente', 'inexistente'])(
+      'rechaza perfil canónico %s antes del evento',
+      async (variant) => {
+        const { repo, deps } = setup();
+        vi.mocked(repo.findCanonicalRequester).mockResolvedValue(
+          variant === 'inexistente'
+            ? null
+            : {
+                uid: identity.uid,
+                nombre: 'Usuario',
+                correo: 'user@tecplayacar.edu.mx',
+                activo: variant !== 'inactivo',
+                role: variant === 'rol divergente' ? 'admin' : 'usuario',
+              },
+        );
+        await expectCode(
+          syncUpdatedEventIntegrationsRecord(identity, request, deps),
+          'permission-denied',
+        );
+        expect(repo.getDetail).not.toHaveBeenCalled();
+        expect(repo.getNotificationRevision).not.toHaveBeenCalled();
+      },
+    );
+    it('no revela revisión de evento ajeno', async () => {
+      const { repo, deps } = setup(false);
+      await expectCode(
+        syncUpdatedEventIntegrationsRecord(identity, { ...request, revisionEsperada: 99 }, deps),
+        'permission-denied',
+      );
+      expect(repo.getNotificationRevision).not.toHaveBeenCalled();
+      expect(deps.integrations.reconcile).not.toHaveBeenCalled();
+    });
+    it.each(['propietario', 'admin'])(
+      'permite %s y verifica revisión después de permisos',
+      async (role) => {
+        const { repo, deps } = setup(role === 'propietario');
+        const actor = role === 'admin' ? { ...identity, role: 'admin' } : identity;
+        if (role === 'admin')
+          vi.mocked(repo.findCanonicalRequester).mockResolvedValue({
+            uid: identity.uid,
+            nombre: 'Admin',
+            correo: 'admin@tecplayacar.edu.mx',
+            activo: true,
+            role: 'admin',
+          });
+        await expect(
+          syncUpdatedEventIntegrationsRecord(actor, request, deps),
+        ).resolves.toMatchObject({ calendarStatus: 'sincronizado' });
+        expect(repo.findCanonicalRequester).toHaveBeenCalledBefore(vi.mocked(repo.getDetail));
+        expect(repo.getDetail).toHaveBeenCalledBefore(vi.mocked(repo.getNotificationRevision));
+        expect(repo.getNotificationRevision).toHaveBeenCalledBefore(deps.integrations.reconcile);
+      },
+    );
+    it.each([
+      { eventId: 'bad/path', revisionEsperada: 1 },
+      { ...request, extra: true },
+      { ...request, revisionEsperada: '1' },
+    ])('rechaza entrada inválida %j', async (data) => {
+      const { repo, deps } = setup();
+      await expectCode(
+        syncUpdatedEventIntegrationsRecord(identity, data, deps),
+        'invalid-argument',
+      );
+      expect(repo.getDetail).not.toHaveBeenCalled();
+      expect(repo.getNotificationRevision).not.toHaveBeenCalled();
+    });
+    it('rechaza revisión antigua sin llamar integraciones', async () => {
+      const { repo, deps } = setup();
+      vi.mocked(repo.getNotificationRevision).mockResolvedValue(2);
+      await expect(
+        syncUpdatedEventIntegrationsRecord(identity, request, deps),
+      ).rejects.toMatchObject({ functionsCode: 'failed-precondition' });
+      expect(deps.integrations.reconcile).not.toHaveBeenCalled();
+    });
   });
 });

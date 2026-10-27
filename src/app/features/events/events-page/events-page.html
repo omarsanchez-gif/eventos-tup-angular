@@ -656,6 +656,12 @@
                           <button
                             class="button button--secondary"
                             type="button"
+                            [disabled]="!reservation.canConfirmReception"
+                            [title]="
+                              reservation.canConfirmReception
+                                ? 'Confirmar que el equipo ya está disponible'
+                                : 'Disponible después del fin del evento o desde el regreso. Actualice el detalle al llegar a esa hora.'
+                            "
                             (click)="requestLogisticsAction('reception', reservation.equipmentId)"
                           >
                             Confirmar recepción

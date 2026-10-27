@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { peakOccupancy, reservationInterval } from './reservation-capacity.js';
 
 import {
   FieldValue,
@@ -383,6 +384,23 @@ function logisticsNotificationVersions(value: unknown): LogisticsNotificationVer
   };
 }
 
+function receptionAvailable(event: DocumentData, reservation: DocumentData, now: Date): boolean {
+  if (reservation['estado'] !== 'confirmada' && reservation['estado'] !== 'requiere_revision')
+    return false;
+  const blockStart = dateFromUnknown(reservation['bloqueoInicio']);
+  if (!blockStart || now.getTime() < blockStart.getTime()) return false;
+  const end = dateFromUnknown(event['finAt']);
+  if (reservation['esTraslado'] === true) {
+    const returnStart = dateFromUnknown(reservation['regresoProgramado']);
+    return (
+      !!returnStart &&
+      now.getTime() >= returnStart.getTime() &&
+      (event['estatus'] === 'cancelado' || (!!end && now.getTime() >= end.getTime()))
+    );
+  }
+  return !!end && now.getTime() >= end.getTime();
+}
+
 function eventNotFound(): never {
   throw new EventsError('event-not-found', 'not-found', 'El evento no existe.');
 }
@@ -587,11 +605,14 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       ),
     );
     const calculations = blocks.map((item, index): ReservationCalculation => {
-      const occupied = (overlappingSnapshots[index]?.docs ?? []).reduce((total, snapshot) => {
-        if (snapshot.data()['eventoId'] === options.excludeEventId) return total;
-        const value = snapshot.data()['cantidad'];
-        return total + (Number.isInteger(value) && (value as number) > 0 ? (value as number) : 0);
-      }, 0);
+      const intervals = (overlappingSnapshots[index]?.docs ?? [])
+        .filter((snapshot) => snapshot.data()['eventoId'] !== options.excludeEventId)
+        .map((snapshot) => reservationInterval(snapshot.data()));
+      const occupied = peakOccupancy(
+        intervals,
+        item.block.start.getTime(),
+        item.block.end.getTime(),
+      );
       return {
         ...item,
         occupied,
@@ -689,6 +710,13 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         .sort((left, right) => (left.start?.getTime() ?? 0) - (right.start?.getTime() ?? 0));
     },
 
+    async getNotificationRevision(eventId): Promise<number | null> {
+      const snapshot = await events.doc(eventId).get();
+      if (!snapshot.exists) eventNotFound();
+      const revision = snapshot.data()?.['revisionNotificacion'];
+      return Number.isInteger(revision) ? (revision as number) : null;
+    },
+
     async getDetail(requesterUid, eventId, now): Promise<EventDetail> {
       await requireRequester(requesterUid);
       const [eventSnapshot, reservationSnapshot] = await Promise.all([
@@ -759,6 +787,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             blockEnd,
             scheduledRelease,
             receptionConfirmed: dateFromUnknown(reservation['recepcionConfirmada']),
+            canConfirmReception: receptionAvailable(data, reservation, now),
             delayReported: reservation['demoraReportada'] === true,
           };
         })
@@ -828,6 +857,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             nombre: record.name,
           })),
           revisionNotificacion: 1,
+          coordinacionIdsRetiradas: [],
           terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
           equipoIds: result.calculations.map((item) => item.equipment.id),
           equiposSolicitados: result.calculations.map((item) => ({
@@ -1073,9 +1103,15 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             nombre: record.name,
           })),
           revisionNotificacion: revision,
+          coordinacionIdsRetiradas: notificationChanged
+            ? [...previousCoordinationIds].filter((id) => !input.coordinationIds.includes(id))
+            : stringArray(previous['coordinacionIdsRetiradas']),
           notificacionesEstado: notificationChanged ? 'pendiente' : previousNotificationState,
           calendarEstado:
-            scheduleChanged || previous['nombreEvento'] !== input.name
+            scheduleChanged ||
+            campusChanged ||
+            previous['nombreEvento'] !== input.name ||
+            previous['observaciones'] !== input.observations
               ? 'pendiente'
               : previousCalendarState,
           terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
@@ -1332,6 +1368,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           calendarEstado: 'pendiente',
           notificacionesEstado: 'pendiente',
           revisionNotificacion: revision,
+          coordinacionIdsRetiradas: [],
           fechaActualizacion: FieldValue.serverTimestamp(),
         });
         return { eventId, protocolPath };
@@ -1408,11 +1445,18 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         }
         const reservation = reservationSnapshot.data() ?? {};
         if (reservation['estado'] === 'finalizada' && reservation['recepcionConfirmada']) return;
-        if (reservation['estado'] === 'cancelada') {
+        if (reservation['estado'] === 'cancelada' || reservation['estado'] === 'finalizada') {
           throw new EventsError(
             'reservation-state-invalid',
             'failed-precondition',
             'La reservación ya no admite esta acción.',
+          );
+        }
+        if (!receptionAvailable(eventSnapshot.data() ?? {}, reservation, now)) {
+          throw new EventsError(
+            'reception-not-available',
+            'failed-precondition',
+            'La etapa logística todavía no permite confirmar recepción.',
           );
         }
         transaction.update(reservationReference, {
@@ -1462,19 +1506,28 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           reservation['regresoProgramado'],
           'La reservación no tiene un regreso programado.',
         );
-        if (release.getTime() <= now.getTime() || release.getTime() <= returnStart.getTime()) {
+        const currentRelease = timestampRequired(
+          reservation['liberacionProgramada'],
+          'Falta la liberación actual.',
+        );
+        const currentEnd = timestampRequired(reservation['bloqueoFin'], 'Falta el bloqueo actual.');
+        if (
+          reservation['demoraReportada'] === true &&
+          currentRelease.getTime() === release.getTime() &&
+          currentEnd.getTime() === release.getTime()
+        )
+          return;
+        if (
+          release.getTime() <= now.getTime() ||
+          release.getTime() <= returnStart.getTime() ||
+          release.getTime() <= currentRelease.getTime() ||
+          release.getTime() <= currentEnd.getTime()
+        ) {
           throw new EventsError(
             'invalid-argument',
             'invalid-argument',
-            'La nueva liberación debe ser posterior al regreso previsto.',
+            'La demora debe ampliar la liberación y el bloqueo actuales.',
           );
-        }
-        const currentRelease = dateFromUnknown(reservation['liberacionProgramada']);
-        if (
-          reservation['demoraReportada'] === true &&
-          currentRelease?.getTime() === release.getTime()
-        ) {
-          return;
         }
         const nextControlVersion = positiveVersion(controlSnapshot) + 1;
         transaction.update(reservationReference, {

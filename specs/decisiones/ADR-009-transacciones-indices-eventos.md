@@ -20,8 +20,8 @@ El listado y el calendario requieren consultas acotadas por cursores o intervalo
    - `controlReservasEquipo/{equipoId}`;
    - reservaciones activas que se superponen con cada intervalo calculado.
 3. `controlReservasEquipo/{equipoId}` contiene una versión monotónica administrada por servidor. No contiene ni representa disponibilidad.
-4. Toda transacción que cree, sustituya, reduzca, cancele o finalice una reserva incrementa la versión de cada equipo afectado. Dos operaciones concurrentes sobre el mismo equipo modifican el mismo documento de control; Firestore reintenta una de ellas y obliga a recalcular con las reservas confirmadas más recientes.
-5. La disponibilidad se calcula desde `cantidadOperativa` menos la suma de reservas `confirmada` o `requiere_revision` cuyos intervalos se superponen.
+4. Toda transacción que cree, sustituya, reduzca, cancele o finalice una reserva incrementa la versión de cada equipo afectado. Una reducción administrativa de cantidadOperativa también lee e incrementa este control y encola sus avisos en la misma transacción. Dos operaciones concurrentes sobre el mismo equipo modifican el mismo documento de control; Firestore reintenta una de ellas y obliga a recalcular con las reservas confirmadas más recientes.
+5. La disponibilidad se calcula desde `cantidadOperativa` menos el máximo uso simultáneo de reservas `confirmada` o `requiere_revision` dentro del intervalo solicitado. Se recortan los intervalos al candidato, se agrupan altas y bajas por instante y se respetan extremos [inicio, fin); reservas sucesivas no se acumulan artificialmente.
 6. Si cualquier equipo, cantidad, campus, destino, corte o intervalo es inválido, la transacción termina sin escribir evento, reservas, controles ni marcas de uso.
 7. Si todo es válido, la misma transacción escribe el estado canónico del evento, todas las reservas deterministas, controles y marcas permanentes de uso.
 8. Un evento admite como máximo 20 tipos distintos de equipo, IDs únicos y cantidades enteras positivas.

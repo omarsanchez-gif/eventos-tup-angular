@@ -164,3 +164,13 @@ Evidencia vigente del 27 de octubre de 2026: la actualización compatible y los 
 ## Criterio de aceptación
 
 Una sesión Firebase sin claim autorizado no obtiene acceso a Firestore o Storage protegidos. Un usuario autorizado solo puede ejecutar las operaciones correspondientes a su rol y propiedad.
+
+## Control de integración de Calendar
+
+controlIntegracionesEvento es inaccesible en lectura y escritura para todo cliente, incluidos administradores. Solo Admin SDK gestiona el lease. coordinacionIdsRetiradas contiene únicamente IDs ya permitidos en Eventos, es inmutable desde el cliente y se calcula en las transacciones backend. Reception-not-available usa un mensaje funcional sin datos técnicos; ninguna habilitación de botón concede autorización.
+
+Publicación del 27 de octubre de 2026: la protección de controlIntegracionesEvento fue desplegada únicamente a staging y se verificó coincidencia entre Rules locales y remotas. Cuatro callables afectadas rechazaron solicitudes anónimas con 401; las pruebas locales de Rules aprobaron 15 casos. Evidencia exacta en [matriz de trazabilidad](matriz-trazabilidad.md); la comprobación remota anónima no sustituye la regresión autenticada.
+
+## Revalidación previa de sincronización — publicada en staging
+
+SEC-EVT-018 / EVT-116: syncUpdatedEventIntegrations revalida identidad, claims y perfil activo antes de leer el evento; después verifica propiedad o rol admin y finalmente la revisión esperada. El handler delega en un caso de uso probado y no consulta Firestore directamente antes de autorizar. ID documental malformado falla antes de la lectura del evento. No cambia el contrato público ni agrega permisos. Implementado y validado localmente con negativas de identidad, perfil, propiedad y revisión, además de una prueba con Firestore Emulator. Desplegado únicamente a staging el 27 de octubre de 2026: la callable está ACTIVE y rechazó las comprobaciones anónimas con 401 / UNAUTHENTICATED. Esta comprobación remota no sustituye las pruebas autenticadas de roles.

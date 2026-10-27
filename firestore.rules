@@ -39,6 +39,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /controlIntegracionesEvento/{eventId} {
+      allow read, write: if false;
+    }
+
     match /controlReservasEquipo/{equipmentId} {
       allow read, write: if false;
     }

@@ -169,6 +169,7 @@ campusHistorico:
   nombre: string
   direccion: string | null
 coordinacionIds: string[]
+coordinacionIdsRetiradas: string[]
 coordinacionesInvolucradas:
   - coordinacionId: string
     nombre: string
@@ -307,3 +308,25 @@ unavailableSections: DashboardSection[]
 ```
 
 `DashboardEventSummary` contiene únicamente ID, nombre, fecha y hora de inicio, responsable y estado temporal. `DashboardActivity` contiene ID, nombre, `creacion | actualizacion`, timestamp, responsable y estado temporal. No devuelve documentos de Usuario, correos de coordinaciones, URLs de protocolos, inventario, errores técnicos, secretos ni estados internos de integraciones. Los valores `null` identifican consultas fallidas; un conteo real sin coincidencias usa `0`.
+
+## Precisiones de consistencia — 27 de octubre de 2026
+
+El primer incremento de cinco correcciones no agregó colecciones ni campos: calendarEventId admite el ID determinista de la integración además de los IDs históricos. notificacionesEstado representa exclusivamente revisionNotificacion vigente. La reducción de cantidadOperativa actualiza atómicamente reservasEquipo.estado, motivosRevision, versionesAvisoLogistico.inventario_reducido, controlReservasEquipo.version y trabajos existentes de notificacionesEventos con su fotografía. La disponibilidad continúa calculándose, ahora mediante máximo uso simultáneo; no se persiste un contador.
+
+## Segundo incremento local de consistencia — 27 de octubre de 2026
+
+Se autoriza controlIntegracionesEvento/{eventId}, exclusivo de Admin SDK:
+
+```text
+procesadorId: string | null
+bloqueoHasta: Timestamp | null
+fechaActualizacion: Timestamp
+```
+
+Un lease de diez minutos serializa las operaciones externas de Calendar de cada evento; no contiene secretos, disponibilidad ni datos públicos. La adquisición, publicación del resultado y liberación verifican la identidad del procesador transaccionalmente. Un lease vencido puede recuperarse en la siguiente reconciliación; no se crea un cron nuevo.
+
+eventos añade coordinacionIdsRetiradas: string[], calculado en la transacción de cada revisión notificable como IDs anteriores menos actuales. Crear o cancelar escribe []; una edición sin cambio notificable conserva la transición de la revisión vigente. Son solo IDs, no correos. Documentos históricos sin el campo usan exclusivamente los trabajos de creación/actualización de la revisión inmediatamente anterior, nunca retiros previos ni todo el historial.
+
+El read model EventReservationDetail añade canConfirmReception: boolean, derivado por backend a la hora de consulta; no se persiste. False ante etapas prematuras o datos temporales incompletos. No modifica permisos ni sustituye la validación al ejecutar.
+
+Estado de publicación: este incremento se desplegó únicamente en staging el 27 de octubre de 2026. No se ejecutó backfill ni migración masiva; controlIntegracionesEvento se crea al reconciliar y coordinacionIdsRetiradas se calcula en las operaciones backend descritas arriba. El tratamiento de documentos históricos permanece vigente.

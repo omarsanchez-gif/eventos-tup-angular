@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La normalización y aceptación visual/accesible/responsive quedaron confirmadas el 3 de octubre; la validación administrativa completa conserva seguimiento separado y producción no está autorizada.
+Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La normalización y aceptación visual/accesible/responsive quedaron confirmadas el 3 de octubre; la validación administrativa completa fue aceptada por el responsable el 27 de octubre de 2026 y producción no está autorizada.
 
 ## Documentación
 
@@ -39,11 +39,11 @@ Implementado, validado y desplegado únicamente a staging el 21 de agosto de 202
 - [x] CAM-T22 Ejecutar unitarias Angular y Functions.
 - [x] CAM-T23 Ejecutar integración con Firestore Emulator.
 - [x] CAM-T24 Ejecutar lint, formato y build de staging.
-- [ ] CAM-T25 Validar manualmente con datos sintéticos.
+- [x] CAM-T25 Validar manualmente con datos sintéticos; confirmado por el responsable en staging el 27 de octubre de 2026.
 
 ## Cierre
 
-- [ ] CAM-T26 Completar la aceptación funcional del recorrido administrativo; la aceptación visual quedó aprobada el 3 de octubre de 2026.
+- [x] CAM-T26 Completar la aceptación funcional del recorrido administrativo; aceptación funcional confirmada el 27 de octubre de 2026 y aceptación visual aprobada el 3 de octubre de 2026.
 - [x] CAM-T27 Autorizar y completar despliegue separado en staging.
 - [x] CAM-T28 Confirmar que producción no fue utilizada.
 
@@ -68,4 +68,4 @@ Implementado, validado y desplegado únicamente a staging el 21 de agosto de 202
 - Guardia automática: `npm run lint:visual` aprobada sin selectores compartidos duplicados ni colores institucionales obsoletos.
 - Verificación posterior: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules aprobadas.
 - Build de staging aprobado con `campuses-page` diferido de 34.17 kB.
-- Pendientes reales: CAM-T25 recorrido administrativo autenticado y la parte funcional de CAM-T26. CAM-T31 y la aceptación visual de CAM-T26 quedaron aprobadas el 3 de octubre de 2026.
+- Cierre vigente: CAM-T25 y la parte funcional de CAM-T26 fueron aceptadas por el responsable el 27 de octubre de 2026; CAM-T31 y la aceptación visual de CAM-T26 quedaron aprobadas el 3 de octubre de 2026.

@@ -311,4 +311,62 @@ describe('EventsPage', () => {
     });
     expect(element.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe('1');
   });
+  it.each([false, true])(
+    'habilita recepción solo según la ventana validada por backend (%s)',
+    async (allowed) => {
+      user.update((value) => (value ? { ...value, rol: 'admin' } : value));
+      vi.mocked(eventsGateway.detail).mockResolvedValueOnce({
+        ...detail,
+        reservations: [
+          {
+            equipmentId: 'speaker',
+            equipmentName: 'Bocina',
+            quantity: 1,
+            state: 'confirmada',
+            reviewReasons: [],
+            requiresTransfer: false,
+            blockStart: summary.start,
+            blockEnd: summary.end,
+            scheduledRelease: summary.end,
+            receptionConfirmed: null,
+            delayReported: false,
+            canConfirmReception: allowed,
+          },
+        ],
+      });
+      const element = fixture.nativeElement as HTMLElement;
+      element
+        .querySelector<HTMLButtonElement>('button[aria-label="Ver detalle de PRUEBA 1"]')
+        ?.click();
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        const button = Array.from(element.querySelectorAll('button')).find(
+          (item) => item.textContent?.trim() === 'Confirmar recepción',
+        );
+        expect(button).toBeDefined();
+        expect(button?.disabled).toBe(!allowed);
+        expect(button?.title).toContain(allowed ? 'ya está disponible' : 'Actualice el detalle');
+      });
+    },
+  );
+
+  it('actualiza catálogos al abrir creación y edición sin perder la selección', async () => {
+    const campuses = TestBed.inject(CAMPUSES_GATEWAY);
+    const coordinations = TestBed.inject(COORDINATIONS_GATEWAY);
+    const equipment = TestBed.inject(EQUIPMENT_GATEWAY);
+    expect(campuses.listSelectable).toHaveBeenCalledTimes(1);
+    fixture.componentInstance['openCreate']();
+    await vi.waitFor(() => expect(campuses.listSelectable).toHaveBeenCalledTimes(2));
+    await fixture.componentInstance['events'].loadCatalogs();
+    fixture.componentInstance['closeDialog']();
+    fixture.componentInstance['openEdit'](detail);
+    await fixture.componentInstance['events'].loadCatalogs();
+    for (const gateway of [campuses, coordinations, equipment])
+      expect(gateway.listSelectable).toHaveBeenCalledTimes(3);
+    expect(fixture.componentInstance['requestedEquipment']()).toEqual([
+      { equipoId: 'speaker', cantidad: 1 },
+    ]);
+    expect(fixture.componentInstance['eventForm'].controls.nombreEvento.value).toBe(detail.name);
+    fixture.componentInstance['closeDialog']();
+  });
 });

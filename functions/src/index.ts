@@ -70,6 +70,7 @@ import {
   listCalendarEventRecords,
   listEventRecords,
   reconcileEventIntegrationsRecord,
+  syncUpdatedEventIntegrationsRecord,
   reportEquipmentDelayRecord,
   updateEventRecord,
   type EventRequestIdentity,
@@ -681,35 +682,13 @@ export const processEventIntegrations = onCall(eventIntegrationCallableOptions, 
 export const syncUpdatedEventIntegrations = onCall(
   eventIntegrationCallableOptions,
   async (request) =>
-    executeEventOperation(async () => {
-      const data =
-        request.data && typeof request.data === 'object' && !Array.isArray(request.data)
-          ? (request.data as Record<string, unknown>)
-          : {};
-      if (
-        Object.keys(data).some((key) => !['eventId', 'revisionEsperada'].includes(key)) ||
-        typeof data['eventId'] !== 'string' ||
-        !Number.isInteger(data['revisionEsperada'])
-      ) {
-        throw new EventsError('invalid-argument', 'invalid-argument', 'La solicitud no es válida.');
-      }
-      const eventSnapshot = await firestore.doc(`eventos/${data['eventId']}`).get();
-      if (!eventSnapshot.exists) {
-        throw new EventsError('event-not-found', 'not-found', 'El evento no existe.');
-      }
-      if (eventSnapshot.data()?.['revisionNotificacion'] !== data['revisionEsperada']) {
-        throw new EventsError(
-          'invalid-argument',
-          'failed-precondition',
-          'La revisión del evento cambió.',
-        );
-      }
-      return reconcileEventIntegrationsRecord(
+    executeEventOperation(() =>
+      syncUpdatedEventIntegrationsRecord(
         toEventIdentity(request.auth),
-        { eventId: data['eventId'] },
+        request.data,
         eventsDependencies(),
-      );
-    }),
+      ),
+    ),
 );
 
 export const processEventNotifications = onSchedule(

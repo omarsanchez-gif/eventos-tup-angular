@@ -17,6 +17,8 @@ import {
   type ManagedEquipmentRecord,
 } from './admin-equipment.js';
 
+import { reconcileInventoryReduction } from './equipment-inventory.js';
+
 function classification(value: unknown): EquipmentClassification {
   return value === 'transferible' ? 'transferible' : 'fijo';
 }
@@ -73,6 +75,7 @@ function target(records: readonly ManagedEquipmentRecord[], id: string): Managed
 
 export function createFirestoreAdminEquipmentRepository(
   firestore: Firestore,
+  clock: { now(): Date } = { now: () => new Date() },
 ): AdminEquipmentRepository {
   const equipment = firestore.collection('equipos');
   const campuses = firestore.collection('campus');
@@ -231,6 +234,16 @@ export function createFirestoreAdminEquipmentRepository(
           );
         }
         const campusSnapshots = await validateCampuses(transaction, input);
+        if (input.cantidadOperativa < current.cantidadOperativa) {
+          await reconcileInventoryReduction(
+            firestore,
+            transaction,
+            current.documentId,
+            input.cantidadOperativa,
+            clock.now(),
+            1 + campusSnapshots.length,
+          );
+        }
         markCampusesUsed(transaction, campusSnapshots);
         transaction.update(equipment.doc(current.documentId), {
           nombre: input.nombre,

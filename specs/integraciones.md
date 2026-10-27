@@ -241,3 +241,30 @@ Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill e
 - Resolver mediante actualización compatible las vulnerabilidades moderadas de ejecución; no usar `npm audit fix --force`.
 
 La aceptación manual del 3 de octubre siguió el orden aprobado: configuración canónica, Rules, Functions enlazadas, creación, actualización, cancelación, entrega dinámica, negativas, deduplicación y revisión visual. Un fallo futuro detiene la secuencia y no se compensa borrando el evento canónico de Firestore.
+
+## Corrección de reintentos y revisión vigente — 27 de octubre de 2026
+
+- Calendar asigna al crear un ID determinista hexadecimal derivado del ID canónico del evento. Reintentos, respuestas perdidas y llamadas concurrentes usan el mismo ID; no crean IDs aleatorios. Conserva IDs ya enlazados. Ante 409, recupera y valida eventosTupId antes de actualizar el recurso existente; nunca sobreescribe un recurso ajeno.
+- Si un ID enlazado desaparece (404/410), su sustituto se deriva del evento y del ID anterior, por lo que los reintentos de la sustitución también convergen. Un recurso cancelado conserva una identidad retirada; se deriva un sucesor determinista con un máximo de tres intentos por llamada. Errores de permisos, transporte o límites permanecen recuperables sin crear identidades alternativas al azar. No se migran entradas existentes ni se eliminan duplicados históricos automáticamente.
+- Fundamento: [IDs de Calendar](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert) y [tratamiento de 409](https://developers.google.com/workspace/calendar/api/guides/errors).
+- El resumen notificacionesEstado se recalcula en una transacción que lee la revisión canónica y los trabajos funcionales de esa misma revisión. Un trabajo antiguo puede completar su historial, pero nunca cambia el resumen de una revisión posterior. Cambios concurrentes de evento o de trabajos obligan a reintentar la lectura.
+- Reducción de inventario crea avisos logísticos en la propia transacción de Equipos, con la misma clave evento/equipo/motivo/versión/destinatario que la reconciliación. El worker existente los procesa sin requerir otra edición o sincronización del evento.
+- Correcciones desplegadas con autorización expresa únicamente a staging el 27 de octubre de 2026. La regresión local utilizó Calendar/SMTP simulados; durante la verificación del despliegue no se ejecutó un ciclo real ni se enviaron correos de prueba. Su aceptación funcional autenticada queda pendiente.
+
+## Orden de Calendar y transición de coordinaciones — publicado en staging
+
+- Adquirir un lease protegido por evento antes de leer la versión a enviar a Calendar. Una llamada concurrente devuelve pendiente, sin iniciar otra escritura externa.
+- Calendar y OAuth tienen timeout HTTP de 15 segundos por solicitud. No se hacen peticiones externas dentro de transacciones Firestore.
+- Tras cada operación externa, releer evento y lease en una transacción. Comparar la fotografía de todos los campos enviados y la revisión/cancelación: una respuesta antigua no puede declarar sincronizada la versión nueva. Conservar el ID obtenido para poder retirar una creación que coincidió con cancelación.
+- Si cambió el evento, mantener pendiente y procesar su versión más reciente bajo el mismo lease, hasta cinco vueltas. Si continúa cambiando, liberar dejando pendiente para una reconciliación posterior. Publicar éxito y liberar se hacen atómicamente; errores nunca sobreescriben el estado publicado por otro propietario del lease.
+- Una cancelación sin ID guardado también intenta retirar la identidad determinista inicial, para recuperar una creación cuya respuesta se perdió. Los timeouts externos no garantizan una transacción distribuida; se conserva reconciliación e idempotencia, sin prometer exactly-once del proveedor.
+- Un proceso terminado abruptamente deja el lease hasta su vencimiento (máximo diez minutos). El próximo intento reanuda desde Firestore. No se elimina un lease ajeno ni se atribuye éxito a una operación incompleta.
+- Los retiros se calculan desde coordinacionIdsRetiradas de la revisión vigente. Se deduplican por evento/revisión/tipo/correo y no se repiten al editar posteriormente nombre, fecha u horario sin retirar esa coordinación otra vez. Reagregar y volver a retirar genera una nueva transición legítima.
+- Solo se aprovechan contactos históricos de la revisión inmediatamente anterior para esos IDs retirados; se agregan sus contactos canónicos sin avisar dos veces a quien ya recibe la actualización actual. La falta de historial no inventa retiros; la transición canónica funciona aunque los correos anteriores hayan expirado por TTL.
+- Antes de crear cada trabajo se revalida la revisión canónica: una preparación obsoleta no crea trabajos nuevos de una edición superada. Los trabajos ya confirmados conservan su política histórica de reintentos.
+
+- Antes de iniciar una operación Calendar se exigen al menos tres minutos restantes de lease para cubrir sus solicitudes HTTP acotadas. Si no queda ese margen, se libera el control y se devuelve pendiente; no se inicia trabajo remoto al borde del vencimiento.
+
+## Sincronización con revisión esperada — EVT-116 en staging
+
+syncUpdatedEventIntegrations conserva eventId y revisionEsperada. El caso de uso comprueba identidad, claims y perfil canónico antes de leer el evento, valida el ID y autoriza propietario o admin antes de leer/comparar la revisión. Revisión distinta devuelve failed-precondition sin reconciliar; no se devuelve ese dato a usuarios sin permiso. El sincronizador de Calendar sigue reconciliando la versión canónica vigente conforme a RN-083; la comprobación de revisionEsperada no es una transacción distribuida. Esta corrección fue validada localmente y desplegada únicamente a staging el 27 de octubre de 2026; la callable quedó ACTIVE y rechazó solicitudes anónimas con UNAUTHENTICATED. No se ejecutaron operaciones Calendar/SMTP reales durante la comprobación del despliegue.
