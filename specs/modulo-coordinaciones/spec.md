@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging y el Hosting vigente incluye `/coordinaciones`. Sus contactos institucionales pueden autorizar notificaciones de Eventos mediante procedencia protegida, sin incorporarlos a la lista fija del secreto. Permanecen pendientes la revisión manual accesible y la aceptación funcional y visual; producción no está autorizada.
+Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging y el Hosting vigente incluye `/coordinaciones`. La revisión visual, accesible y responsive y la recepción real de notificaciones por contactos canónicos quedaron aceptadas el 3 de octubre. El recorrido administrativo completo y la carrera uso/eliminación conservan seguimiento separado; producción no está autorizada.
 
 ## Objetivo
 
@@ -289,4 +289,4 @@ Columnas:
 
 ## Decisiones pendientes
 
-No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima. Ese despliegue inicial no modificó Hosting; publicaciones posteriores del frontend incorporaron `/coordinaciones`. La aceptación funcional y visual autenticada continúa pendiente y producción no fue modificada.
+No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima. Publicaciones posteriores incorporaron `/coordinaciones` y la aceptación visual autenticada quedó confirmada el 3 de octubre. El recorrido administrativo completo y la carrera uso/eliminación conservan seguimiento; producción no fue modificada.

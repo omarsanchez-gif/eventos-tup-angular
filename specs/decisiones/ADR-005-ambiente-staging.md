@@ -27,16 +27,16 @@ La migración Angular necesita validar servicios Firebase reales sin desarrollar
 - Dominios locales autorizados: `localhost` y `127.0.0.1`.
 - `bootstrapAuthorization`: desplegada en `us-central1`.
 - Usuarios: cinco callables Gen 2 desplegadas en `us-central1` después de aprobar Auth/Firestore Emulator y Rules.
-- Firestore Rules: aprobadas y desplegadas a staging; Storage Rules continúan sin desplegar hasta el incremento que las utilice.
+- Firestore Rules y Storage Rules: aprobadas y desplegadas únicamente a staging.
 - Entorno local: Java Temurin 21.0.12 disponible para Emulator Suite.
 - Artifact Registry: limpieza automática de imágenes con más de un día.
 - Cloud Storage: bucket predeterminado `eventos-tup-angular-stg.firebasestorage.app`, regional en `US-CENTRAL1`, clase `STANDARD`.
 - Cuenta `omar.sanchez@tecplayacar.edu.mx`: autorizada, activa y rol `admin`; UID y último acceso permanecen administrados por `bootstrapAuthorization`.
-- Calendar, SMTP y cuentas sintéticas restantes: pendientes.
+- Calendar institucional, SMTP y perfiles de aceptación: configurados y aceptados el 3 de octubre de 2026.
 
 ## Consecuencias
 
-La aplicación puede compilarse y abrirse localmente contra la configuración pública de staging. Google Sign-In y la Function de autorización están disponibles, pero el flujo integral requiere cuentas sintéticas en Firestore y la validación pendiente de Security Rules.
+La aplicación puede compilarse y abrirse localmente contra la configuración pública de staging. Google Sign-In, autorización, Rules, Calendar, SMTP y perfiles por rol cuentan con aceptación integral en staging desde el 3 de octubre de 2026. Las cuentas utilizadas pueden ser institucionales reales aprobadas y no requieren copiar datos de producción.
 
 Blaze permite desplegar Functions y utilizar Storage, pero introduce consumo facturable. Toda ampliación deberá ser explícita, limitada a staging y acompañada por controles de costo. La ubicación `US-CENTRAL1` del bucket es definitiva y no se podrá cambiar.
 

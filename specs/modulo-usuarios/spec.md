@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación funcional definida. Las decisiones `USR-D01` a `USR-D04` fueron aprobadas documentalmente. La implementación fue autorizada expresamente el 18 de agosto de 2026, aprobó pruebas unitarias, Auth/Firestore Emulator y Security Rules, y sus cinco callables fueron desplegadas únicamente a staging. El Hosting vigente de staging incluye la ruta administrativa `/usuarios`; permanecen pendientes la revisión visual autenticada, el recorrido manual completo y la aceptación antes de producción.
+Especificación funcional definida. Las decisiones `USR-D01` a `USR-D04` fueron aprobadas documentalmente. La implementación fue autorizada expresamente el 18 de agosto de 2026, aprobó pruebas unitarias, Auth/Firestore Emulator y Security Rules, y sus cinco callables fueron desplegadas únicamente a staging. El 3 de octubre se aceptaron la presentación visual, accesibilidad, responsive, roles, revocación y negativas de autorización. El recorrido administrativo completo de alta, edición, estado y eliminación conserva seguimiento separado antes de producción.
 
 ## Objetivo
 

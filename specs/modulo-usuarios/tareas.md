@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación autorizada, validada en Emulator Suite y desplegada únicamente a staging el 18 de agosto de 2026. Las tareas marcadas reflejan evidencia disponible; revisión visual autenticada, recorrido manual completo y aceptación final permanecen pendientes.
+Implementación autorizada, validada en Emulator Suite y desplegada únicamente a staging el 18 de agosto de 2026. El 3 de octubre se aceptaron roles, revocación, negativas y la presentación visual/accesible/responsive; el recorrido administrativo completo conserva seguimiento separado.
 
 ## Documentación base
 
@@ -150,10 +150,10 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 ## Responsive y accesibilidad
 
 - [x] USR-T96 Definir tabla contenida o tarjetas equivalentes debajo de 720 px.
-- [ ] USR-T97 Validar ancho mínimo de 320 px sin scroll horizontal global.
-- [ ] USR-T98 Validar objetivos táctiles mínimos de 44 × 44 px.
-- [ ] USR-T99 Validar contraste, foco, teclado y lector de pantalla.
-- [ ] USR-T100 Validar diálogos, regiones dinámicas y `prefers-reduced-motion`.
+- [x] USR-T97 Validar ancho mínimo de 320 px sin scroll horizontal global.
+- [x] USR-T98 Validar objetivos táctiles mínimos de 44 × 44 px.
+- [x] USR-T99 Validar contraste, foco, teclado y lector de pantalla.
+- [x] USR-T100 Validar diálogos, regiones dinámicas y `prefers-reduced-motion`.
 
 ## Pruebas automatizadas
 
@@ -161,7 +161,7 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 - [x] USR-T102 Crear pruebas unitarias de facade, estados y errores.
 - [ ] USR-T103 Crear pruebas de componentes, formulario, tabla, diálogos y navegación.
 - [x] USR-T104 Crear pruebas de las cinco callables con Auth y Firestore Emulator.
-- [ ] USR-T105 Crear pruebas de claims, revocación, ventana del ID token, fallo cerrado, reconciliación e idempotencia.
+- [x] USR-T105 Crear y aceptar pruebas de claims, revocación, ventana del ID token, fallo cerrado, reconciliación e idempotencia.
 - [x] USR-T106 Crear pruebas de concurrencia para correo único.
 - [ ] USR-T107 Ejecutar USR-001 a USR-069 y registrar evidencia de cada resultado.
 
@@ -169,12 +169,12 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 
 - [x] USR-T108 Ejecutar formato, lint, TypeScript, pruebas frontend, Functions y Rules.
 - [x] USR-T109 Verificar presupuesto de bundle y carga diferida.
-- [ ] USR-T110 Realizar revisión visual en 320 px, tableta y escritorio.
-- [ ] USR-T111 Realizar recorrido completo por teclado y lector de pantalla.
-- [ ] USR-T112 Validar primero con Emulator Suite y después con cuentas sintéticas de staging.
+- [x] USR-T110 Realizar revisión visual en 320 px, tableta y escritorio.
+- [x] USR-T111 Realizar recorrido completo por teclado y lector de pantalla.
+- [x] USR-T112 Validar primero con Emulator Suite y después con cuentas institucionales aprobadas de staging.
 - [x] USR-T113 Confirmar que producción no fue utilizada ni modificada.
 - [x] USR-T114 Actualizar trazabilidad, decisiones pendientes y README solo después de autorizar implementación.
-- [ ] USR-T115 Obtener aceptación funcional y visual en staging antes de considerar producción.
+- [ ] USR-T115 Completar la aceptación funcional del recorrido administrativo en staging antes de considerar producción; la aceptación visual/accesible quedó aprobada el 3 de octubre de 2026.
 
 ## Seguimiento de búsqueda e iconografía
 

@@ -45,24 +45,21 @@
 
 ## Pendientes transversales de aceptación
 
-- Disponer de perfiles de staging separados para `usuario`, inactivo y no autorizado; pueden ser cuentas institucionales reales aprobadas y no es obligatorio crear identidades ficticias. La cuenta `admin` de Omar no sustituye todos los casos de rechazo y permisos.
-- Completar el recorrido accesible y responsive del Login, shell, Dashboard y módulos administrativos en 320 px, tableta y escritorio.
 - Confirmar límites y cuotas aplicables del proyecto Firebase y conservar activo el presupuesto de `100 MXN` con sus alertas.
 - Mantener la auditoría de dependencias sin vulnerabilidades altas o críticas; no usar `npm audit fix --force` ni aceptar cambios mayores automáticos.
-- Producción permanece fuera de alcance hasta completar aceptación funcional, visual, accesible y operativa en staging.
+- Dar seguimiento a las tres vulnerabilidades moderadas de ejecución reportadas por `npm audit --omit=dev` y resolverlas mediante una actualización compatible y nueva regresión.
+- Producción permanece fuera de alcance hasta definir su configuración, migración, reversión y autorización expresa, aunque staging ya cuente con aceptación integral.
 
 ## Pendientes para aceptar Autenticación y Usuarios
 
 - Confirmar que el volumen esperado de `usuarios` permanece por debajo de 500; si lo supera, actualizar la estrategia de búsqueda antes de producción.
 - Conservar al menos dos administradores activos antes de probar operaciones que reduzcan privilegios.
-- Validar manualmente en staging la revocación de refresh tokens al desactivar, eliminar o degradar una cuenta de prueba autorizada que no sea la única administración activa.
-- Ejecutar Google Sign-In y `bootstrapAuthorization` con los perfiles de staging definidos, además de la cuenta `admin` ya operativa.
+- Completar, si aún no existe evidencia separada, el recorrido administrativo completo de alta, edición, activación, suspensión y eliminación de Usuarios.
 - Seleccionar los archivos finales de logotipo e iconografía y confirmar la familia tipográfica institucional licenciada.
 
 ## Pendientes para aceptar Coordinaciones
 
 - Completar la prueba de carrera entre el primer uso de una coordinación y un intento concurrente de eliminación.
-- Ejecutar revisión manual accesible y responsive con sesión `admin`.
 - Ejecutar el recorrido funcional autenticado de alta, edición, suspensión, activación y eliminación condicionada.
 
 ## Pendientes para aceptar Campus y Equipos
@@ -70,23 +67,18 @@
 - Agregar o confirmar las direcciones oficiales de TUP y FCS y validar la búsqueda por ubicación.
 - Confirmar que el inventario de staging continúa representando únicamente unidades utilizables.
 - Ejecutar los recorridos administrativos de alta, edición, suspensión, activación y eliminación condicionada para Campus y Equipos.
-- Validar manualmente el comportamiento responsive, teclado, foco y diálogos de ambas pantallas.
-- Verificar escenarios operativos de reservaciones, logística, recepción anticipada y demora con datos sintéticos; las pruebas automatizadas de concurrencia y todos-o-ninguno ya están aprobadas.
 
-## Pendientes para aceptar Eventos e integraciones
+## Seguimiento de Eventos e integraciones
 
-- Crear un evento sintético nuevo y confirmar una sola entrada en el calendario institucional vigente.
-- Editar fecha u horario y comprobar actualización idempotente del mismo evento de Calendar y entrega del correo correspondiente.
-- Cancelar el evento y comprobar retiro de Calendar, liberación de reservas y correo de cancelación.
-- Comprobar una entrega real a un contacto institucional canónico de Coordinaciones y un rechazo controlado sin procedencia válida.
 - Verificar manualmente eventos históricos incompletos y conservar el backfill como comando explícito; no ejecutarlo sin autorización separada.
 - Observar worker SMTP, limpieza de protocolos y TTL sin bucles, duplicados o crecimiento inesperado.
+- Confirmar cuotas reales de Gmail SMTP, Calendar API y Functions con una carga representativa.
 
-## Pendientes para aceptar Dashboard
+## Dashboard aceptado en staging
 
-- Validar visualmente carga, datos, vacíos, error parcial, tabla y tarjetas móviles con sesión `admin`.
-- Repetir el recorrido con un perfil `usuario` y comprobar el mismo read model sin acceso administrativo indirecto.
-- Confirmar en staging que los cuatro KPI, próximos eventos y actividad reciente coinciden con los datos canónicos esperados.
+- El 3 de octubre de 2026 se validaron carga, datos, vacíos, error parcial, tabla y tarjetas móviles.
+- `admin` y `usuario` obtuvieron el mismo read model sanitizado sin ampliar permisos administrativos.
+- Los cuatro KPI, próximos eventos y actividad reciente coincidieron con los datos canónicos esperados.
 
 ## Funcionalidad diferida
 
@@ -100,8 +92,9 @@
 
 - Autenticación, shell, Usuarios, Coordinaciones, Campus, Equipos, Eventos y Dashboard están implementados y publicados únicamente en `eventos-tup-angular-stg` conforme a sus incrementos autorizados.
 - El Hosting vigente incluye la normalización visual compartida, Eventos multidiarios, acciones por propiedad, Calendar administrativo y Dashboard real.
-- Eventos dispone de reservas transaccionales, logística, PDF, Calendar institucional, SMTP HTML y autorización dinámica de contactos de Coordinaciones. Las pruebas reales enumeradas arriba continúan pendientes de aceptación.
-- Dashboard tiene índice `READY`, callable Gen 2 activa en `us-central1` y Hosting verificado con HTTP 200; faltan las pruebas autenticadas con ambos roles.
+- El 3 de octubre de 2026 se aceptaron el ciclo integral de Eventos, reservaciones concurrentes, logística, Calendar institucional, SMTP HTML, autorización dinámica de contactos, negativas, roles, propiedad y revocación.
+- La aceptación visual, accesible y responsive quedó confirmada en 320 px, tableta y escritorio para Login, shell, Dashboard, catálogos, listado y calendario.
+- Dashboard tiene índice `READY`, callable Gen 2 activa en `us-central1`, Hosting verificado con HTTP 200 y aceptación autenticada con ambos roles.
 - La regresión automatizada vigente aprobó 212 pruebas, además de compilación de Functions, lint Angular/Functions/visual, formato y build de staging.
-- El código y la documentación actuales se encuentran en la rama `desarrollo`; deben versionarse antes de considerar que GitHub representa exactamente el estado desplegado.
+- La línea base funcional aceptada quedó versionada y publicada en `desarrollo` mediante `0ad7bae`; esta reconciliación documental posterior deberá incluirse en el siguiente commit sin reabrir la aceptación funcional.
 - Producción no fue utilizada ni modificada.

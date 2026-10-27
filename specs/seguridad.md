@@ -72,7 +72,7 @@ La sincronización se realizará exclusivamente mediante Admin SDK conforme a `d
 
 ## Coordinaciones
 
-Estas reglas están implementadas en código, probadas localmente con Firestore Emulator y desplegadas a staging el 19 de agosto de 2026. Una prueba de humo remota confirmó que `listCoordinations` rechaza llamadas anónimas con `401`; la aceptación autenticada con perfiles sintéticos continúa pendiente.
+Estas reglas están implementadas en código, probadas localmente con Firestore Emulator y desplegadas a staging el 19 de agosto de 2026. Una prueba de humo remota confirmó que `listCoordinations` rechaza llamadas anónimas con `401`; la aceptación autenticada por roles y negativas quedó confirmada el 3 de octubre de 2026.
 
 - SEC-COO-001: Solo `admin` puede leer documentos completos de `coordinaciones` y ejecutar mutaciones.
 - SEC-COO-002: Usuarios autorizados no administrativos obtienen únicamente ID y nombre de coordinaciones activas mediante un contrato backend sanitizado.
@@ -116,7 +116,7 @@ Estas reglas están implementadas en código, probadas localmente con Firestore 
 - SEC-RES-014: Confirmar cobertura, confirmar recepción o reportar demora exige perfil canónico `admin`; la operación actualiza reserva y control en una sola transacción.
 - SEC-RES-015: Confirmar cobertura retira solo su motivo y no puede limpiar revisiones de inventario o coordinación. Recepción y demora usan hora de servidor y un estado objetivo idempotente.
 
-La evidencia del 30 de septiembre cubre creación, disponibilidad, edición, cancelación, confirmaciones administrativas, trabajos idempotentes, leases, adaptadores de integración, control de concurrencia y Rules. Firestore Rules, Storage Rules y las Functions fueron desplegadas únicamente a staging. El 1 de octubre se acreditaron Calendar y una entrega SMTP real, se observó un rechazo cerrado fuera de la lista anterior y `SMTP_CONFIG` versión 3 quedó limitado a las cuatro cuentas institucionales autorizadas y enlazado a las ocho Functions consumidoras. El 2 de octubre, el calendario institucional compartido aprobó OAuth `calendar.events` y una lectura previa; `GOOGLE_CALENDAR_CONFIG` versión 3 se habilitó sin exponer valores y sus siete Functions quedaron `ACTIVE`. El 3 de octubre, EVT-110 aprobó sus pruebas locales y las ocho Functions consumidoras de SMTP se actualizaron en staging sin rotar secretos ni modificar Hosting, Rules, índices, datos o producción. Permanecen pendientes una creación nueva en ese calendario, la entrega de una revisión nueva a coordinación fuera de la lista fija, las negativas controladas y las pruebas reales de actualización y cancelación; producción no está autorizada.
+La evidencia del 30 de septiembre cubre creación, disponibilidad, edición, cancelación, confirmaciones administrativas, trabajos idempotentes, leases, adaptadores de integración, control de concurrencia y Rules. Firestore Rules, Storage Rules y las Functions fueron desplegadas únicamente a staging. El 1 de octubre se acreditaron Calendar y una entrega SMTP real; el 2 de octubre se habilitó el calendario institucional con OAuth `calendar.events`; y el 3 de octubre se desplegó EVT-110. Ese mismo día se aceptaron creación, actualización y cancelación reales, entrega dinámica, negativas controladas, roles, propiedad, revocación y concurrencia logística. Producción no está autorizada.
 
 ## Notificaciones de Eventos
 

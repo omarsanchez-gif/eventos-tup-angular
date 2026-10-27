@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La validación manual, normalización visual y aceptación permanecen pendientes; producción no está autorizada.
+Implementado, validado y desplegado únicamente a staging el 21 de agosto de 2026. La normalización y aceptación visual/accesible/responsive quedaron confirmadas el 3 de octubre; la validación administrativa completa conserva seguimiento separado y producción no está autorizada.
 
 ## Documentación
 
@@ -43,15 +43,15 @@ Implementado, validado y desplegado únicamente a staging el 21 de agosto de 202
 
 ## Cierre
 
-- [ ] CAM-T26 Obtener aceptación funcional y visual.
+- [ ] CAM-T26 Completar la aceptación funcional del recorrido administrativo; la aceptación visual quedó aprobada el 3 de octubre de 2026.
 - [x] CAM-T27 Autorizar y completar despliegue separado en staging.
 - [x] CAM-T28 Confirmar que producción no fue utilizada.
 
-## Normalización visual pendiente
+## Normalización visual aceptada
 
 - [x] CAM-T29 Documentar la auditoría de divergencias respecto al sistema de diseño global.
 - [x] CAM-T30 Retirar del SCSS de Campus las redefiniciones de botones, icon-buttons, colores, tamaños, radios y estados compartidos.
-- [ ] CAM-T31 Comparar Campus con Usuarios, Coordinaciones y Equipos en escritorio, tableta y 320 px, incluido teclado y foco visible.
+- [x] CAM-T31 Comparar Campus con Usuarios, Coordinaciones y Equipos en escritorio, tableta y 320 px, incluido teclado y foco visible; aprobado el 3 de octubre de 2026.
 - [x] CAM-T32 Ejecutar lint visual, suite completa y build de staging después de normalizar.
 
 ## Evidencia del incremento local
@@ -68,4 +68,4 @@ Implementado, validado y desplegado únicamente a staging el 21 de agosto de 202
 - Guardia automática: `npm run lint:visual` aprobada sin selectores compartidos duplicados ni colores institucionales obsoletos.
 - Verificación posterior: 51 pruebas Angular, 51 de Functions, 7 de Usuarios, 8 de Coordinaciones, 6 de Campus, 7 de Equipos y 14 de Rules aprobadas.
 - Build de staging aprobado con `campuses-page` diferido de 34.17 kB.
-- Pendientes reales: CAM-T25 validación manual autenticada, CAM-T26 aceptación funcional/visual y CAM-T31 verificación transversal.
+- Pendientes reales: CAM-T25 recorrido administrativo autenticado y la parte funcional de CAM-T26. CAM-T31 y la aceptación visual de CAM-T26 quedaron aprobadas el 3 de octubre de 2026.

@@ -183,7 +183,7 @@ Las vistas de catálogo y operación conservan este orden visual cuando el bloqu
 | Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
 | Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
 
-La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. El Hosting vigente de staging incorpora estas primitivas; la aceptación visual autenticada y responsive continúa pendiente.
+La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`, para impedir que un módulo vuelva a declarar botones/icon-buttons o use la paleta institucional anterior. El Hosting vigente de staging incorpora estas primitivas; la comparación autenticada en escritorio, tableta y 320 px, junto con el recorrido de teclado y foco, quedó aceptada manualmente el 3 de octubre de 2026.
 
 ### Verificación obligatoria de normalización
 
