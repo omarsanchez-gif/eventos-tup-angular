@@ -184,7 +184,7 @@ Las vistas de catálogo y operación conservan este orden visual cuando el bloqu
 | Campus            | Conforme en código local        | Consume botones, icon-buttons y tokens globales; conserva únicamente distribución propia. |
 | Equipos           | Conforme en código local        | Consume las mismas primitivas globales que los demás catálogos.                           |
 
-La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`. Desde el 27 de octubre de 2026 la guardia protege botones, paneles, encabezados, `eyebrow`, badges, estados, alertas, tooltips, overlays, acciones de diálogo, campos, spinners, estados de carga/vacío y utilidades accesibles, además de rechazar la paleta obsoleta y colores semánticos duplicados. El Hosting vigente de staging conserva la aceptación visual previa; esta estabilización no se despliega sin autorización separada.
+La corrección retiró las redefiniciones detectadas y agregó `npm run lint:visual`, integrado en `npm run lint`. Desde el 27 de octubre de 2026 la guardia protege botones, paneles, encabezados, `eyebrow`, badges, estados, alertas, tooltips, overlays, acciones de diálogo, campos, spinners, estados de carga/vacío y utilidades accesibles, además de rechazar la paleta obsoleta y colores semánticos duplicados. Después de la autorización separada, el Hosting de staging publicó esta estabilización y quedó verificado con `main-CAAEIP5O.js` y `styles-ENSU7VMN.css`; la evidencia administrativa exhaustiva de los catálogos se recopilará sobre esta versión.
 
 ### Consolidación técnica — 27 de octubre de 2026
 
