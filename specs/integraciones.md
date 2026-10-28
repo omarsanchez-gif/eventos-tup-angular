@@ -1,5 +1,25 @@
 # Integraciones
 
+## Incidencia SMTP de staging — 27 de octubre de 2026
+
+La consulta de solo lectura de `VALIDACIÓN 02` confirmó Calendar sincronizado y siete trabajos fallidos en el primer intento: cuatro de creación (creador y tres contactos de Coordinación) y tres logísticos. El código conservado es `smtp-permanent`; no es `recipient-not-allowed`. Una verificación SMTP sin enviar mensajes confirmó `EAUTH`, respuesta `535 / 5.7.8` en autenticación, usando `SMTP_CONFIG` versión 3 enlazada a `createEvent`. El creador sí pertenece a la lista permitida. No se conoce si la contraseña fue revocada o sustituida; no atribuirlo a permisos de Coordinación.
+
+Recuperación operativa:
+
+1. El responsable genera una contraseña de aplicación válida de `eventos@tecplayacar.edu.mx`; nunca se copia al chat ni a archivos versionados.
+2. Ejecuta `scripts/rotate-staging-smtp.ps1` en una terminal local. La entrada es oculta y se transmite al proceso Node por stdin, sin argumento de línea de comandos ni archivo temporal. El auxiliar `.cjs` usa la sesión existente de Firebase CLI, limita el destino a staging, conserva el JSON actualmente enlazado y reemplaza solo `password`. Silencia logs de Firebase y comprueba la autenticación de Gmail antes de crear la versión. No envía mensajes ni despliega servicios.
+3. Verificar la versión creada y enlazarla mediante despliegue selectivo de las ocho Functions consumidoras SMTP, con autorización de staging; comprobar su estado y bindings.
+4. Las entregas terminales no se reabren automáticamente al rotar el secreto ni mediante reconciliación. Recuperar los trabajos de esta incidencia requiere una operación separada, acotada a los fallidos por autenticación, autorizada y documentada; conservar IDs e historial, no repetir trabajos enviados ni aumentar la revisión del evento artificialmente.
+5. Verificar entrega real al creador y coordinación y el resumen de la revisión vigente antes de cerrar la incidencia. La aceptación de octubre anterior no prueba la vigencia actual de la credencial.
+
+El responsable ejecutó el auxiliar y confirmó autenticación Gmail correcta y creación de `SMTP_CONFIG` versión 4. La continuación de la reparación se limita a las ocho Functions consumidoras SMTP de staging; el diagnóstico previo no modificó servicios ni datos.
+
+Recuperación excepcional acotada de `VALIDACIÓN 02`: después de verificar la versión nueva, seleccionar exactamente los siete trabajos identificados por el diagnóstico, del mismo evento y revisión/causa logística registrada. Exigir en una transacción que continúen `fallido`, con `ultimoErrorCodigo: smtp-permanent`, un intento, `fechaEnvio: null`, `proximoIntento: null` y sin lease. Conservar IDs, destinatarios, fotografía, revisión e intentos; reabrir con `estado: pendiente`, próximo intento actual y limpiar finalización/expiración terminales. Cambiar el resumen funcional a pendiente solo si la revisión canónica sigue siendo 1 y el evento no está cancelado. Si alguna precondición difiere, detener sin escrituras. El worker existente realizará el siguiente intento; no ejecutar un envío paralelo ni reabrir otros fallos. Registrar esta excepción y sus resultados aquí, sin agregar campos ni colecciones. La rotación ordinaria sigue sin reabrir trabajos automáticamente.
+
+Resultado verificado: las ocho Functions quedaron `ACTIVE` y enlazadas a `SMTP_CONFIG` versión 4. La transacción de recuperación confirmó las precondiciones y reabrió exactamente siete trabajos a las 16:23:51 de Cancún (21:23:51 UTC), conservando IDs e intento anterior. El worker programado respondió 200, procesó siete trabajos y registró los siete como `enviado` en el segundo intento entre 16:28:02 y 16:28:10 de Cancún; `ultimoErrorCodigo` quedó en null y `VALIDACIÓN 02` revisión 1 quedó `notificacionesEstado: completas`. Esto confirma aceptación por SMTP; no se inspeccionaron buzones ni se afirma lectura del destinatario. No se crearon trabajos duplicados ni se reabrieron fallos ajenos.
+
+Se publicó por separado Hosting con EVT-120 después de aprobar 96 pruebas Angular, lint y build; los 20 archivos remotos coinciden con el build local. No se modificaron Calendar, Rules, índices, datos de otros eventos ni producción. La aceptación funcional general de los doce casos anteriores sigue pendiente.
+
 ## Firebase Authentication
 
 - Proveedor exclusivo: Google.
@@ -229,7 +249,7 @@ Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill e
 ## Configuración operativa resuelta en staging
 
 - `configuracion/logisticaEquipos` guarda el ID canónico `GoPowUg4NO8bbW5658Jx` de la Coordinación de Sistemas y los valores de ADR-010.
-- `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3 están enlazados a las Functions consumidoras correspondientes. Calendar usa el calendario institucional compartido y OAuth `calendar.events`; la comprobación de lectura aprobó sin exponer credenciales.
+- `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 4 están enlazados a las Functions consumidoras correspondientes. Calendar usa el calendario institucional compartido y OAuth `calendar.events`; la comprobación de lectura aprobó sin exponer credenciales.
 - La lista fija conserva Omar, Eventos, Víctor Yama y Lizett Méndez. Los contactos institucionales fotografiados como `coordinacion` o `sistemas` se autorizan dinámicamente sin rotar `SMTP_CONFIG`; cualquier otra dirección continúa bloqueada.
 - El 2 de octubre de 2026 la plantilla institucional HTML y su alternativa de texto quedaron desplegadas en las ocho Functions consumidoras de SMTP de staging. El contenido usa únicamente datos fotografiados de la revisión, estilos inline, escape de valores y recursos locales al propio mensaje; Firebase confirmó las ocho actualizaciones sin modificar secretos, Hosting, Rules, índices, datos o producción.
 - El 3 de octubre de 2026 se implementó y validó la autorización dinámica de contactos de Coordinaciones definida por RN-082. Con autorización separada se actualizaron únicamente las ocho Functions consumidoras de SMTP en staging y Firebase confirmó las ocho operaciones. `SMTP_CONFIG` versión 3 se conservó sin rotación; la prueba real positiva fuera de la lista fija y las negativas controladas quedaron aceptadas ese mismo día. No se modificaron Hosting, Rules, índices, datos o producción.

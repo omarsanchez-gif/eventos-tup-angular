@@ -1,5 +1,66 @@
 # Matriz de trazabilidad
 
+## EVT-121 — Cancelación de finalizados y cierre de las doce validaciones, 28 de octubre de 2026
+
+El responsable confirmó: «ya probé las doce validaciones y todo está bien». Se cierran las ocho correcciones de consistencia y las cuatro EVT-116 a EVT-119 mediante esa aceptación humana en staging. No se presenta como un recorrido de navegador ejecutado por el agente. La incidencia de cancelación de finalizados fue comunicada en el mismo mensaje y se trata por separado como EVT-121.
+
+- Contrato: RN-023, SEC-EVT-004, ADR-010 y spec/pruebas/tareas de Eventos. Sin nuevos campos, colecciones, Functions, dependencias ni estilos.
+- Backend: `events.ts` inyecta el reloj en la cancelación; `firestore-events.repository.ts` valida el fin dentro de cada intento transaccional y proyecta `canCancel: false`. Fechas históricas válidas se interpretan sin backfill. El error `event-finished` ocurre antes de escrituras o integraciones externas.
+- Interfaz: acciones separadas para editar/cancelar; escritorio, móvil y detalle no ofrecen cancelar finalizados. El temporizador incluye detalles fuera de la página actual; confirmaciones abiertas pierden su acción al llegar el fin. La respuesta funcional del backend tiene mensaje propio.
+- **257 pruebas aprobadas:** 102 Angular, 108 unitarias de Functions y 47 de Eventos con Firestore Emulator. Se añadieron seis casos Angular y siete casos de integración; también se amplió la prueba de idempotencia para repetir una cancelación después del fin. Incluyen propietarios con ambos roles, fin exacto, último día multidiario, históricos incompletos, reloj cliente adelantado y ausencia de efectos secundarios.
+- Aprobaron lint Angular/Functions, `lint:visual`, `functions:build`, `build` y `build:staging`. Build staging local: `main-H4EJQ5IB.js`; build predeterminado posterior: `main-XRRR6CWY.js`. Estilos sin cambios: `styles-ENSU7VMN.css`.
+- El puerto habitual del emulador estaba ocupado. La suite utilizó una instancia Firestore aislada del proyecto demo en puertos libres, con configuración temporal eliminada al terminar, sin detener el servicio existente.
+- **Publicado posteriormente el mismo día:** Hosting y las cuatro Functions de cancelación y consulta quedaron desplegados con autorización expresa únicamente en staging. Evidencia en el apartado siguiente. No se modificaron datos de eventos, Rules, índices, secretos, Calendar, SMTP ni producción. La aceptación funcional autenticada de EVT-121 sigue pendiente.
+
+## Publicación y verificación remota de EVT-121 — 28 de octubre de 2026
+
+El responsable autorizó «sube al stanging y documenta los specs». Se reconstruyeron `build:staging` y `functions:build`, se verificó `git diff --check` y `npm audit --omit=dev` reportó cero vulnerabilidades. El bundle coincide con el candidato previamente probado (`main-H4EJQ5IB.js`). Las 257 pruebas previas conservan su alcance; no se volvieron a ejecutar durante esta publicación.
+
+Despliegues separados completados:
+
+1. `firebase deploy --only functions:cancelEvent,functions:getEventDetail,functions:listEvents,functions:listCalendarEvents --project staging --non-interactive`.
+2. `firebase deploy --only hosting --project staging --non-interactive`.
+
+Verificación de metadatos a las `2026-10-28T21:55:26.099Z` (16:55 de Cancún), comprobando el nombre completo de cada recurso. Las cuatro Functions están `ACTIVE`, en `us-central1` y runtime `nodejs22`:
+
+| Function             | Revisión publicada             | Actualización UTC                |
+| -------------------- | ------------------------------ | -------------------------------- |
+| `cancelEvent`        | `cancelevent-00009-xak`        | `2026-10-28T21:54:41.989260772Z` |
+| `getEventDetail`     | `geteventdetail-00003-kug`     | `2026-10-28T21:54:28.448564421Z` |
+| `listEvents`         | `listevents-00002-tod`         | `2026-10-28T21:54:27.570724545Z` |
+| `listCalendarEvents` | `listcalendarevents-00002-xol` | `2026-10-28T21:54:28.370316253Z` |
+
+`cancelEvent` mantiene los enlaces `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 4; las tres Functions de consulta no requieren secretos. No se accedió al contenido ni se crearon versiones de secretos.
+
+Los **20/20 archivos** de `dist/eventos-tup-angular/browser` coinciden por SHA-256 con los publicados. `/login` respondió `200` con el mismo HTML local. Hashes verificados:
+
+- `main-H4EJQ5IB.js`: `927374609ce00b443cf9531d2ad886feee6b073b757abf11cc5a8df5640aaa7a`.
+- `styles-ENSU7VMN.css`: `31fb12ad781b27e4337039d5aadb2d4c1938f65b793fa6dbbd1624fc89bb7dd0`.
+
+Solicitudes anónimas a las cuatro callables, con un ID sintético inexistente, devolvieron `401 / UNAUTHENTICATED`. No ejecutaron cancelaciones ni integraciones reales. Esta evidencia comprueba publicación, integridad y rechazo sin sesión; no sustituye el recorrido autenticado de un evento finalizado y de una confirmación abierta al alcanzar el fin. Queda pendiente esa aceptación específica. Las doce validaciones anteriores conservan la aceptación comunicada por el responsable.
+
+No se desplegaron otras Functions, Rules o índices, no se modificaron datos de eventos ni se ejecutaron migraciones, reparaciones históricas o envíos de prueba. Producción permanece intacta.
+
+## Incidencias de aceptación — 27 de octubre de 2026
+
+- EVT-120: `events.facade.ts`, `events-error.mapper.ts`, `events-page.ts/html`; `spec.md`, `pruebas.md` y `tareas.md` de Eventos. Cuatro regresiones nuevas: error y recuperación, timeout/respuesta tardía, invalidación y error visible/reintento dentro del modal. 96 Angular aprobadas (40 específicas del módulo); Hosting publicado y verificado, aceptación visual autenticada pendiente.
+- SMTP: `VALIDACIÓN 02`, revisión 1, siete trabajos terminales `smtp-permanent`, un intento cada uno y sin `fechaEnvio`. `createEvent` ACTIVE, enlazada a `SMTP_CONFIG` versión 3, creador permitido; prueba `verify()` sin envío rechazada con `EAUTH` / `535` / `5.7.8` en `AUTH PLAIN`. Diagnóstico real de autenticación, sin modificar datos ni servicios; no prueba entrega.
+- Auxiliar manual `scripts/rotate-staging-smtp.ps1` y `.cjs`: sintaxis PowerShell y Node verificadas. No contiene credenciales; exige entrada oculta, valida formato y destino, silencia logs, verifica autenticación antes de escribir Secret Manager y no envía correo ni despliega. El responsable lo ejecutó y confirmó autenticación correcta y versión 4 creada.
+- EVT-120: además aprobaron lint Angular/Functions, guardia visual, formato de archivos afectados, `git diff --check` y build de staging (`main-XJTQY4RO.js`, `styles-ENSU7VMN.css`). Se publicó Hosting por separado; los 20 archivos remotos coinciden por SHA-256 con el build local. Se compiló Functions para la rotación; el código backend no cambió.
+- Rotación: el primer despliegue se detuvo en descubrimiento local (10 segundos), sin actualizar Functions; el reintento con `FUNCTIONS_DISCOVERY_TIMEOUT=60` exclusivamente durante el comando completó las ocho Functions, conservando límites de ejecución remotos. Todas se verificaron `ACTIVE` y enlazadas a versión 4.
+- Recuperación: evento `JiSd5ZEFGboQLkdjjIqJ` (`VALIDACIÓN 02`), revisión 1. Transacción de siete trabajos confirmada a `2026-10-27T21:23:51.840313Z`; se preservaron IDs, destinatarios, revisión, fotografía e intento previo. Worker programado: HTTP 200, `processed: 7`. Los siete figuran `enviado`, con `intentos: 2`, sin error y fecha de envío entre `21:28:02.567Z` y `21:28:10.514Z` (16:28 de Cancún). Resumen `completas`; aceptación por SMTP comprobada, sin inspección de buzones. No se modificó producción ni se reabrieron otros trabajos.
+
+| Function                     | Revisión verificada con SMTP_CONFIG 4  |
+| ---------------------------- | -------------------------------------- |
+| createEvent                  | createevent-00008-pak                  |
+| updateEvent                  | updateevent-00008-rad                  |
+| cancelEvent                  | cancelevent-00008-qur                  |
+| reportEquipmentDelay         | reportequipmentdelay-00008-kem         |
+| reconcileEventIntegrations   | reconcileeventintegrations-00008-sor   |
+| processEventIntegrations     | processeventintegrations-00008-dup     |
+| syncUpdatedEventIntegrations | syncupdatedeventintegrations-00009-leq |
+| processEventNotifications    | processeventnotifications-00006-zub    |
+
 ## Equivalencia del producto actual
 
 | Comportamiento actual          | Spec Angular                      | Prueba requerida                                                           | Estado                                                                                                                 |
@@ -207,7 +268,7 @@ Validación de este incremento: **222 pruebas aprobadas** = 73 Angular + 95 unit
 
 El build local con configuración staging produjo main-YXUZKP35.js y styles-ENSU7VMN.css; posteriormente se publicaron con autorización expresa el 27 de octubre de 2026, según la evidencia al final de este documento. El incremento requiere una colección de control protegida y el campo canónico coordinacionIdsRetiradas, definidos primero en modelo-datos.md; no agrega dependencias ni índices. La colección se crea al reconciliar cada evento y no requiere migración masiva. La habilitación de recepción es una proyección, no un campo almacenado.
 
-Despliegue completado y verificado técnicamente. Pendiente: validación funcional autenticada de estas ocho correcciones en staging. Las pruebas anteriores aceptadas en staging siguen siendo evidencia de la versión anterior.
+Despliegue completado y verificado técnicamente. Validación funcional de estas ocho correcciones aceptada por el responsable el 28 de octubre de 2026. Las pruebas anteriores aceptadas en staging siguen siendo evidencia de la versión anterior.
 
 ## Despliegue de las ocho correcciones — 27 de octubre de 2026
 
@@ -220,7 +281,7 @@ Autorización expresa del responsable: desplegar las ocho correcciones y actuali
 - Antes de publicar se repitieron satisfactoriamente build:staging, functions:build y diff --check. La evidencia de regresión previa del mismo código es de 222 pruebas: 73 Angular, 95 unitarias de Functions, 39 de Eventos con Firestore Emulator y 15 Rules, además de lint, guardia visual y formato. No se afirma haber repetido estas suites durante el despliegue.
 - No se desplegaron índices ni Storage Rules, no se rotaron secretos y no se ejecutaron migraciones, reparación de datos históricos ni envíos de correo de prueba. Los workers publicados conservan su operación normal. La colección de control se materializa durante reconciliaciones; el campo de transición se calcula en las operaciones definidas por el modelo. Producción no fue modificada.
 
-Pendiente de aceptación funcional con sesión iniciada sobre esta versión: reducción de inventario y avisos atómicos; identidad Calendar sin duplicados; demoras que solo extienden; resumen SMTP de revisión vigente; capacidad por pico simultáneo; Calendar concurrente ordenado; recepción por etapa; retiros de coordinaciones por transición. La verificación técnica del despliegue y los dobles locales de Calendar/SMTP no sustituyen esos recorridos. La evidencia administrativa de la versión anterior conserva su alcance histórico.
+Aceptación funcional confirmada por el responsable el 28 de octubre de 2026 sobre esta versión: reducción de inventario y avisos atómicos; identidad Calendar sin duplicados; demoras que solo extienden; resumen SMTP de revisión vigente; capacidad por pico simultáneo; Calendar concurrente ordenado; recepción por etapa; retiros de coordinaciones por transición. La verificación técnica del despliegue y los dobles locales de Calendar/SMTP no sustituyen esos recorridos. La evidencia administrativa de la versión anterior conserva su alcance histórico.
 
 ## Cuatro correcciones posteriores — evidencia exclusivamente local del 27 de octubre de 2026
 
@@ -233,7 +294,7 @@ Pendiente de aceptación funcional con sesión iniciada sobre esta versión: red
 
 Validación del código final: **240 pruebas aprobadas** (92 Angular, 108 unitarias de Functions y 40 Eventos con Firestore Emulator). Son 33 regresiones nuevas sobre estas suites; no se repitieron las suites de Rules u otros emuladores ajenos al cambio. También aprobaron lint Angular/Functions, lint:visual, functions:build, build y build:staging. Se comprobó formato y diff sin errores al cerrar la documentación.
 
-El build de configuración staging generó main-3W3UNOGZ.js y styles-ENSU7VMN.css; el build predeterminado posterior generó main-OE2QS2OH.js. Durante esa validación eran artefactos locales: no se desplegaron servicios ni se ejecutaron Calendar/SMTP reales y staging conservaba main-YXUZKP35.js. La publicación posterior autorizada se registra a continuación; la aceptación funcional autenticada permanece pendiente.
+El build de configuración staging generó main-3W3UNOGZ.js y styles-ENSU7VMN.css; el build predeterminado posterior generó main-OE2QS2OH.js. Durante esa validación eran artefactos locales: no se desplegaron servicios ni se ejecutaron Calendar/SMTP reales y staging conservaba main-YXUZKP35.js. La publicación posterior autorizada se registra a continuación; la aceptación funcional fue confirmada por el responsable el 28 de octubre de 2026.
 
 ## Publicación de EVT-116 a EVT-119 — 27 de octubre de 2026
 
@@ -245,4 +306,4 @@ Autorización expresa del responsable para desplegar las cuatro correcciones ún
 
 No se desplegaron otras Functions, Rules, índices o secretos. No se realizaron migraciones, escrituras de datos ni envíos de prueba a Calendar/SMTP. Producción no fue modificada. Las 240 pruebas locales previas conservan su evidencia; este paso verifica publicación, integridad de archivos y rechazo anónimo, no aceptación funcional autenticada.
 
-Pendiente: recorrido autenticado de EVT-116 a EVT-119, incluidos cambios rápidos de búsqueda/mes/campus, cierre del detalle durante carga y refresco de catálogos al abrir formulario. Se conserva también el pendiente de regresión funcional de las ocho correcciones anteriores; no se declara aceptado por el mero despliegue.
+Cierre del 28 de octubre de 2026: el responsable confirmó satisfactorias las doce validaciones, incluidas las ocho correcciones anteriores y EVT-116 a EVT-119 (acceso, búsqueda/mes/campus, cierre del detalle y catálogos). Evidencia declarada por el responsable; no se atribuye a una sesión de navegador automatizada.

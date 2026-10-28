@@ -195,6 +195,8 @@ canceladoPorUid: string | null
 
 Los eventos nuevos persisten `programado` al crearse. La interfaz y el backend derivan `programado`, `en_ejecucion` o `finalizado` comparando la hora actual con `inicioAt` y `finAt`; no escriben transiciones temporales. `cancelado` sí es un estado persistido, prevalece sobre el cálculo y convierte el documento en registro histórico de solo lectura. `fechaCancelacion` y `canceladoPorUid` se completan desde backend al finalizar la cancelación.
 
+EVT-121 utiliza los mismos instantes: desde el fin se prohíbe cancelar. No se agregan campos ni se escribe `finalizado`; tampoco se modifican cancelaciones históricas existentes. La validación de cancelación mantiene el contrato de fechas históricas descrito abajo.
+
 `protocoloUrl`, `protocoloNombre`, `protocoloRuta` y `calendarEventId` admiten `null` durante integración parcial y después de confirmar su retiro en una cancelación. `protocoloRuta` se deriva en backend desde el objeto de Storage validado y es la autoridad para reemplazo, cancelación y limpieza. La fotografía mínima necesaria para correo permanece en la bandeja protegida y no depende de conservar recursos eliminados.
 
 `calendarEstado` y `notificacionesEstado` son resúmenes funcionales administrados por backend. No contienen destinatarios ni errores técnicos. `terminosBusqueda` se calcula desde nombre y responsable conforme a ADR-010; el cliente no lo propone.

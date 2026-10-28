@@ -1,8 +1,12 @@
 # Decisiones y pendientes
 
-**Publicación vigente en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Pendiente aceptación funcional autenticada sobre esta versión. Producción no fue modificada.
+**Publicación de EVT-121 — 28 de octubre de 2026:** corrección de cancelación de eventos finalizados desplegada con autorización expresa únicamente a staging: Hosting y cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`). Las cuatro están `ACTIVE`; los 20 archivos remotos coinciden con el build validado y las cuatro callables rechazan solicitudes anónimas. Se conserva la aceptación de las doce validaciones anteriores. Pendiente únicamente la aceptación funcional específica de EVT-121 con sesión iniciada; evidencia en la matriz de trazabilidad. Producción intacta.
 
-**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; queda pendiente la aceptación funcional autenticada de este incremento. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
+**Seguimiento del 27 de octubre:** reparación SMTP completada: versión 4, ocho Functions ACTIVE, siete trabajos recuperados enviados y resumen `completas` en `VALIDACIÓN 02`. EVT-120 publicado en Hosting con regresión técnica aprobada; los doce escenarios anteriores fueron aceptados por el responsable el 28 de octubre; la aceptación visual específica de EVT-120 se conserva por separado. Detalles en `integraciones.md` y `matriz-trazabilidad.md`.
+
+**Publicación previa en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Aceptación funcional de estas cuatro correcciones confirmada por el responsable el 28 de octubre de 2026. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; la aceptación funcional de este incremento fue confirmada por el responsable el 28 de octubre de 2026. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
 
 ## Decisiones resueltas
 
@@ -56,7 +60,7 @@ El responsable confirmó satisfactoriamente en staging todos los recorridos admi
 - Campus: alta, edición, horarios, suspensión, activación y eliminación condicionada.
 - Equipos: alta fija y transferible, edición, destinos, cantidad, suspensión, activación y eliminación condicionada.
 
-No quedan pendientes de aceptación técnica o administrativa en staging. Tampoco quedan pendientes de build, seguridad de ejecución, concurrencia, índices, Rules, Calendar, SMTP, cuotas de aceptación, TTL, limpieza, pruebas automatizadas o trazabilidad de Eventos. El backfill histórico, cualquier migración y producción siguen fuera de alcance y solo se ejecutan con autorización separada.
+Este cierre corresponde a la aceptación administrativa del 27 de octubre y a los doce escenarios confirmados el 28 de octubre. EVT-121 ya está publicado y verificado técnicamente en staging; queda pendiente su aceptación funcional con sesión iniciada. La aceptación visual específica de EVT-120 se conserva por separado. El backfill histórico, cualquier migración y producción siguen fuera de alcance y solo se ejecutan con autorización separada.
 
 ## Controles operativos continuos — no son pendientes de aceptación
 
@@ -102,8 +106,8 @@ No quedan pendientes de aceptación técnica o administrativa en staging. Tampoc
 
 Los tres hallazgos adicionales están corregidos y documentados junto con los cinco anteriores. La regresión del alcance afectado aprobó 222 pruebas. Las reglas temporales de recepción, la transición canónica de coordinaciones y el lease de Calendar quedan definidos en sus specs.
 
-El conjunto de ocho correcciones ya está publicado y verificado técnicamente en staging. Queda pendiente su aceptación funcional autenticada, incluidos recepción por etapa y avisos de retiro por transición. Un proceso Calendar interrumpido puede dejar el evento pendiente hasta vencer su lease y ejecutar una nueva reconciliación; no se anuncia éxito ni se ejecuta una reparación masiva de datos anteriores.
+El conjunto de ocho correcciones ya está publicado y verificado técnicamente en staging. El responsable confirmó su aceptación funcional el 28 de octubre de 2026, incluidos recepción por etapa y avisos de retiro por transición. Un proceso Calendar interrumpido puede dejar el evento pendiente hasta vencer su lease y ejecutar una nueva reconciliación; no se anuncia éxito ni se ejecuta una reparación masiva de datos anteriores.
 
 ## Seguimiento de EVT-116 a EVT-119
 
-Las cuatro correcciones ya están publicadas y verificadas técnicamente en staging. No queda pendiente autorización ni despliegue de este incremento. Falta la aceptación funcional autenticada sobre la versión actual; las pruebas locales y el rechazo anónimo remoto no sustituyen ese recorrido. Producción requiere autorización independiente.
+Las cuatro correcciones ya están publicadas y verificadas técnicamente en staging. No queda pendiente autorización ni despliegue de este incremento. El responsable confirmó la aceptación funcional de estas cuatro correcciones el 28 de octubre de 2026; la evidencia es su validación humana, no el rechazo anónimo ni las pruebas locales. Producción requiere autorización independiente.

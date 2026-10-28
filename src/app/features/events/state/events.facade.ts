@@ -33,6 +33,7 @@ export class EventsFacade implements OnDestroy {
   private readonly loadingState = signal(false);
   private readonly mutatingState = signal(false);
   private readonly availabilityLoadingState = signal(false);
+  private readonly availabilityErrorState = signal<string | null>(null);
   private readonly availabilityState = signal<EventAvailabilityResult | null>(null);
   private readonly errorState = signal<string | null>(null);
   private readonly noticeState = signal<string | null>(null);
@@ -42,6 +43,7 @@ export class EventsFacade implements OnDestroy {
   private readonly detailLoadingState = signal(false);
   private readonly actionLoadingState = signal<string | null>(null);
   private requestVersion = 0;
+  private cancelAvailabilityRequest: (() => void) | null = null;
   private listVersion = 0;
   private calendarVersion = 0;
   private detailVersion = 0;
@@ -64,6 +66,7 @@ export class EventsFacade implements OnDestroy {
   readonly loading = this.loadingState.asReadonly();
   readonly mutating = this.mutatingState.asReadonly();
   readonly availabilityLoading = this.availabilityLoadingState.asReadonly();
+  readonly availabilityError = this.availabilityErrorState.asReadonly();
   readonly availability = this.availabilityState.asReadonly();
   readonly error = computed(() => this.errorState() ?? this.catalogErrorState());
   readonly notice = this.noticeState.asReadonly();
@@ -166,24 +169,49 @@ export class EventsFacade implements OnDestroy {
     input: EventAvailabilityInput,
     preserveCurrent = false,
   ): Promise<boolean> {
+    if (this.destroyed) return false;
     const version = ++this.requestVersion;
+    this.cancelAvailabilityRequest?.();
     this.availabilityLoadingState.set(true);
+    this.availabilityErrorState.set(null);
     if (!preserveCurrent) this.availabilityState.set(null);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timeout = setTimeout(
+        () =>
+          reject(
+            Object.assign(new Error('availability-timeout'), { code: 'availability-timeout' }),
+          ),
+        20_000,
+      );
+      this.cancelAvailabilityRequest = () => reject(new Error('availability-cancelled'));
+    });
     try {
-      const result = await this.gateway.checkAvailability(input);
-      if (version === this.requestVersion) this.availabilityState.set(result);
+      const result = await Promise.race([this.gateway.checkAvailability(input), deadline]);
+      if (version !== this.requestVersion) return false;
+      this.availabilityState.set(result);
       return result.confirmable;
     } catch (error) {
-      if (version === this.requestVersion) this.errorState.set(mapEventsError(error));
+      if (version === this.requestVersion) {
+        this.availabilityState.set(null);
+        this.availabilityErrorState.set(mapEventsError(error));
+      }
       return false;
     } finally {
-      if (version === this.requestVersion) this.availabilityLoadingState.set(false);
+      if (timeout) clearTimeout(timeout);
+      if (version === this.requestVersion) {
+        this.cancelAvailabilityRequest = null;
+        this.availabilityLoadingState.set(false);
+      }
     }
   }
 
   invalidateAvailability(): void {
     this.requestVersion += 1;
+    this.cancelAvailabilityRequest?.();
+    this.cancelAvailabilityRequest = null;
     this.availabilityState.set(null);
+    this.availabilityErrorState.set(null);
     this.availabilityLoadingState.set(false);
   }
 
@@ -224,8 +252,10 @@ export class EventsFacade implements OnDestroy {
     try {
       const detail = await this.gateway.detail(eventId);
       if (version !== this.detailVersion) return null;
-      this.detailState.set(detail);
-      return detail;
+      const current = this.withTemporalDetail(detail);
+      this.detailState.set(current);
+      this.scheduleTemporalRefresh();
+      return current;
     } catch (error) {
       if (version !== this.detailVersion) return null;
       this.errorState.set(mapEventsError(error));
@@ -356,7 +386,7 @@ export class EventsFacade implements OnDestroy {
     this.listVersion += 1;
     this.calendarVersion += 1;
     this.detailVersion += 1;
-    this.requestVersion += 1;
+    this.invalidateAvailability();
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
     if (this.searchTimer) clearTimeout(this.searchTimer);
   }
@@ -406,7 +436,7 @@ export class EventsFacade implements OnDestroy {
     return this.serverClockOffsetMs === null ? null : Date.now() + this.serverClockOffsetMs;
   }
 
-  private withTemporalStatuses(items: readonly EventSummary[]): readonly EventSummary[] {
+  private withTemporalStatuses<T extends EventSummary>(items: readonly T[]): readonly T[] {
     const now = this.currentServerTime();
     if (now === null) return items;
     return items.map((item) => {
@@ -419,12 +449,26 @@ export class EventsFacade implements OnDestroy {
     });
   }
 
+  private withTemporalDetail(detail: EventDetail): EventDetail {
+    const current = this.withTemporalStatuses([detail])[0]!;
+    return {
+      ...current,
+      canCancel:
+        current.canCancel && current.status !== 'finalizado' && current.status !== 'cancelado',
+    };
+  }
+
   private scheduleTemporalRefresh(): void {
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
     this.temporalTimer = null;
     const now = this.currentServerTime();
     if (now === null) return;
-    const boundaries = [...this.recordsState(), ...this.calendarItemsState()]
+    const detail = this.detailState();
+    const boundaries = [
+      ...this.recordsState(),
+      ...this.calendarItemsState(),
+      ...(detail ? [detail] : []),
+    ]
       .filter((item) => item.status !== 'cancelado')
       .flatMap((item) => [item.start, item.end])
       .map((value) => (value ? Date.parse(value) : Number.NaN))
@@ -441,6 +485,7 @@ export class EventsFacade implements OnDestroy {
   private refreshTemporalStatuses(): void {
     this.recordsState.update((items) => this.withTemporalStatuses(items));
     this.calendarItemsState.update((items) => this.withTemporalStatuses(items));
+    this.detailState.update((detail) => (detail ? this.withTemporalDetail(detail) : null));
     this.scheduleTemporalRefresh();
   }
 }

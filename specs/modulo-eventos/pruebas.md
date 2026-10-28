@@ -1,5 +1,27 @@
 # Pruebas: Eventos
 
+## EVT-121 — Cancelación y fin del evento
+
+- Creador `usuario` y creador `admin`: al alcanzar exactamente el fin, detalle con `canCancel: false`; la callable rechaza con `event-finished` sin modificar evento, reservas, controles, PDF, correo ni Calendar.
+- Antes del fin, incluido un milisegundo antes del último día de un evento multidiario, continúa permitida la cancelación por el creador. Un evento ya cancelado conserva idempotencia después del fin.
+- Históricos: fechas locales válidas se resuelven en memoria sin backfill; fin desconocido rechaza y no ofrece cancelar. Los no propietarios conservan sus restricciones.
+- Escritorio y móvil: no aparece `Cancelar` para finalizados. La edición conserva su permiso previo. Desde el detalle, incluido el enlace procedente del calendario, tampoco aparece cancelación.
+- Dejar confirmación abierta hasta cruzar el fin: desaparece `Confirmar cancelación`, se anuncia que ya no admite cancelación y permanece la opción de cerrar. Un detalle fuera de la página actual también actualiza su estado mediante el reloj sincronizado con servidor.
+- Pantalla antigua: un rechazo backend presenta «El evento ya finalizó y no se puede cancelar», sin anunciar éxito.
+- Regresión local del 28 de octubre: 257 pruebas aprobadas (102 Angular, 108 unitarias de Functions y 47 de Eventos con Firestore Emulator), lint/guardia visual y builds aprobados. Publicación posterior del mismo día: cuatro Functions y Hosting desplegados únicamente a staging; las cuatro Functions están `ACTIVE`, los 20 archivos remotos coinciden por SHA-256, `/login` responde `200` y las cuatro callables rechazan solicitudes anónimas con `401 / UNAUTHENTICATED`. Se repitieron builds y auditoría de ejecución (cero vulnerabilidades), no las 257 pruebas. Esta verificación técnica no sustituye la aceptación funcional con sesión iniciada de EVT-121; evidencia detallada en `../matriz-trazabilidad.md`.
+
+Aceptación de las doce correcciones anteriores: confirmada por el responsable el 28 de octubre de 2026 con resultado satisfactorio. La incidencia EVT-121 es posterior y no forma parte de ese cierre.
+
+## EVT-120 — Error y espera de disponibilidad
+
+- Rechazo funcional al consultar: finaliza la carga, invalida el resultado anterior y muestra la causa dentro del formulario, conservando campos y cantidades.
+- Reintento desde el modal: nueva consulta correcta elimina el error y muestra disponibilidad; no crea ni modifica el evento.
+- Promesa sin respuesta: a los 20 segundos finaliza la espera y permite reintentar. La respuesta tardía no sustituye el resultado nuevo.
+- Cierre/cambio de contexto: invalida la consulta, descarta errores tardíos y cancela el temporizador de espera.
+- Regresión del 27 de octubre: 40 pruebas específicas de Eventos y 96 Angular totales aprobadas; cuatro casos nuevos. Hosting publicado y verificado; aceptación visual autenticada pendiente. Las doce validaciones anteriores fueron aceptadas posteriormente por el responsable el 28 de octubre; este cierre no se atribuye a pruebas automáticas.
+
+Incidencia SMTP separada: se diagnosticó `535 / 5.7.8` con la versión 3, el responsable creó la versión 4 con autenticación correcta y se enlazaron ocho Functions verificadas `ACTIVE`. Recuperación transaccional de siete trabajos de `VALIDACIÓN 02`; el worker programado los entregó a SMTP en el segundo intento y el evento quedó en `completas` a las 16:28 de Cancún. No se inspeccionaron buzones; ver `../integraciones.md`.
+
 ## Estado
 
 Casos redefinidos para Coordinaciones y notificaciones y ampliados el 28 de septiembre de 2026 con anticipación, eventos multidiarios, estados derivados y FullCalendar. El 30 de septiembre se obtuvo evidencia local de creación, disponibilidad, búsqueda, detalle, edición, cancelación, logística administrativa, integraciones con dobles, leases, limpieza, backfill, concurrencia, Rules y experiencia Angular; además se desplegaron secretos, configuración, Rules, Functions y Hosting únicamente a staging. El 3 de octubre se completó la aceptación manual del ciclo institucional, Calendar/SMTP, roles, concurrencia, logística y experiencia visual/accesible/responsive. La ejecución exhaustiva individual de toda la matriz EVT-001 a EVT-110 conserva seguimiento documental separado.
@@ -554,7 +576,7 @@ El responsable confirmó el ciclo de creación, actualización y cancelación en
 - EVT-112: un correo antiguo que termina después de una edición no sobrescribe el estado de la revisión actual; finalización concurrente de trabajos actuales mantiene el resumen correcto.
 - EVT-113: integración de disponibilidad con reservas sucesivas permite capacidad realmente libre y mantiene rechazo atómico de solicitudes que exceden el pico; demora no puede acortar bloqueo.
 
-Resultado local del 27 de octubre: EVT-111 a EVT-113 cubiertos por event-integration-adapters.spec.ts y events-reservations.integration.spec.ts. Aprobaron 95 pruebas unitarias de Functions y 25 pruebas de Eventos con Firestore Emulator; Calendar y SMTP simulados, sin envíos reales. Publicado en staging el 27 de octubre de 2026; pendiente la aceptación funcional autenticada de este incremento.
+Resultado local del 27 de octubre: EVT-111 a EVT-113 cubiertos por event-integration-adapters.spec.ts y events-reservations.integration.spec.ts. Aprobaron 95 pruebas unitarias de Functions y 25 pruebas de Eventos con Firestore Emulator; Calendar y SMTP simulados, sin envíos reales. Publicado en staging el 27 de octubre de 2026; aceptación funcional de este incremento confirmada por el responsable el 28 de octubre de 2026.
 
 ## Regresión adicional
 
@@ -572,4 +594,4 @@ Resultado local de EVT-114 y EVT-115: 39 pruebas de Eventos con Firestore Emulat
 
 Resultados del 27 de octubre de 2026: 240 pruebas aprobadas = 92 Angular + 108 unitarias de Functions + 40 Eventos con Firestore Emulator. Incluyen 33 casos nuevos: 19 Angular, 13 Functions y uno con el repositorio real en Emulator. Lint de Angular/Functions, guardia visual, builds frontend predeterminado y staging, y compilación de Functions aprobados. Las suites ajenas al alcance conservan su evidencia previa; no se afirma haber repetido Rules ni toda la batería histórica. Calendar/SMTP simulados, sin datos reales ni despliegue.
 
-Publicación posterior del 27 de octubre de 2026: syncUpdatedEventIntegrations y Hosting desplegados con autorización expresa. Verificación técnica: Function ACTIVE, rechazo anónimo 401, /login HTTP 200 y los 20 archivos publicados coinciden con el build local. Evidencia en matriz-trazabilidad.md. La aceptación funcional autenticada de EVT-116 a EVT-119 sigue pendiente; no se repitieron las 240 pruebas durante el despliegue.
+Publicación posterior del 27 de octubre de 2026: syncUpdatedEventIntegrations y Hosting desplegados con autorización expresa. Verificación técnica: Function ACTIVE, rechazo anónimo 401, /login HTTP 200 y los 20 archivos publicados coinciden con el build local. Evidencia en matriz-trazabilidad.md. La aceptación funcional de EVT-116 a EVT-119 fue confirmada por el responsable el 28 de octubre; no se repitieron las 240 pruebas durante el despliegue.

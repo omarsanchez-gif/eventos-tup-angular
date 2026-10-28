@@ -175,7 +175,7 @@ export interface EventsRepository {
   cancel(
     requesterUid: string,
     eventId: string,
-    now: Date,
+    now: () => Date,
   ): Promise<{ readonly eventId: string; readonly protocolPath: string | null }>;
   confirmCoverage(
     requesterUid: string,
@@ -238,6 +238,7 @@ export type EventFunctionalCode =
   | 'invalid-campus-schedule'
   | 'event-not-found'
   | 'event-cancelled'
+  | 'event-finished'
   | 'event-update-restricted'
   | 'reservation-not-found'
   | 'reservation-state-invalid'
@@ -699,9 +700,7 @@ export async function cancelEventRecord(
   dependencies: EventsDependencies,
 ) {
   const actor = await requester(identity, dependencies);
-  const result = await dependencies.repository.cancel(
-    actor.uid,
-    eventIdInput(data),
+  const result = await dependencies.repository.cancel(actor.uid, eventIdInput(data), () =>
     dependencies.clock.now(),
   );
   if (result.protocolPath) {

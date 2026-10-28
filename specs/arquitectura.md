@@ -75,6 +75,10 @@ Firestore conserva el perfil canónico. Claims `authorized` y `role` permiten qu
 
 Signals representan estado y valores derivados. RxJS representa observadores y composición asíncrona. Consultar `ADR-003`.
 
+EVT-121: el refresco temporal de Eventos incluye el detalle abierto y su permiso de cancelación, aunque no esté en el listado actual. La cancelación recibe un reloj inyectado que el repositorio consulta dentro de cada intento transaccional tras las lecturas; valida el fin antes de cualquier escritura. Históricos válidos se interpretan en memoria, sin persistir migraciones. El rechazo termina antes de las integraciones externas. Publicado únicamente en staging el 28 de octubre de 2026 mediante Hosting y `cancelEvent`, `getEventDetail`, `listEvents` y `listCalendarEvents`; verificación técnica remota aprobada, aceptación funcional autenticada de EVT-121 pendiente.
+
+EVT-120: la facade de Eventos mantiene error y carga propios de disponibilidad, limita su espera a 20 segundos e invalida resultados anteriores al reintentar, cambiar el contexto o cerrar. El formulario presenta ese error recuperable dentro del modal. El plazo abandona la previsualización, no altera la transacción ni confirma reservas. Publicado en Hosting de staging el 27 de octubre; aceptación visual autenticada pendiente.
+
 ## UI
 
 Angular Material/CDK aporta comportamiento y accesibilidad. El tema institucional y los wrappers propios evitan una apariencia Material genérica. Consultar `ADR-004`.

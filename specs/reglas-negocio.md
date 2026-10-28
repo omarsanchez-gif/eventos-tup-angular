@@ -39,7 +39,7 @@
 - RN-020: Responsable y correo del creador proceden de la sesión autorizada.
 - RN-021: Los eventos nuevos usan `programado` como valor persistido inicial; su estado temporal visible se deriva de los instantes canónicos de inicio y fin.
 - RN-022: `registrado` es un valor histórico equivalente visualmente a `programado`; `en_proceso` y `finalizado` históricos no obligan a realizar escrituras programadas y se recalculan cuando existan fechas válidas.
-- RN-023: Solo el creador puede editar o cancelar un evento.
+- RN-023: Solo el creador puede editar o cancelar un evento. Cancelar exige que todavía no haya finalizado: desde `ahoraServidor >= finAt` se rechaza, incluso con una pantalla antigua. Esta restricción no modifica los permisos de edición.
 - RN-024: Un evento se guarda en Firestore antes de ejecutar Calendar y correo.
 - RN-025: La creación debe procesar Calendar y correo mediante operaciones backend independientes e idempotentes.
 - RN-026: La edición debe sincronizar Google Calendar y generar correo cuando cambien nombre, fecha, horario o coordinaciones.

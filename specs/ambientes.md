@@ -1,8 +1,12 @@
 # Ambientes
 
-**Publicación vigente en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Pendiente aceptación funcional autenticada sobre esta versión. Producción no fue modificada.
+**Publicación de EVT-121 — 28 de octubre de 2026:** corrección de cancelación de eventos finalizados desplegada con autorización expresa únicamente a staging: Hosting y cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`). Las cuatro están `ACTIVE`; los 20 archivos remotos coinciden con el build validado y las cuatro callables rechazan solicitudes anónimas. Se conserva la aceptación de las doce validaciones anteriores. Pendiente únicamente la aceptación funcional específica de EVT-121 con sesión iniciada; evidencia en la matriz de trazabilidad. Producción intacta.
 
-**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; queda pendiente la aceptación funcional autenticada de este incremento. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
+**Reparación operativa — 27 de octubre:** `SMTP_CONFIG` versión 4 validada y enlazada a ocho Functions ACTIVE; `VALIDACIÓN 02` conserva Calendar sincronizado y sus siete envíos recuperados quedaron `enviado`, resumen `completas`. Se publicó Hosting con EVT-120 (`main-XJTQY4RO.js`, `styles-ENSU7VMN.css`); los 20 archivos coinciden con el build local. El auxiliar `scripts/rotate-staging-smtp.ps1` conserva un procedimiento manual de entrada oculta, sin enviar correo ni desplegar. Producción intacta; evidencia en `integraciones.md`.
+
+**Publicación previa en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Aceptación funcional de estas cuatro correcciones confirmada por el responsable el 28 de octubre de 2026. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; la aceptación funcional de este incremento fue confirmada por el responsable el 28 de octubre de 2026. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
 
 ## Local
 
@@ -31,8 +35,8 @@ Objetivo: validar integración real y aceptación antes de producción.
 - Bucket de Storage: `eventos-tup-angular-stg.firebasestorage.app`.
 - Ubicación y clase de Storage: `US-CENTRAL1`, regional, `STANDARD`.
 - Calendario institucional adicional compartido con `eventos@tecplayacar.edu.mx` con permiso para realizar cambios y administrar el uso compartido; Google Calendar API está habilitada en `eventos-tup-angular-stg`. Su ID y credenciales se conservan exclusivamente en `GOOGLE_CALENDAR_CONFIG`, sin registrar valores sensibles en documentación. Sustituye como destino al calendario desechable `CALENDARIO - STAGING`; los eventos de prueba anteriores no se migran ni se reconcilian.
-- Buzón SMTP de staging `eventos@tecplayacar.edu.mx`; el envío manual hacia `omar.sanchez@tecplayacar.edu.mx` fue comprobado. `SMTP_CONFIG` versión 3 está habilitada en Secret Manager, enlazada a las Functions consumidoras e incluye la estructura completa.
-- Lista fija de correo de staging: `omar.sanchez@tecplayacar.edu.mx`, `eventos@tecplayacar.edu.mx`, `victor.yama@tecplayacar.edu.mx` y `lizett.mendez@tecplayacar.edu.mx`. `SMTP_CONFIG` versión 3 conserva ese arreglo. Además, backend permite correos institucionales cuya procedencia `coordinacion` o `sistemas` esté fotografiada en un trabajo protegido con `coordinacionId`; agregar contactos no exige rotar el secreto.
+- Buzón SMTP de staging `eventos@tecplayacar.edu.mx`; el envío manual hacia `omar.sanchez@tecplayacar.edu.mx` fue comprobado. `SMTP_CONFIG` versión 4 está habilitada en Secret Manager, enlazada a las Functions consumidoras e incluye la estructura completa.
+- Lista fija de correo de staging: `omar.sanchez@tecplayacar.edu.mx`, `eventos@tecplayacar.edu.mx`, `victor.yama@tecplayacar.edu.mx` y `lizett.mendez@tecplayacar.edu.mx`. `SMTP_CONFIG` versión 4 conserva ese arreglo. Además, backend permite correos institucionales cuya procedencia `coordinacion` o `sistemas` esté fotografiada en un trabajo protegido con `coordinacionId`; agregar contactos no exige rotar el secreto.
 - Cuentas institucionales autorizadas para validar los roles y estados necesarios. No es obligatorio crear usuarios ficticios si los recorridos se ejecutan con cuentas reales aprobadas y datos exclusivos de staging.
 - Hosting de staging o Preview Channel conectado únicamente a recursos aprobados.
 - No se copiarán datos, usuarios ni archivos de producción para habilitar este ambiente.
@@ -137,7 +141,7 @@ Sobre esa versión, el 27 de octubre de 2026 el responsable confirmó satisfacto
 
 ## Secuencia aprobada para activar Calendar y SMTP en staging
 
-1. Conservar `SMTP_CONFIG` versión 3 y validar que la autorización dinámica solo acepte trabajos protegidos de Coordinaciones; `GOOGLE_CALENDAR_CONFIG` se conserva si supera la validación estructural.
+1. Conservar `SMTP_CONFIG` versión 4 y validar que la autorización dinámica solo acepte trabajos protegidos de Coordinaciones; `GOOGLE_CALENDAR_CONFIG` se conserva si supera la validación estructural.
 2. Resolver vulnerabilidades altas o críticas de dependencias de ejecución y repetir build, lint, pruebas y auditoría.
 3. Crear `configuracion/logisticaEquipos` con el ID canónico de Sistemas y los valores aprobados, sin aceptar correos desde cliente.
 4. Desplegar y verificar por separado Firestore Rules, Storage Rules y las Functions autorizadas; Hosting se publica después de validar backend.
@@ -172,12 +176,18 @@ El build consolidado produjo main-YXUZKP35.js y styles-ENSU7VMN.css y sustituyó
 
 El 27 de octubre de 2026, con autorización expresa, se publicaron por separado Firestore Rules, las 12 Functions afectadas y Hosting únicamente en staging. Las Functions quedaron ACTIVE; los 20 archivos remotos coinciden con el build local, incluido main-YXUZKP35.js y styles-ENSU7VMN.css. La regla de control de integraciones coincide con la versión local y cuatro callables rechazaron solicitudes anónimas con 401. No se desplegaron índices, Storage Rules ni secretos; producción no fue modificada.
 
-La evidencia técnica, hashes y alcance están en [matriz de trazabilidad](matriz-trazabilidad.md). Pendiente: aceptación funcional autenticada de las ocho correcciones en esta versión; no queda pendiente su despliegue.
+La evidencia técnica, hashes y alcance están en [matriz de trazabilidad](matriz-trazabilidad.md). Aceptación funcional de las ocho correcciones confirmada por el responsable el 28 de octubre de 2026; despliegue completado previamente.
 
 ## Preparación local de EVT-116 a EVT-119 — evidencia histórica
 
 Local incorpora las cuatro correcciones posteriores, validadas con 240 pruebas. Se generó main-3W3UNOGZ.js con build:staging y main-OE2QS2OH.js con build predeterminado; ambos conservan styles-ENSU7VMN.css. Durante esa preparación no se publicaron servicios y staging conservaba main-YXUZKP35.js. Tras la autorización expresa se reconstruyó el bundle con configuración staging y se publicaron syncUpdatedEventIntegrations y Hosting según la evidencia siguiente; no se requirieron Rules, índices ni secretos nuevos.
 
-## Publicación vigente de EVT-116 a EVT-119
+## Publicación anterior de EVT-116 a EVT-119
 
-El 27 de octubre de 2026 se actualizaron por separado syncUpdatedEventIntegrations y Hosting en eventos-tup-angular-stg, con --only y --project staging. Function ACTIVE, solicitudes anónimas rechazadas con 401 y 20 archivos remotos coincidentes con el build local; Hosting sirve main-3W3UNOGZ.js y styles-ENSU7VMN.css. No se modificaron Rules, índices, secretos ni producción. La evidencia exacta está en [matriz de trazabilidad](matriz-trazabilidad.md). Pendiente aceptación funcional autenticada del incremento; el despliegue ya está completado.
+El 27 de octubre de 2026 se actualizaron por separado syncUpdatedEventIntegrations y Hosting en eventos-tup-angular-stg, con --only y --project staging. Function ACTIVE, solicitudes anónimas rechazadas con 401 y 20 archivos remotos coincidentes con el build local; Hosting sirve main-3W3UNOGZ.js y styles-ENSU7VMN.css. No se modificaron Rules, índices, secretos ni producción. La evidencia exacta está en [matriz de trazabilidad](matriz-trazabilidad.md). Aceptación funcional del incremento confirmada por el responsable el 28 de octubre de 2026; el despliegue ya estaba completado.
+
+## Publicación vigente de EVT-121 — 28 de octubre de 2026
+
+Autorización expresa para publicar la corrección de cancelación de finalizados y documentarla. Se actualizaron por separado cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`) y Hosting, siempre con `--only` y `--project staging`. Verificación a las 16:55 de Cancún: las cuatro Functions están `ACTIVE`, Node.js 22, `us-central1`; los 20 archivos remotos coinciden con el build local. Hosting sirve `main-H4EJQ5IB.js` y `styles-ENSU7VMN.css`. `/login` responde `200` y las cuatro callables rechazan solicitudes anónimas con `401 / UNAUTHENTICATED`.
+
+`cancelEvent` conserva `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 4. No se rotaron secretos ni se modificaron Rules, índices, datos de eventos, recursos Calendar/SMTP ni producción. La regresión previa de 257 pruebas se conserva; durante el despliegue se reconstruyeron frontend/backend y se verificó `npm audit --omit=dev` con cero vulnerabilidades. Revisiones y hashes en [matriz de trazabilidad](matriz-trazabilidad.md). Pendiente aceptación funcional autenticada específica de EVT-121.

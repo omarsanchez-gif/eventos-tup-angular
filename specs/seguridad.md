@@ -55,7 +55,7 @@ La sincronización se realizará exclusivamente mediante Admin SDK conforme a `d
 - SEC-EVT-001: Solo usuarios autorizados pueden leer y crear eventos.
 - SEC-EVT-002: Solo el creador puede editar o cancelar su evento.
 - SEC-EVT-003: La cancelación y toda escritura directa desde cliente permanecen bloqueadas; el documento cancelado se conserva como histórico de solo lectura.
-- SEC-EVT-004: Functions de integración, reservación y cancelación validan claim autorizado, perfil canónico y propiedad.
+- SEC-EVT-004: Functions de integración, reservación y cancelación validan claim autorizado, perfil canónico y propiedad. EVT-121 exige además validar el fin del evento y el reloj de servidor dentro de la transacción de cancelación; ocultar la acción en Angular no sustituye esta validación.
 - SEC-EVT-005: El cliente solo puede proponer IDs de coordinación; el backend lee nombres, estado y correos canónicos.
 - SEC-EVT-006: Crear exige que cada coordinación seleccionada exista y esté activa. Editar permite conservar referencias históricas suspendidas, pero no agregarlas de nuevo.
 - SEC-EVT-007: Los documentos de evento no exponen correos de coordinaciones ni estados internos de entrega.

@@ -15,6 +15,7 @@ import {
 import {
   calculateEquipmentBlock,
   EventTimeError,
+  localDateTime,
   satisfiesEventAdvance,
   scheduleFromUnknown,
   type EquipmentBlockWindow,
@@ -240,14 +241,46 @@ function temporalStatus(
   return 'programado';
 }
 
+function eventInstant(data: DocumentData, boundary: 'Inicio' | 'Fin'): Date | null {
+  const canonical = dateFromUnknown(data[boundary === 'Inicio' ? 'inicioAt' : 'finAt']);
+  if (canonical) return canonical;
+  const date = data[`fecha${boundary}`];
+  const time = data[`hora${boundary}`];
+  if (typeof date !== 'string' || typeof time !== 'string') return null;
+  try {
+    return localDateTime(date, time);
+  } catch {
+    return null;
+  }
+}
+
+function requireCancellableEvent(data: DocumentData, now: Date): void {
+  const end = eventInstant(data, 'Fin');
+  const status = temporalStatus(data['estatus'], eventInstant(data, 'Inicio'), end, now);
+  if ((end && now.getTime() >= end.getTime()) || status === 'finalizado') {
+    throw new EventsError(
+      'event-finished',
+      'failed-precondition',
+      'El evento ya finalizó y no se puede cancelar.',
+    );
+  }
+  if (!end) {
+    throw new EventsError(
+      'invalid-date-range',
+      'failed-precondition',
+      'El fin del evento no es válido.',
+    );
+  }
+}
+
 function eventSummary(
   snapshot: DocumentSnapshot<DocumentData>,
   now: Date,
   requesterUid: string,
 ): EventSummary {
   const data = snapshot.data() ?? {};
-  const start = dateFromUnknown(data['inicioAt']);
-  const end = dateFromUnknown(data['finAt']);
+  const start = eventInstant(data, 'Inicio');
+  const end = eventInstant(data, 'Fin');
   const campusHistory =
     data['campusHistorico'] && typeof data['campusHistorico'] === 'object'
       ? (data['campusHistorico'] as Record<string, unknown>)
@@ -800,7 +833,11 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         requestedEquipment,
         reservations: reservationDetails,
         canEdit: canMutate,
-        canCancel: canMutate,
+        canCancel:
+          canMutate &&
+          summary.status !== 'finalizado' &&
+          summary.end !== null &&
+          now.getTime() < summary.end.getTime(),
       };
     },
 
@@ -1285,7 +1322,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       });
     },
 
-    async cancel(requesterUid, eventId, now) {
+    async cancel(requesterUid, eventId, clock) {
       const eventReference = events.doc(eventId);
       return firestore.runTransaction(async (transaction) => {
         const eventSnapshot = await transaction.get(eventReference);
@@ -1313,6 +1350,10 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         const controlById = new Map(
           controlSnapshots.map((snapshot) => [snapshot.id, snapshot] as const),
         );
+
+        // Read the server clock again on every transaction attempt, after all reads.
+        const now = clock();
+        requireCancellableEvent(event, now);
 
         reservationSnapshot.docs.forEach((snapshot) => {
           const reservation = snapshot.data();

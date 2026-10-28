@@ -63,6 +63,15 @@ const detail = {
   canCancel: true,
 };
 
+const availabilityInput = {
+  campusId: 'tup',
+  fechaInicio: '2026-10-06',
+  horaInicio: '12:00',
+  fechaFin: '2026-10-06',
+  horaFin: '14:00',
+  equiposSolicitados: [{ equipoId: 'speaker', cantidad: 1 }],
+};
+
 describe('EventsFacade', () => {
   let facade: EventsFacade;
   let eventsGateway: EventsGateway;
@@ -198,6 +207,61 @@ describe('EventsFacade', () => {
     expect(facade.availability()?.items[0]?.available).toBe(2);
   });
 
+  it('expone el rechazo de disponibilidad y descarta el resultado conservado del refresco', async () => {
+    await facade.checkAvailability(availabilityInput);
+    vi.mocked(eventsGateway.checkAvailability).mockRejectedValueOnce({
+      details: { functionalCode: 'invalid-date-range' },
+    });
+    await expect(facade.checkAvailability(availabilityInput, true)).resolves.toBe(false);
+    expect(facade.availability()).toBeNull();
+    expect(facade.availabilityLoading()).toBe(false);
+    expect(facade.availabilityError()).toBe('Revise las fechas y horarios del evento.');
+    await expect(facade.checkAvailability(availabilityInput)).resolves.toBe(true);
+    expect(facade.availabilityError()).toBeNull();
+  });
+
+  it('termina la espera a los 20 segundos y descarta una respuesta tardía después del reintento', async () => {
+    vi.useFakeTimers();
+    try {
+      const result = await eventsGateway.checkAvailability(availabilityInput);
+      const oldRequest = deferred<typeof result>();
+      vi.mocked(eventsGateway.checkAvailability).mockReturnValueOnce(oldRequest.promise);
+      const waiting = facade.checkAvailability(availabilityInput);
+      await vi.advanceTimersByTimeAsync(20_000);
+      await expect(waiting).resolves.toBe(false);
+      expect(facade.availabilityLoading()).toBe(false);
+      expect(facade.availabilityError()).toContain('tardó demasiado');
+      await facade.checkAvailability(availabilityInput);
+      oldRequest.resolve({ ...result, confirmable: false, items: [] });
+      await Promise.resolve();
+      expect(facade.availability()?.confirmable).toBe(true);
+      expect(facade.availabilityError()).toBeNull();
+    } finally {
+      facade.ngOnDestroy();
+      vi.useRealTimers();
+    }
+  });
+
+  it('invalida una consulta al cerrar sin conservar carga, errores tardíos ni temporizadores', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = deferred<Awaited<ReturnType<EventsGateway['checkAvailability']>>>();
+      vi.mocked(eventsGateway.checkAvailability).mockReturnValueOnce(pending.promise);
+      const waiting = facade.checkAvailability(availabilityInput);
+      facade.invalidateAvailability();
+      await expect(waiting).resolves.toBe(false);
+      pending.reject({ code: 'functions/unavailable' });
+      await Promise.resolve();
+      expect(facade.availability()).toBeNull();
+      expect(facade.availabilityError()).toBeNull();
+      expect(facade.availabilityLoading()).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      facade.ngOnDestroy();
+      vi.useRealTimers();
+    }
+  });
+
   it('carga PDF antes de invocar la creación y refresca la primera página', async () => {
     await facade.load();
     const file = new File(['pdf'], 'protocol.pdf', { type: 'application/pdf' });
@@ -263,6 +327,35 @@ describe('EventsFacade', () => {
   afterEach(() => {
     facade.ngOnDestroy();
     vi.useRealTimers();
+  });
+
+  it('retira canCancel al finalizar el detalle abierto fuera del listado, con reloj cliente adelantado', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
+    vi.mocked(eventsGateway.list).mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      serverNow: '2026-10-06T18:59:59.000Z',
+    });
+    await facade.loadRecords();
+    await facade.loadDetail(summary.eventId);
+    expect(facade.detail()).toMatchObject({ status: 'en_ejecucion', canCancel: true });
+    await vi.advanceTimersByTimeAsync(1001);
+    expect(facade.detail()).toMatchObject({
+      status: 'finalizado',
+      canCancel: false,
+      canEdit: true,
+    });
+    expect(eventsGateway.cancel).not.toHaveBeenCalled();
+  });
+
+  it('presenta el rechazo de backend al cancelar un evento que ya finalizó', async () => {
+    vi.mocked(eventsGateway.cancel).mockRejectedValue({
+      details: { functionalCode: 'event-finished' },
+    });
+    expect(await facade.cancel(summary.eventId)).toBe(false);
+    expect(facade.error()).toBe('El evento ya finalizó y no se puede cancelar.');
+    expect(facade.notice()).toBeNull();
   });
 
   it.each(['listado', 'calendario'])(

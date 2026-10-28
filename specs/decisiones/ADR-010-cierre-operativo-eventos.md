@@ -28,7 +28,7 @@ Se implementan los contratos backend siguientes:
 
 - `getEventDetail(eventId)`: proyección sanitizada con datos editables, fotografías y logística; nunca devuelve correos, secretos, controles de concurrencia o documentos técnicos de notificación.
 - `updateEvent(eventId, estadoObjetivo)`: solo propietario; compara estado previo y objetivo, aplica reglas posteriores al límite, sustituye reservas de forma atómica y conserva íntegro el estado anterior si falla.
-- `cancelEvent(eventId)`: solo propietario; idempotente, retira Calendar y PDF, resuelve logística y conserva el documento histórico cancelado.
+- `cancelEvent(eventId)`: solo propietario y antes del fin del evento; idempotente, retira Calendar y PDF, resuelve logística y conserva el documento histórico cancelado. EVT-121 (28 de octubre de 2026) exige revalidar fin y reloj de servidor dentro de la transacción; un evento finalizado responde `event-finished` sin efectos secundarios. Repetir una cancelación ya confirmada sigue siendo idempotente después de la fecha de fin.
 - `reconcileEventIntegrations(eventId)`: propietario o `admin`; vuelve a intentar exclusivamente el estado canónico pendiente sin duplicar Calendar o correos enviados.
 
 El formulario de alta se reutiliza para edición. Un evento cancelado queda de solo lectura. Listado y calendario abren el mismo detalle; solo el propietario ve Editar o Cancelar.

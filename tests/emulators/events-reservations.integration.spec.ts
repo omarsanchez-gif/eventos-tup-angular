@@ -1,5 +1,5 @@
 import { deleteApp, initializeApp, type App } from 'firebase-admin/app';
-import { getFirestore, Timestamp, type Firestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, Timestamp, type Firestore } from 'firebase-admin/firestore';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -445,7 +445,134 @@ describe('Eventos y reservaciones con Firestore Emulator', () => {
     expect(detail.status).toBe('cancelado');
     expect(detail.canEdit).toBe(false);
     expect(detail.reservations[0]?.state).toBe('cancelada');
+    const cancelledSnapshot = (await firestore.doc(`eventos/${created.eventId}`).get()).data();
+    await cancelEventRecord(
+      identity,
+      { eventId: created.eventId },
+      {
+        ...dependencies,
+        clock: { now: () => new Date('2026-10-07T12:00:00-05:00') },
+      },
+    );
+    expect((await firestore.doc(`eventos/${created.eventId}`).get()).data()).toEqual(
+      cancelledSnapshot,
+    );
   });
+
+  it.each([identity, adminIdentity])(
+    'rechaza cancelación desde el fin exacto sin efectos secundarios para creador $role',
+    async (owner) => {
+      await seedEquipment('bocina');
+      const created = await createEventRecord(owner, payload(['bocina']), dependencies);
+      const reference = firestore.doc(`eventos/${created.eventId}`);
+      const eventBefore = (await reference.get()).data();
+      const reservesBefore = (await firestore.collection('reservasEquipo').get()).docs.map((doc) =>
+        doc.data(),
+      );
+      const controlBefore = (await firestore.doc('controlReservasEquipo/bocina').get()).data();
+      const remove = vi.fn();
+      const reconcile = vi.fn();
+      const completedDependencies = {
+        ...dependencies,
+        clock: { now: () => new Date('2026-10-06T14:00:00-05:00') },
+        protocols: { ...dependencies.protocols, remove },
+        integrations: { reconcile },
+      };
+      const detail = await getEventDetailRecord(
+        owner,
+        { eventId: created.eventId },
+        completedDependencies,
+      );
+      expect(detail).toMatchObject({ status: 'finalizado', canCancel: false, canEdit: true });
+      await expect(
+        cancelEventRecord(owner, { eventId: created.eventId }, completedDependencies),
+      ).rejects.toMatchObject({
+        functionalCode: 'event-finished',
+        functionsCode: 'failed-precondition',
+      });
+      expect((await reference.get()).data()).toEqual(eventBefore);
+      expect(
+        (await firestore.collection('reservasEquipo').get()).docs.map((doc) => doc.data()),
+      ).toEqual(reservesBefore);
+      expect((await firestore.doc('controlReservasEquipo/bocina').get()).data()).toEqual(
+        controlBefore,
+      );
+      expect((await firestore.collection('notificacionesEventos').get()).empty).toBe(true);
+      expect(remove).not.toHaveBeenCalled();
+      expect(reconcile).not.toHaveBeenCalled();
+    },
+  );
+
+  it('permite cancelar en ejecución justo antes del fin de un evento multidiario', async () => {
+    const created = await createEventRecord(
+      identity,
+      {
+        ...payload([]),
+        fechaFin: '2026-10-08',
+      },
+      dependencies,
+    );
+    const beforeEnd = {
+      ...dependencies,
+      clock: { now: () => new Date('2026-10-08T13:59:59.999-05:00') },
+    };
+    expect(
+      await getEventDetailRecord(identity, { eventId: created.eventId }, beforeEnd),
+    ).toMatchObject({ status: 'en_ejecucion', canCancel: true });
+    await cancelEventRecord(identity, { eventId: created.eventId }, beforeEnd);
+    expect((await firestore.doc(`eventos/${created.eventId}`).get()).data()?.['estatus']).toBe(
+      'cancelado',
+    );
+  });
+
+  it('histórico con fin local válido impide cancelación sin persistir backfill', async () => {
+    const created = await createEventRecord(identity, payload([]), dependencies);
+    const reference = firestore.doc(`eventos/${created.eventId}`);
+    await reference.update({ inicioAt: FieldValue.delete(), finAt: FieldValue.delete() });
+    const past = { ...dependencies, clock: { now: () => new Date('2026-10-07T12:00:00-05:00') } };
+    expect(await getEventDetailRecord(identity, { eventId: created.eventId }, past)).toMatchObject({
+      status: 'finalizado',
+      canCancel: false,
+    });
+    await expect(
+      cancelEventRecord(identity, { eventId: created.eventId }, past),
+    ).rejects.toMatchObject({ functionalCode: 'event-finished' });
+    expect((await reference.get()).data()?.['finAt']).toBeUndefined();
+    expect((await reference.get()).data()?.['estatus']).toBe('programado');
+  });
+
+  it('cierra cancelación si el fin histórico no puede determinarse', async () => {
+    const created = await createEventRecord(identity, payload([]), dependencies);
+    await firestore
+      .doc(`eventos/${created.eventId}`)
+      .update({ finAt: FieldValue.delete(), horaFin: '' });
+    expect(
+      await getEventDetailRecord(identity, { eventId: created.eventId }, dependencies),
+    ).toMatchObject({ canCancel: false });
+    await expect(
+      cancelEventRecord(identity, { eventId: created.eventId }, dependencies),
+    ).rejects.toMatchObject({ functionalCode: 'invalid-date-range' });
+  });
+
+  it.each(['Inicio', 'Fin'])(
+    'histórico finalizado sin %s no permite cancelar',
+    async (boundary) => {
+      const created = await createEventRecord(identity, payload([]), dependencies);
+      const reference = firestore.doc(`eventos/${created.eventId}`);
+      await reference.update({
+        estatus: 'finalizado',
+        [boundary === 'Inicio' ? 'inicioAt' : 'finAt']: FieldValue.delete(),
+        [`hora${boundary}`]: '',
+      });
+      expect(
+        await getEventDetailRecord(identity, { eventId: created.eventId }, dependencies),
+      ).toMatchObject({ status: 'finalizado', canCancel: false });
+      await expect(
+        cancelEventRecord(identity, { eventId: created.eventId }, dependencies),
+      ).rejects.toMatchObject({ functionalCode: 'event-finished' });
+      expect((await reference.get()).data()?.['estatus']).toBe('finalizado');
+    },
+  );
 
   it('aplica cobertura, recepción y demora solo mediante admin', async () => {
     await firestore.doc('campus/fcs').set({
