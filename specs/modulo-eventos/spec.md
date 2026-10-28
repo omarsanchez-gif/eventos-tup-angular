@@ -33,9 +33,9 @@ Antes de integrar Eventos deben existir:
 - Rules y callables de Coordinaciones aprobadas en Emulator Suite.
 - Políticas aprobadas de límites, reintentos, retención, PDFs, paginación y verificación de staging.
 
-La creación del calendario institucional, la habilitación de la API, el consentimiento OAuth, la comprobación del buzón SMTP y la configuración de los secretos ya están realizadas en staging. Sus valores no se documentan. Las Functions consumidoras están enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3.
+La creación del calendario institucional, la habilitación de la API, el consentimiento OAuth, la comprobación del buzón SMTP y la configuración de los secretos ya están realizadas en staging. Sus valores no se documentan. Las Functions consumidoras están enlazadas a `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 4.
 
-La aceptación manual integral de Eventos quedó confirmada el 3 de octubre de 2026. Los recorridos administrativos completos de algunos catálogos conservan seguimiento propio y producción requiere autorización separada.
+La aceptación manual integral de Eventos quedó confirmada el 3 de octubre de 2026. Los recorridos administrativos de los catálogos fueron aceptados por el responsable el 27 de octubre; las ocho correcciones de consistencia fueron publicadas y verificadas técnicamente en staging el 27 de octubre; su aceptación funcional fue confirmada por el responsable el 28 de octubre de 2026. Producción requiere autorización separada.
 
 ## Alcance
 
@@ -213,12 +213,11 @@ El evento no se elimina porque SMTP falle.
 
 ## Flujo de cancelación
 
-1. Revalidar autorización, propiedad y documento.
-2. Rechazar reactivación o cancelación duplicada no idempotente y construir la fotografía y destinatarios.
-3. Eliminar o confirmar ausente el evento de Calendar.
-4. Eliminar o confirmar ausente el PDF vigente.
-5. En una transacción, crear trabajos idempotentes `cancelacion`, limpiar referencias externas confirmadas y actualizar Firestore con `estatus: cancelado`, `fechaCancelacion` y `canceladoPorUid`.
-6. Dejar el evento de solo lectura e informar cancelación completa con notificaciones en proceso o integración parcial.
+1. Revalidar autorización y perfil canónico del solicitante.
+2. En la transacción, leer el evento y revalidar propiedad. Si ya está cancelado, conservar idempotencia. En otro caso, comprobar el fin contra la hora del servidor después de las lecturas; un evento finalizado se rechaza antes de escribir o integrar (EVT-121).
+3. Confirmar atómicamente `estatus: cancelado`, `fechaCancelacion`, `canceladoPorUid`, revisión de notificaciones, referencias PDF vacías y la actualización de reservas y controles por equipo. Conservar la ruta previa para su retiro posterior.
+4. Después del commit, retirar el PDF y reconciliar Calendar y los trabajos idempotentes de cancelación conforme a `integraciones.md`. Las integraciones son recuperables y no forman una transacción distribuida con Firestore.
+5. Mantener el evento de solo lectura e informar cancelación completa con notificaciones en proceso o integración parcial; un fallo externo no restaura el evento ni sus reservas.
 
 Las reservaciones locales se cancelan y liberan. Si un equipo ya salió de su campus base, conserva su ventana de regreso y el registro logístico necesario aunque el evento se cancele.
 
@@ -265,7 +264,7 @@ En staging, `eventos@tecplayacar.edu.mx` envía mediante `smtp.gmail.com:465` co
 - El cursor queda ligado al término; cambiar o limpiar búsqueda reinicia la primera página.
 - El listado no muestra correos de Coordinaciones.
 - La columna `Integración`, con los estados resumidos de Calendar y correo, se renderiza únicamente cuando el perfil canónico autenticado tiene rol `admin`; para `usuario` no existe encabezado, celda ni texto equivalente en el DOM.
-- La columna `Acciones` ofrece `Ver detalle` a todo usuario autorizado. Si el registro pertenece al solicitante y no está cancelado, ofrece además acceso directo a `Editar evento` y `Cancelar evento`, sin exigir abrir primero el detalle.
+- La columna `Acciones` ofrece `Ver detalle` a todo usuario autorizado. Si el registro pertenece al solicitante y no está cancelado, ofrece acceso directo a `Editar evento`. `Cancelar evento` solo aparece para el propietario mientras no esté finalizado ni cancelado, sin exigir abrir primero el detalle.
 - El detalle muestra nombres de coordinaciones, incluso si después fueron suspendidas o renombradas.
 - `getEventDetail` entrega los IDs y cantidades necesarios para editar, además de una proyección logística sanitizada; no expone correos, configuración, claves idempotentes, leases o controles.
 - No muestra `notificacionesEventos`, claves idempotentes, errores SMTP ni listas de destinatarios.
@@ -333,6 +332,7 @@ unauthenticated
 permission-denied
 event-not-found
 event-cancelled
+event-finished
 coordination-not-found
 coordination-inactive
 equipment-not-found
@@ -421,6 +421,43 @@ service-unavailable
 
 - El ID canónico de la Coordinación de Sistemas, los secretos, la lista fija y la autorización dinámica están configurados en staging.
 - El ciclo real de Calendar/SMTP, reservaciones, logística, roles y aceptación visual quedó confirmado el 3 de octubre de 2026.
-- Completar los recorridos administrativos pendientes de Coordinaciones, Campus y Equipos; su aceptación visual ya está cerrada.
+- Los recorridos administrativos de Coordinaciones, Campus y Equipos fueron aceptados el 27 de octubre; conservar esa evidencia histórica y validar el incremento posterior de consistencia.
 - Confirmar cuotas aplicables de Calendar, SMTP y Functions y observar workers, limpieza y TTL con carga representativa.
 - Mantener el backfill como operación explícita; staging o producción requieren autorización separada para ejecutarlo.
+
+## Correcciones de consistencia publicadas en staging — 27 de octubre de 2026
+
+Disponibilidad por pico simultáneo, demoras estrictamente extensivas, Calendar con identidad determinista y resumen SMTP vinculado a la revisión vigente, conforme a reservaciones.md e integraciones.md. La reducción administrativa de inventario encola avisos de Sistemas sin modificar fechas o cantidades de eventos. Este incremento fue desplegado únicamente a staging el 27 de octubre de 2026.
+
+## Segundo incremento publicado en staging
+
+Serialización y versión vigente de Calendar (RN-083), recepción por etapa logística (RN-RES-025) y avisos de retiro por transición (RN-084), conforme a integraciones.md, modelo-datos.md y reservaciones.md. Desplegado en staging el 27 de octubre de 2026; verificación técnica aprobada y aceptación funcional confirmada por el responsable el 28 de octubre de 2026.
+
+## Acceso, consultas y catálogos publicados en staging — 27 de octubre de 2026
+
+- EVT-116: syncUpdatedEventIntegrations valida sesión, claims y perfil canónico antes de consultar el evento. Valida ID documental, propiedad o rol administrador antes de comparar revisionEsperada; un solicitante no autorizado no recibe información de revisión. Conserva contratos y permisos vigentes.
+- EVT-117: listado, búsqueda, calendario y detalle aceptan únicamente la última solicitud vigente de su ámbito. Respuestas, errores y finalizaciones anteriores no reemplazan datos ni estados de carga actuales. Escribir un nuevo término invalida inmediatamente la consulta anterior, incluso durante debounce o con un carácter. Cerrar detalle o destruir la vista invalida las solicitudes pendientes.
+- EVT-118: el detalle del calendario no se reabre después de cerrar ni reemplaza una selección posterior. Clic y teclado usan la misma protección; destruir la vista impide aplicar respuestas pendientes.
+- EVT-119: separar listado y catálogos sanitizados. Cargar catálogos una vez por instancia de la vista y compartir una solicitud concurrente; buscar, paginar y recargar tras mutaciones solo consultan eventos. Actualizar catálogos al abrir creación/edición, conservando la selección capturada; al salir y entrar a la ruta se cargan otra vez. Un fallo permite reintentar, no descarta el listado correcto ni se guarda como carga exitosa. No hay caché persistente ni cambio de disponibilidad: backend sigue validando la confirmación.
+
+Las cuatro correcciones fueron desplegadas con autorización expresa únicamente a staging el 27 de octubre de 2026. Se actualizaron syncUpdatedEventIntegrations y Hosting; la verificación técnica remota aprobó. Aceptación funcional confirmada por el responsable el 28 de octubre de 2026. No cambia el modelo de datos, Rules, índices, secretos ni primitivas visuales.
+
+## EVT-120 — Disponibilidad con error recuperable dentro del formulario
+
+- Un rechazo de disponibilidad se muestra dentro del modal, junto a Equipamiento, con mensaje funcional y acción `Reintentar disponibilidad`; no se presenta como una consulta todavía pendiente ni como inventario agotado.
+- La espera de una consulta se limita a 20 segundos en la facade. Al vencer se abandona su resultado, se termina la carga y se permite reintentar. Una respuesta tardía no sustituye el estado de una consulta posterior.
+- Un fallo de actualización invalida la previsualización anterior: no permite guardar usando disponibilidad obsoleta. Guardar siempre mantiene la validación transaccional del backend.
+- Cambiar el contexto, cerrar el modal o destruir la vista invalida la consulta pendiente y limpia su temporizador. Sin campus, fechas u horas completos, la interfaz indica qué completar.
+- El monitor de 30 segundos y la actualización al recuperar foco se conservan. Se usan alertas y botones del sistema de diseño sin variantes nuevas.
+- Publicado únicamente en Hosting de staging el 27 de octubre de 2026, con 96 pruebas Angular aprobadas, lint, guardia visual, build y coincidencia remota de los 20 archivos. Aceptación visual autenticada pendiente. EVT-120 no modifica Functions, Rules, índices, secretos ni datos; la reparación SMTP independiente está documentada en `integraciones.md`.
+
+## EVT-121 — Impedir la cancelación de eventos finalizados
+
+Regla solicitada por el responsable el 28 de octubre de 2026 tras aceptar las doce validaciones anteriores en staging.
+
+- Desde el instante de fin, incluido el límite exacto, el evento no admite cancelación. Se usa el fin canónico y la hora del servidor; los datos históricos con fechas locales válidas se interpretan en `America/Cancun` sin persistir un backfill. Si no puede determinarse el fin, se rechaza con `invalid-date-range`; un histórico explícitamente finalizado tampoco puede cancelarse.
+- `cancelEvent` revalida propiedad y fin dentro de la transacción, tomando la hora del servidor después de las lecturas y antes de escribir, también en cada reintento. Devuelve `event-finished` / `failed-precondition` con el mensaje «El evento ya finalizó y no se puede cancelar». El rechazo conserva evento, reservas, controles, PDF y estados de integración; no encola correos ni modifica Calendar.
+- Una cancelación previamente aplicada sigue siendo idempotente aunque después pase la fecha de fin. Los eventos programados o en ejecución conservan su regla de cancelación por el creador.
+- Listado de escritorio y móvil, detalle y confirmación ocultan la acción al finalizar. Una confirmación abierta informa que ya no puede cancelarse y permite cerrarla. El refresco temporal incluye el detalle abierto, aunque el evento no esté en la página actual; backend conserva la última autoridad ante pantallas antiguas.
+- Los permisos de edición y las operaciones logísticas administrativas conservan sus contratos. No se agregan campos, colecciones, Functions ni estilos locales.
+- Estado al 28 de octubre de 2026: implementado y publicado con autorización expresa únicamente en staging mediante Hosting y cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`). Regresión previa: 257 pruebas aprobadas (102 Angular, 108 Functions y 47 Firestore Emulator), lint/guardia visual y builds correctos. Verificación remota: cuatro Functions `ACTIVE`, 20 archivos coincidentes con el build y rechazo anónimo `401`. Queda pendiente la aceptación funcional autenticada de EVT-121; no se modificaron datos de eventos ni producción. Evidencia exacta en `../matriz-trazabilidad.md`.

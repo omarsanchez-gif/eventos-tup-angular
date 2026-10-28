@@ -2,7 +2,7 @@
 
 ## Estado
 
-El catálogo fue implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. Reservaciones, disponibilidad y operación logística fueron autorizadas después mediante ADR-009, se integraron con Eventos y están desplegadas únicamente a staging. El 3 de octubre se aceptaron la presentación visual, accesibilidad, concurrencia, disponibilidad, traslados, cobertura, recepción, demora y cancelación posterior a traslado. El recorrido administrativo completo del catálogo conserva seguimiento separado; producción no está autorizada.
+El catálogo fue implementado, validado y desplegado únicamente a staging desde el 21 de agosto de 2026. Reservaciones, disponibilidad y operación logística fueron autorizadas después mediante ADR-009, se integraron con Eventos y están desplegadas únicamente a staging. El 3 de octubre se aceptaron la presentación visual, accesibilidad, concurrencia, disponibilidad, traslados, cobertura, recepción, demora y cancelación posterior a traslado. El 27 de octubre de 2026 el responsable aceptó el recorrido administrativo completo del catálogo, incluidas las restricciones de clasificación, destinos, uso y eliminación condicionada. Producción no está autorizada.
 
 ## Objetivo
 
@@ -216,5 +216,15 @@ service-unavailable
 - TUP y FCS están capturados en staging con horarios canónicos.
 - El inventario utilizado en las pruebas representa unidades operativas y los traslados vigentes son TUP → FCS.
 - La logística y el recorrido visual/accesible/responsive quedaron aceptados el 3 de octubre de 2026.
-- El recorrido administrativo exhaustivo del catálogo conserva seguimiento separado.
+- El recorrido administrativo exhaustivo del catálogo fue aceptado por el responsable el 27 de octubre de 2026.
 - Cualquier despliegue posterior y toda promoción a producción requieren autorización independiente.
+
+## Corrección de inventario publicada en staging — 27 de octubre de 2026
+
+updateEquipment implementa la reducción transaccional, el límite seguro y la bandeja logística definidos en reservaciones.md. No devuelve éxito si falta la información necesaria para encolar avisos. La cantidad aumentada no retira revisiones administrativas de forma implícita. Esta corrección fue desplegada únicamente a staging el 27 de octubre de 2026.
+
+La interfaz conserva el formulario y presenta un mensaje específico para reservation-review-required: la reducción no se guardó y deben revisarse reservas y configuración de Sistemas antes de reintentar. No cambia el diseño visual.
+
+## Segundo incremento publicado en staging
+
+Serialización y versión vigente de Calendar (RN-083), recepción por etapa logística (RN-RES-025) y avisos de retiro por transición (RN-084), conforme a integraciones.md, modelo-datos.md y reservaciones.md. Desplegado en staging el 27 de octubre de 2026; verificación técnica aprobada y aceptación funcional autenticada pendiente.

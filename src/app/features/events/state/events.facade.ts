@@ -33,6 +33,7 @@ export class EventsFacade implements OnDestroy {
   private readonly loadingState = signal(false);
   private readonly mutatingState = signal(false);
   private readonly availabilityLoadingState = signal(false);
+  private readonly availabilityErrorState = signal<string | null>(null);
   private readonly availabilityState = signal<EventAvailabilityResult | null>(null);
   private readonly errorState = signal<string | null>(null);
   private readonly noticeState = signal<string | null>(null);
@@ -42,6 +43,14 @@ export class EventsFacade implements OnDestroy {
   private readonly detailLoadingState = signal(false);
   private readonly actionLoadingState = signal<string | null>(null);
   private requestVersion = 0;
+  private cancelAvailabilityRequest: (() => void) | null = null;
+  private listVersion = 0;
+  private calendarVersion = 0;
+  private detailVersion = 0;
+  private destroyed = false;
+  private catalogsLoaded = false;
+  private catalogsRequest: Promise<void> | null = null;
+  private readonly catalogErrorState = signal<string | null>(null);
   private serverClockOffsetMs: number | null = null;
   private temporalTimer: ReturnType<typeof setTimeout> | null = null;
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -57,8 +66,9 @@ export class EventsFacade implements OnDestroy {
   readonly loading = this.loadingState.asReadonly();
   readonly mutating = this.mutatingState.asReadonly();
   readonly availabilityLoading = this.availabilityLoadingState.asReadonly();
+  readonly availabilityError = this.availabilityErrorState.asReadonly();
   readonly availability = this.availabilityState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  readonly error = computed(() => this.errorState() ?? this.catalogErrorState());
   readonly notice = this.noticeState.asReadonly();
   readonly calendarItems = this.calendarItemsState.asReadonly();
   readonly calendarLoading = this.calendarLoadingState.asReadonly();
@@ -71,39 +81,72 @@ export class EventsFacade implements OnDestroy {
   );
 
   async load(): Promise<void> {
+    await Promise.all([this.loadRecords(), this.loadCatalogs()]);
+  }
+
+  loadCatalogs(refresh = false): Promise<void> {
+    if (this.destroyed) return Promise.resolve();
+    if (this.catalogsRequest) return this.catalogsRequest;
+    if (this.catalogsLoaded && !refresh) return Promise.resolve();
+    this.catalogErrorState.set(null);
+    this.catalogsRequest = Promise.all([
+      this.campusesGateway.listSelectable(),
+      this.coordinationsGateway.listSelectable(),
+      this.equipmentGateway.listSelectable(),
+    ])
+      .then(([campuses, coordinations, equipment]) => {
+        if (this.destroyed) return;
+        this.campusesState.set(campuses.items);
+        this.coordinationsState.set(coordinations.items);
+        this.equipmentState.set(equipment.items);
+        this.catalogsLoaded = true;
+      })
+      .catch((error: unknown) => {
+        if (this.destroyed) return;
+        this.catalogsLoaded = false;
+        this.catalogErrorState.set(mapEventsError(error));
+      })
+      .finally(() => {
+        this.catalogsRequest = null;
+      });
+    return this.catalogsRequest;
+  }
+
+  async loadRecords(): Promise<void> {
+    if (this.destroyed) return;
+    const version = ++this.listVersion;
     this.loadingState.set(true);
     this.errorState.set(null);
     try {
       const cursor = this.cursorStackState()[this.pageState() - 1] ?? null;
-      const [events, campuses, coordinations, equipment] = await Promise.all([
-        this.gateway.list(cursor, this.backendSearch()),
-        this.campusesGateway.listSelectable(),
-        this.coordinationsGateway.listSelectable(),
-        this.equipmentGateway.listSelectable(),
-      ]);
+      const events = await this.gateway.list(cursor, this.backendSearch());
+      if (version !== this.listVersion) return;
       this.synchronizeServerClock(events.serverNow);
       this.recordsState.set(this.withTemporalStatuses(events.items));
       this.scheduleTemporalRefresh();
       this.nextCursorState.set(events.nextCursor);
-      this.campusesState.set(campuses.items);
-      this.coordinationsState.set(coordinations.items);
-      this.equipmentState.set(equipment.items);
     } catch (error) {
-      this.errorState.set(mapEventsError(error));
+      if (version === this.listVersion) this.errorState.set(mapEventsError(error));
     } finally {
-      this.loadingState.set(false);
+      if (version === this.listVersion) this.loadingState.set(false);
     }
   }
 
   search(term: string): void {
+    if (this.destroyed) return;
+    this.listVersion += 1;
+    this.loadingState.set(false);
+    this.recordsState.set([]);
+    this.errorState.set(null);
     const normalized = term.trim().replace(/\s+/gu, ' ');
+    this.loadingState.set(normalized.length !== 1);
     this.searchState.set(normalized);
     this.pageState.set(1);
     this.cursorStackState.set([null]);
     this.nextCursorState.set(null);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     if (normalized.length === 1) return;
-    this.searchTimer = setTimeout(() => void this.load(), 300);
+    this.searchTimer = setTimeout(() => void this.loadRecords(), 300);
   }
 
   async nextPage(): Promise<void> {
@@ -113,37 +156,62 @@ export class EventsFacade implements OnDestroy {
     stack[this.pageState()] = cursor;
     this.cursorStackState.set(stack);
     this.pageState.update((page) => page + 1);
-    await this.load();
+    await this.loadRecords();
   }
 
   async previousPage(): Promise<void> {
     if (this.pageState() <= 1 || this.loadingState()) return;
     this.pageState.update((page) => page - 1);
-    await this.load();
+    await this.loadRecords();
   }
 
   async checkAvailability(
     input: EventAvailabilityInput,
     preserveCurrent = false,
   ): Promise<boolean> {
+    if (this.destroyed) return false;
     const version = ++this.requestVersion;
+    this.cancelAvailabilityRequest?.();
     this.availabilityLoadingState.set(true);
+    this.availabilityErrorState.set(null);
     if (!preserveCurrent) this.availabilityState.set(null);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timeout = setTimeout(
+        () =>
+          reject(
+            Object.assign(new Error('availability-timeout'), { code: 'availability-timeout' }),
+          ),
+        20_000,
+      );
+      this.cancelAvailabilityRequest = () => reject(new Error('availability-cancelled'));
+    });
     try {
-      const result = await this.gateway.checkAvailability(input);
-      if (version === this.requestVersion) this.availabilityState.set(result);
+      const result = await Promise.race([this.gateway.checkAvailability(input), deadline]);
+      if (version !== this.requestVersion) return false;
+      this.availabilityState.set(result);
       return result.confirmable;
     } catch (error) {
-      if (version === this.requestVersion) this.errorState.set(mapEventsError(error));
+      if (version === this.requestVersion) {
+        this.availabilityState.set(null);
+        this.availabilityErrorState.set(mapEventsError(error));
+      }
       return false;
     } finally {
-      if (version === this.requestVersion) this.availabilityLoadingState.set(false);
+      if (timeout) clearTimeout(timeout);
+      if (version === this.requestVersion) {
+        this.cancelAvailabilityRequest = null;
+        this.availabilityLoadingState.set(false);
+      }
     }
   }
 
   invalidateAvailability(): void {
     this.requestVersion += 1;
+    this.cancelAvailabilityRequest?.();
+    this.cancelAvailabilityRequest = null;
     this.availabilityState.set(null);
+    this.availabilityErrorState.set(null);
     this.availabilityLoadingState.set(false);
   }
 
@@ -165,7 +233,7 @@ export class EventsFacade implements OnDestroy {
       this.noticeState.set(this.integrationNotice('Evento guardado.', result));
       this.pageState.set(1);
       this.cursorStackState.set([null]);
-      await this.load();
+      await this.loadRecords();
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -176,22 +244,31 @@ export class EventsFacade implements OnDestroy {
   }
 
   async loadDetail(eventId: string): Promise<EventDetail | null> {
+    if (this.destroyed) return null;
+    const version = ++this.detailVersion;
+    this.detailState.set(null);
     this.detailLoadingState.set(true);
     this.errorState.set(null);
     try {
       const detail = await this.gateway.detail(eventId);
-      this.detailState.set(detail);
-      return detail;
+      if (version !== this.detailVersion) return null;
+      const current = this.withTemporalDetail(detail);
+      this.detailState.set(current);
+      this.scheduleTemporalRefresh();
+      return current;
     } catch (error) {
+      if (version !== this.detailVersion) return null;
       this.errorState.set(mapEventsError(error));
       this.detailState.set(null);
       return null;
     } finally {
-      this.detailLoadingState.set(false);
+      if (version === this.detailVersion) this.detailLoadingState.set(false);
     }
   }
 
   clearDetail(): void {
+    this.detailVersion += 1;
+    this.detailLoadingState.set(false);
     this.detailState.set(null);
   }
 
@@ -214,7 +291,7 @@ export class EventsFacade implements OnDestroy {
         protocoloNombre: replacement?.name ?? currentProtocol.name,
       });
       this.noticeState.set(this.integrationNotice('Evento actualizado.', result));
-      await Promise.all([this.load(), this.loadDetail(eventId)]);
+      await Promise.all([this.loadRecords(), this.loadDetail(eventId)]);
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -231,8 +308,8 @@ export class EventsFacade implements OnDestroy {
     try {
       const result = await this.gateway.cancel(eventId);
       this.noticeState.set(this.integrationNotice('Evento cancelado.', result));
-      await this.load();
-      this.detailState.set(await this.gateway.detail(eventId));
+      await this.loadRecords();
+      await this.loadDetail(eventId);
       return true;
     } catch (error) {
       this.errorState.set(mapEventsError(error));
@@ -246,7 +323,7 @@ export class EventsFacade implements OnDestroy {
     await this.runAction(`reconcile:${eventId}`, async () => {
       const result = await this.gateway.reconcile(eventId);
       this.noticeState.set(this.integrationNotice('Reconciliación ejecutada.', result));
-      await Promise.all([this.load(), this.loadDetail(eventId)]);
+      await Promise.all([this.loadRecords(), this.loadDetail(eventId)]);
     });
   }
 
@@ -275,22 +352,28 @@ export class EventsFacade implements OnDestroy {
   }
 
   async loadCalendar(start: string, end: string, campusId: string | null): Promise<void> {
+    if (this.destroyed) return;
+    const version = ++this.calendarVersion;
+    this.calendarItemsState.set([]);
     this.calendarLoadingState.set(true);
     this.errorState.set(null);
     try {
       const result = await this.gateway.listCalendar({ inicio: start, fin: end, campusId });
+      if (version !== this.calendarVersion) return;
       this.synchronizeServerClock(result.serverNow);
       this.calendarItemsState.set(this.withTemporalStatuses(result.items));
       this.scheduleTemporalRefresh();
     } catch (error) {
+      if (version !== this.calendarVersion) return;
       this.errorState.set(mapEventsError(error));
       this.calendarItemsState.set([]);
     } finally {
-      this.calendarLoadingState.set(false);
+      if (version === this.calendarVersion) this.calendarLoadingState.set(false);
     }
   }
 
   clearError(): void {
+    this.catalogErrorState.set(null);
     this.errorState.set(null);
   }
 
@@ -299,6 +382,11 @@ export class EventsFacade implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.listVersion += 1;
+    this.calendarVersion += 1;
+    this.detailVersion += 1;
+    this.invalidateAvailability();
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
     if (this.searchTimer) clearTimeout(this.searchTimer);
   }
@@ -348,7 +436,7 @@ export class EventsFacade implements OnDestroy {
     return this.serverClockOffsetMs === null ? null : Date.now() + this.serverClockOffsetMs;
   }
 
-  private withTemporalStatuses(items: readonly EventSummary[]): readonly EventSummary[] {
+  private withTemporalStatuses<T extends EventSummary>(items: readonly T[]): readonly T[] {
     const now = this.currentServerTime();
     if (now === null) return items;
     return items.map((item) => {
@@ -361,12 +449,26 @@ export class EventsFacade implements OnDestroy {
     });
   }
 
+  private withTemporalDetail(detail: EventDetail): EventDetail {
+    const current = this.withTemporalStatuses([detail])[0]!;
+    return {
+      ...current,
+      canCancel:
+        current.canCancel && current.status !== 'finalizado' && current.status !== 'cancelado',
+    };
+  }
+
   private scheduleTemporalRefresh(): void {
     if (this.temporalTimer) clearTimeout(this.temporalTimer);
     this.temporalTimer = null;
     const now = this.currentServerTime();
     if (now === null) return;
-    const boundaries = [...this.recordsState(), ...this.calendarItemsState()]
+    const detail = this.detailState();
+    const boundaries = [
+      ...this.recordsState(),
+      ...this.calendarItemsState(),
+      ...(detail ? [detail] : []),
+    ]
       .filter((item) => item.status !== 'cancelado')
       .flatMap((item) => [item.start, item.end])
       .map((value) => (value ? Date.parse(value) : Number.NaN))
@@ -383,6 +485,7 @@ export class EventsFacade implements OnDestroy {
   private refreshTemporalStatuses(): void {
     this.recordsState.update((items) => this.withTemporalStatuses(items));
     this.calendarItemsState.update((items) => this.withTemporalStatuses(items));
+    this.detailState.update((detail) => (detail ? this.withTemporalDetail(detail) : null));
     this.scheduleTemporalRefresh();
   }
 }

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CAMPUSES_GATEWAY, type CampusesGateway } from '../../campuses/data/campuses.gateway';
 import {
@@ -9,6 +9,16 @@ import {
 import { EQUIPMENT_GATEWAY, type EquipmentGateway } from '../../equipment/data/equipment.gateway';
 import { EVENTS_GATEWAY, type EventsGateway } from '../data/events.gateway';
 import { EventsFacade } from './events.facade';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
 
 const summary = {
   eventId: 'event-1',
@@ -51,6 +61,15 @@ const detail = {
   reservations: [],
   canEdit: true,
   canCancel: true,
+};
+
+const availabilityInput = {
+  campusId: 'tup',
+  fechaInicio: '2026-10-06',
+  horaInicio: '12:00',
+  fechaFin: '2026-10-06',
+  horaFin: '14:00',
+  equiposSolicitados: [{ equipoId: 'speaker', cantidad: 1 }],
 };
 
 describe('EventsFacade', () => {
@@ -188,6 +207,61 @@ describe('EventsFacade', () => {
     expect(facade.availability()?.items[0]?.available).toBe(2);
   });
 
+  it('expone el rechazo de disponibilidad y descarta el resultado conservado del refresco', async () => {
+    await facade.checkAvailability(availabilityInput);
+    vi.mocked(eventsGateway.checkAvailability).mockRejectedValueOnce({
+      details: { functionalCode: 'invalid-date-range' },
+    });
+    await expect(facade.checkAvailability(availabilityInput, true)).resolves.toBe(false);
+    expect(facade.availability()).toBeNull();
+    expect(facade.availabilityLoading()).toBe(false);
+    expect(facade.availabilityError()).toBe('Revise las fechas y horarios del evento.');
+    await expect(facade.checkAvailability(availabilityInput)).resolves.toBe(true);
+    expect(facade.availabilityError()).toBeNull();
+  });
+
+  it('termina la espera a los 20 segundos y descarta una respuesta tardía después del reintento', async () => {
+    vi.useFakeTimers();
+    try {
+      const result = await eventsGateway.checkAvailability(availabilityInput);
+      const oldRequest = deferred<typeof result>();
+      vi.mocked(eventsGateway.checkAvailability).mockReturnValueOnce(oldRequest.promise);
+      const waiting = facade.checkAvailability(availabilityInput);
+      await vi.advanceTimersByTimeAsync(20_000);
+      await expect(waiting).resolves.toBe(false);
+      expect(facade.availabilityLoading()).toBe(false);
+      expect(facade.availabilityError()).toContain('tardó demasiado');
+      await facade.checkAvailability(availabilityInput);
+      oldRequest.resolve({ ...result, confirmable: false, items: [] });
+      await Promise.resolve();
+      expect(facade.availability()?.confirmable).toBe(true);
+      expect(facade.availabilityError()).toBeNull();
+    } finally {
+      facade.ngOnDestroy();
+      vi.useRealTimers();
+    }
+  });
+
+  it('invalida una consulta al cerrar sin conservar carga, errores tardíos ni temporizadores', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = deferred<Awaited<ReturnType<EventsGateway['checkAvailability']>>>();
+      vi.mocked(eventsGateway.checkAvailability).mockReturnValueOnce(pending.promise);
+      const waiting = facade.checkAvailability(availabilityInput);
+      facade.invalidateAvailability();
+      await expect(waiting).resolves.toBe(false);
+      pending.reject({ code: 'functions/unavailable' });
+      await Promise.resolve();
+      expect(facade.availability()).toBeNull();
+      expect(facade.availabilityError()).toBeNull();
+      expect(facade.availabilityLoading()).toBe(false);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      facade.ngOnDestroy();
+      vi.useRealTimers();
+    }
+  });
+
   it('carga PDF antes de invocar la creación y refresca la primera página', async () => {
     await facade.load();
     const file = new File(['pdf'], 'protocol.pdf', { type: 'application/pdf' });
@@ -248,5 +322,169 @@ describe('EventsFacade', () => {
       facade.ngOnDestroy();
       vi.useRealTimers();
     }
+  });
+
+  afterEach(() => {
+    facade.ngOnDestroy();
+    vi.useRealTimers();
+  });
+
+  it('retira canCancel al finalizar el detalle abierto fuera del listado, con reloj cliente adelantado', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
+    vi.mocked(eventsGateway.list).mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      serverNow: '2026-10-06T18:59:59.000Z',
+    });
+    await facade.loadRecords();
+    await facade.loadDetail(summary.eventId);
+    expect(facade.detail()).toMatchObject({ status: 'en_ejecucion', canCancel: true });
+    await vi.advanceTimersByTimeAsync(1001);
+    expect(facade.detail()).toMatchObject({
+      status: 'finalizado',
+      canCancel: false,
+      canEdit: true,
+    });
+    expect(eventsGateway.cancel).not.toHaveBeenCalled();
+  });
+
+  it('presenta el rechazo de backend al cancelar un evento que ya finalizó', async () => {
+    vi.mocked(eventsGateway.cancel).mockRejectedValue({
+      details: { functionalCode: 'event-finished' },
+    });
+    expect(await facade.cancel(summary.eventId)).toBe(false);
+    expect(facade.error()).toBe('El evento ya finalizó y no se puede cancelar.');
+    expect(facade.notice()).toBeNull();
+  });
+
+  it.each(['listado', 'calendario'])(
+    'descarta respuesta antigua de %s y conserva el resultado vigente',
+    async (scope) => {
+      const old = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+      const latest = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+      const gateway = scope === 'listado' ? eventsGateway.list : eventsGateway.listCalendar;
+      vi.mocked(gateway).mockReturnValueOnce(old.promise).mockReturnValueOnce(latest.promise);
+      const load = () =>
+        scope === 'listado' ? facade.loadRecords() : facade.loadCalendar('a', 'b', null);
+      const first = load();
+      const second = load();
+      latest.resolve({ items: [{ ...summary, name: 'Vigente' }], nextCursor: null, serverNow: '' });
+      await second;
+      old.resolve({ items: [{ ...summary, name: 'Antiguo' }], nextCursor: 'old', serverNow: '' });
+      await first;
+      expect((scope === 'listado' ? facade.records() : facade.calendarItems())[0]?.name).toBe(
+        'Vigente',
+      );
+      expect(facade.hasNextPage()).toBe(false);
+    },
+  );
+  it.each(['listado', 'calendario'])(
+    'ignora error anterior de %s sin finalizar la consulta vigente',
+    async (scope) => {
+      const old = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+      const latest = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+      vi.mocked(scope === 'listado' ? eventsGateway.list : eventsGateway.listCalendar)
+        .mockReturnValueOnce(old.promise)
+        .mockReturnValueOnce(latest.promise);
+      const load = () =>
+        scope === 'listado' ? facade.loadRecords() : facade.loadCalendar('a', 'b', null);
+      const first = load();
+      const second = load();
+      old.reject(new Error('antiguo'));
+      await first;
+      expect(facade.error()).toBeNull();
+      expect(scope === 'listado' ? facade.loading() : facade.calendarLoading()).toBe(true);
+      latest.resolve({ items: [], nextCursor: null, serverNow: '' });
+      await second;
+    },
+  );
+  it.each(['a', 'nuevo'])(
+    'invalida búsqueda anterior inmediatamente al escribir %s',
+    async (term) => {
+      vi.useFakeTimers();
+      const pending = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+      vi.mocked(eventsGateway.list).mockReturnValueOnce(pending.promise);
+      const first = facade.loadRecords();
+      facade.search(term);
+      pending.resolve({ items: [summary], nextCursor: 'old', serverNow: '' });
+      await first;
+      expect(facade.records()).toEqual([]);
+      expect(facade.hasNextPage()).toBe(false);
+      expect(eventsGateway.list).toHaveBeenCalledTimes(1);
+    },
+  );
+  it('descarta detalles anteriores y sus errores', async () => {
+    const old = deferred<typeof detail>();
+    const latest = deferred<typeof detail>();
+    vi.mocked(eventsGateway.detail)
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(latest.promise);
+    const first = facade.loadDetail('a');
+    const second = facade.loadDetail('b');
+    old.reject(new Error('old'));
+    await expect(first).resolves.toBeNull();
+    expect(facade.error()).toBeNull();
+    expect(facade.detailLoading()).toBe(true);
+    latest.resolve({ ...detail, eventId: 'b' });
+    await second;
+    expect(facade.detail()?.eventId).toBe('b');
+  });
+  it('cerrar detalle invalida su respuesta pendiente', async () => {
+    const pending = deferred<typeof detail>();
+    vi.mocked(eventsGateway.detail).mockReturnValueOnce(pending.promise);
+    const call = facade.loadDetail('a');
+    facade.clearDetail();
+    pending.resolve(detail);
+    await expect(call).resolves.toBeNull();
+    expect(facade.detail()).toBeNull();
+    expect(facade.detailLoading()).toBe(false);
+  });
+  it('no aplica respuestas al destruir la vista', async () => {
+    const pending = deferred<Awaited<ReturnType<EventsGateway['list']>>>();
+    vi.mocked(eventsGateway.list).mockReturnValueOnce(pending.promise);
+    const call = facade.loadRecords();
+    facade.ngOnDestroy();
+    pending.resolve({ items: [summary], nextCursor: null, serverNow: '' });
+    await call;
+    expect(facade.records()).toEqual([]);
+  });
+  it('búsqueda, paginación y recarga del listado no vuelven a consultar catálogos', async () => {
+    vi.useFakeTimers();
+    await facade.load();
+    await facade.nextPage();
+    await facade.previousPage();
+    facade.search('omar');
+    await vi.advanceTimersByTimeAsync(301);
+    await facade.loadRecords();
+    for (const token of [CAMPUSES_GATEWAY, COORDINATIONS_GATEWAY, EQUIPMENT_GATEWAY]) {
+      expect(TestBed.inject(token).listSelectable).toHaveBeenCalledTimes(1);
+    }
+    await facade.loadCatalogs(true);
+    for (const token of [CAMPUSES_GATEWAY, COORDINATIONS_GATEWAY, EQUIPMENT_GATEWAY]) {
+      expect(TestBed.inject(token).listSelectable).toHaveBeenCalledTimes(2);
+    }
+  });
+  it('comparte una carga de catálogos concurrente', async () => {
+    const pending = deferred<Awaited<ReturnType<CampusesGateway['listSelectable']>>>();
+    const gateway = TestBed.inject(CAMPUSES_GATEWAY);
+    vi.mocked(gateway.listSelectable).mockReturnValueOnce(pending.promise);
+    const first = facade.loadCatalogs();
+    const second = facade.loadCatalogs(true);
+    expect(first).toBe(second);
+    expect(gateway.listSelectable).toHaveBeenCalledTimes(1);
+    pending.resolve({ items: [], total: 0 });
+    await first;
+  });
+  it('fallo de catálogos conserva listado y permite reintento', async () => {
+    const gateway = TestBed.inject(CAMPUSES_GATEWAY);
+    vi.mocked(gateway.listSelectable).mockRejectedValueOnce(new Error('unavailable'));
+    await facade.load();
+    expect(facade.records()).toEqual([summary]);
+    expect(facade.error()).not.toBeNull();
+    await facade.loadCatalogs();
+    expect(gateway.listSelectable).toHaveBeenCalledTimes(2);
+    expect(facade.error()).toBeNull();
+    expect(facade.campuses()).toHaveLength(1);
   });
 });

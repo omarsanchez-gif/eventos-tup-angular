@@ -4,6 +4,7 @@ import {
   Component,
   HostListener,
   OnInit,
+  OnDestroy,
   computed,
   inject,
   signal,
@@ -34,11 +35,12 @@ interface CalendarEventMountInfo {
   styleUrl: './events-calendar-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EventsCalendarPage implements OnInit {
+export class EventsCalendarPage implements OnInit, OnDestroy {
   protected readonly events = inject(EventsFacade);
   protected readonly selectedEvent = signal<EventSummary | null>(null);
   protected readonly campusFilter = signal<string | null>(null);
   protected readonly statusFilter = signal<EventTemporalStatus | null>(null);
+  private selectionVersion = 0;
   private readonly visibleRange = signal<{ start: string; end: string } | null>(null);
   private readonly visibleItems = computed(() => {
     const status = this.statusFilter();
@@ -84,7 +86,7 @@ export class EventsCalendarPage implements OnInit {
   }));
 
   ngOnInit(): void {
-    void this.events.load();
+    void this.events.loadCatalogs();
   }
 
   protected campusChanged(event: Event): void {
@@ -97,7 +99,12 @@ export class EventsCalendarPage implements OnInit {
     this.statusFilter.set(value ? (value as EventTemporalStatus) : null);
   }
 
+  ngOnDestroy(): void {
+    this.closeDetail();
+  }
+
   protected closeDetail(): void {
+    this.selectionVersion += 1;
     this.selectedEvent.set(null);
     this.events.clearDetail();
   }
@@ -150,12 +157,15 @@ export class EventsCalendarPage implements OnInit {
 
   private eventClicked(info: EventClickInfo): void {
     const event = this.events.calendarItems().find((item) => item.eventId === info.event.id);
-    if (event) {
-      this.selectedEvent.set(event);
-      void this.events.loadDetail(event.eventId).then((detail) => {
-        if (detail) this.selectedEvent.set(detail);
-      });
-    }
+    if (event) this.openEventDetail(event);
+  }
+
+  private openEventDetail(event: EventSummary): void {
+    const version = ++this.selectionVersion;
+    this.selectedEvent.set(event);
+    void this.events.loadDetail(event.eventId).then((detail) => {
+      if (version === this.selectionVersion && detail) this.selectedEvent.set(detail);
+    });
   }
 
   private decorateEvent(info: CalendarEventMountInfo): void {
@@ -169,10 +179,7 @@ export class EventsCalendarPage implements OnInit {
     info.el.addEventListener('keydown', (keyboardEvent) => {
       if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
         keyboardEvent.preventDefault();
-        this.selectedEvent.set(event);
-        void this.events.loadDetail(event.eventId).then((detail) => {
-          if (detail) this.selectedEvent.set(detail);
-        });
+        this.openEventDetail(event);
       }
     });
   }

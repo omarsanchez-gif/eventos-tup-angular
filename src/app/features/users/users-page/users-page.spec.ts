@@ -161,4 +161,52 @@ describe('UsersPage', () => {
       element.querySelector(`#${ownDelete?.getAttribute('aria-describedby')}`)?.textContent?.trim(),
     ).toBe('No puede eliminar su propio registro');
   });
+
+  it('edits, changes status and deletes through their confirmation flows', async () => {
+    const element = fixture.nativeElement as HTMLElement;
+
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Editar a Persona Usuaria"]')
+      ?.click();
+    fixture.detectChanges();
+    const name = element.querySelector<HTMLInputElement>('#user-name')!;
+    name.value = 'Persona Editada';
+    name.dispatchEvent(new Event('input', { bubbles: true }));
+    element
+      .querySelector<HTMLFormElement>('.users-dialog form')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+    expect(gateway.update).toHaveBeenCalledWith(
+      expect.objectContaining({ documentId: 'user-document', nombre: 'Persona Editada' }),
+    );
+
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Desactivar a Persona Usuaria"]')
+      ?.click();
+    fixture.detectChanges();
+    Array.from(element.querySelectorAll<HTMLButtonElement>('.users-dialog .button'))
+      .find((button) => button.textContent?.includes('Desactivar'))
+      ?.click();
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+    expect(gateway.setStatus).toHaveBeenCalledWith({
+      documentId: 'user-document',
+      activo: false,
+    });
+
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Eliminar a Persona Usuaria"]')
+      ?.click();
+    fixture.detectChanges();
+    Array.from(element.querySelectorAll<HTMLButtonElement>('.users-dialog .button'))
+      .find((button) => button.textContent?.includes('Eliminar autorización'))
+      ?.click();
+    await fixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+    expect(gateway.delete).toHaveBeenCalledWith('user-document');
+  });
 });

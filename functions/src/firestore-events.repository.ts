@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { peakOccupancy, reservationInterval } from './reservation-capacity.js';
 
 import {
   FieldValue,
@@ -14,6 +15,7 @@ import {
 import {
   calculateEquipmentBlock,
   EventTimeError,
+  localDateTime,
   satisfiesEventAdvance,
   scheduleFromUnknown,
   type EquipmentBlockWindow,
@@ -239,14 +241,46 @@ function temporalStatus(
   return 'programado';
 }
 
+function eventInstant(data: DocumentData, boundary: 'Inicio' | 'Fin'): Date | null {
+  const canonical = dateFromUnknown(data[boundary === 'Inicio' ? 'inicioAt' : 'finAt']);
+  if (canonical) return canonical;
+  const date = data[`fecha${boundary}`];
+  const time = data[`hora${boundary}`];
+  if (typeof date !== 'string' || typeof time !== 'string') return null;
+  try {
+    return localDateTime(date, time);
+  } catch {
+    return null;
+  }
+}
+
+function requireCancellableEvent(data: DocumentData, now: Date): void {
+  const end = eventInstant(data, 'Fin');
+  const status = temporalStatus(data['estatus'], eventInstant(data, 'Inicio'), end, now);
+  if ((end && now.getTime() >= end.getTime()) || status === 'finalizado') {
+    throw new EventsError(
+      'event-finished',
+      'failed-precondition',
+      'El evento ya finalizó y no se puede cancelar.',
+    );
+  }
+  if (!end) {
+    throw new EventsError(
+      'invalid-date-range',
+      'failed-precondition',
+      'El fin del evento no es válido.',
+    );
+  }
+}
+
 function eventSummary(
   snapshot: DocumentSnapshot<DocumentData>,
   now: Date,
   requesterUid: string,
 ): EventSummary {
   const data = snapshot.data() ?? {};
-  const start = dateFromUnknown(data['inicioAt']);
-  const end = dateFromUnknown(data['finAt']);
+  const start = eventInstant(data, 'Inicio');
+  const end = eventInstant(data, 'Fin');
   const campusHistory =
     data['campusHistorico'] && typeof data['campusHistorico'] === 'object'
       ? (data['campusHistorico'] as Record<string, unknown>)
@@ -381,6 +415,23 @@ function logisticsNotificationVersions(value: unknown): LogisticsNotificationVer
     demora: version('demora'),
     cancelacion_post_salida: version('cancelacion_post_salida'),
   };
+}
+
+function receptionAvailable(event: DocumentData, reservation: DocumentData, now: Date): boolean {
+  if (reservation['estado'] !== 'confirmada' && reservation['estado'] !== 'requiere_revision')
+    return false;
+  const blockStart = dateFromUnknown(reservation['bloqueoInicio']);
+  if (!blockStart || now.getTime() < blockStart.getTime()) return false;
+  const end = dateFromUnknown(event['finAt']);
+  if (reservation['esTraslado'] === true) {
+    const returnStart = dateFromUnknown(reservation['regresoProgramado']);
+    return (
+      !!returnStart &&
+      now.getTime() >= returnStart.getTime() &&
+      (event['estatus'] === 'cancelado' || (!!end && now.getTime() >= end.getTime()))
+    );
+  }
+  return !!end && now.getTime() >= end.getTime();
 }
 
 function eventNotFound(): never {
@@ -587,11 +638,14 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       ),
     );
     const calculations = blocks.map((item, index): ReservationCalculation => {
-      const occupied = (overlappingSnapshots[index]?.docs ?? []).reduce((total, snapshot) => {
-        if (snapshot.data()['eventoId'] === options.excludeEventId) return total;
-        const value = snapshot.data()['cantidad'];
-        return total + (Number.isInteger(value) && (value as number) > 0 ? (value as number) : 0);
-      }, 0);
+      const intervals = (overlappingSnapshots[index]?.docs ?? [])
+        .filter((snapshot) => snapshot.data()['eventoId'] !== options.excludeEventId)
+        .map((snapshot) => reservationInterval(snapshot.data()));
+      const occupied = peakOccupancy(
+        intervals,
+        item.block.start.getTime(),
+        item.block.end.getTime(),
+      );
       return {
         ...item,
         occupied,
@@ -689,6 +743,13 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         .sort((left, right) => (left.start?.getTime() ?? 0) - (right.start?.getTime() ?? 0));
     },
 
+    async getNotificationRevision(eventId): Promise<number | null> {
+      const snapshot = await events.doc(eventId).get();
+      if (!snapshot.exists) eventNotFound();
+      const revision = snapshot.data()?.['revisionNotificacion'];
+      return Number.isInteger(revision) ? (revision as number) : null;
+    },
+
     async getDetail(requesterUid, eventId, now): Promise<EventDetail> {
       await requireRequester(requesterUid);
       const [eventSnapshot, reservationSnapshot] = await Promise.all([
@@ -759,6 +820,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             blockEnd,
             scheduledRelease,
             receptionConfirmed: dateFromUnknown(reservation['recepcionConfirmada']),
+            canConfirmReception: receptionAvailable(data, reservation, now),
             delayReported: reservation['demoraReportada'] === true,
           };
         })
@@ -771,7 +833,11 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         requestedEquipment,
         reservations: reservationDetails,
         canEdit: canMutate,
-        canCancel: canMutate,
+        canCancel:
+          canMutate &&
+          summary.status !== 'finalizado' &&
+          summary.end !== null &&
+          now.getTime() < summary.end.getTime(),
       };
     },
 
@@ -828,6 +894,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             nombre: record.name,
           })),
           revisionNotificacion: 1,
+          coordinacionIdsRetiradas: [],
           terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
           equipoIds: result.calculations.map((item) => item.equipment.id),
           equiposSolicitados: result.calculations.map((item) => ({
@@ -1073,9 +1140,15 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
             nombre: record.name,
           })),
           revisionNotificacion: revision,
+          coordinacionIdsRetiradas: notificationChanged
+            ? [...previousCoordinationIds].filter((id) => !input.coordinationIds.includes(id))
+            : stringArray(previous['coordinacionIdsRetiradas']),
           notificacionesEstado: notificationChanged ? 'pendiente' : previousNotificationState,
           calendarEstado:
-            scheduleChanged || previous['nombreEvento'] !== input.name
+            scheduleChanged ||
+            campusChanged ||
+            previous['nombreEvento'] !== input.name ||
+            previous['observaciones'] !== input.observations
               ? 'pendiente'
               : previousCalendarState,
           terminosBusqueda: buildEventSearchTerms(input.name, result.requester.nombre),
@@ -1249,7 +1322,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
       });
     },
 
-    async cancel(requesterUid, eventId, now) {
+    async cancel(requesterUid, eventId, clock) {
       const eventReference = events.doc(eventId);
       return firestore.runTransaction(async (transaction) => {
         const eventSnapshot = await transaction.get(eventReference);
@@ -1277,6 +1350,10 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         const controlById = new Map(
           controlSnapshots.map((snapshot) => [snapshot.id, snapshot] as const),
         );
+
+        // Read the server clock again on every transaction attempt, after all reads.
+        const now = clock();
+        requireCancellableEvent(event, now);
 
         reservationSnapshot.docs.forEach((snapshot) => {
           const reservation = snapshot.data();
@@ -1332,6 +1409,7 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           calendarEstado: 'pendiente',
           notificacionesEstado: 'pendiente',
           revisionNotificacion: revision,
+          coordinacionIdsRetiradas: [],
           fechaActualizacion: FieldValue.serverTimestamp(),
         });
         return { eventId, protocolPath };
@@ -1408,11 +1486,18 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
         }
         const reservation = reservationSnapshot.data() ?? {};
         if (reservation['estado'] === 'finalizada' && reservation['recepcionConfirmada']) return;
-        if (reservation['estado'] === 'cancelada') {
+        if (reservation['estado'] === 'cancelada' || reservation['estado'] === 'finalizada') {
           throw new EventsError(
             'reservation-state-invalid',
             'failed-precondition',
             'La reservación ya no admite esta acción.',
+          );
+        }
+        if (!receptionAvailable(eventSnapshot.data() ?? {}, reservation, now)) {
+          throw new EventsError(
+            'reception-not-available',
+            'failed-precondition',
+            'La etapa logística todavía no permite confirmar recepción.',
           );
         }
         transaction.update(reservationReference, {
@@ -1462,19 +1547,28 @@ export function createFirestoreEventsRepository(firestore: Firestore): EventsRep
           reservation['regresoProgramado'],
           'La reservación no tiene un regreso programado.',
         );
-        if (release.getTime() <= now.getTime() || release.getTime() <= returnStart.getTime()) {
+        const currentRelease = timestampRequired(
+          reservation['liberacionProgramada'],
+          'Falta la liberación actual.',
+        );
+        const currentEnd = timestampRequired(reservation['bloqueoFin'], 'Falta el bloqueo actual.');
+        if (
+          reservation['demoraReportada'] === true &&
+          currentRelease.getTime() === release.getTime() &&
+          currentEnd.getTime() === release.getTime()
+        )
+          return;
+        if (
+          release.getTime() <= now.getTime() ||
+          release.getTime() <= returnStart.getTime() ||
+          release.getTime() <= currentRelease.getTime() ||
+          release.getTime() <= currentEnd.getTime()
+        ) {
           throw new EventsError(
             'invalid-argument',
             'invalid-argument',
-            'La nueva liberación debe ser posterior al regreso previsto.',
+            'La demora debe ampliar la liberación y el bloqueo actuales.',
           );
-        }
-        const currentRelease = dateFromUnknown(reservation['liberacionProgramada']);
-        if (
-          reservation['demoraReportada'] === true &&
-          currentRelease?.getTime() === release.getTime()
-        ) {
-          return;
         }
         const nextControlVersion = positiveVersion(controlSnapshot) + 1;
         transaction.update(reservationReference, {

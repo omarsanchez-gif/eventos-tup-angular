@@ -1,5 +1,13 @@
 # Sistema de Eventos TUP — Angular
 
+**Publicación de EVT-121 — 28 de octubre de 2026:** corrección de cancelación de eventos finalizados desplegada con autorización expresa únicamente a staging: Hosting y cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`). Las cuatro están `ACTIVE`; los 20 archivos remotos coinciden con el build validado y las cuatro callables rechazan solicitudes anónimas. Se conserva la aceptación de las doce validaciones anteriores. Pendiente únicamente la aceptación funcional específica de EVT-121 con sesión iniciada; evidencia en la matriz de trazabilidad. Producción intacta.
+
+**Reparación publicada (27 de octubre):** EVT-120 está en Hosting de staging; SMTP recuperado con versión 4 y ocho Functions ACTIVE. `VALIDACIÓN 02`: siete envíos aceptados por SMTP, resumen `completas`. 96 pruebas Angular, lint, build e integridad remota aprobados. Evidencia en `specs/integraciones.md`; los doce escenarios anteriores fueron aceptados por el responsable el 28 de octubre; la aceptación visual específica de EVT-120 se conserva por separado.
+
+**Publicación previa en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Aceptación funcional de estas cuatro correcciones confirmada por el responsable el 28 de octubre de 2026. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; la aceptación funcional de este incremento fue confirmada por el responsable el 28 de octubre de 2026. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](specs/matriz-trazabilidad.md).
+
 Migración del frontend institucional a Angular 22, guiada exclusivamente por las especificaciones de [`/specs`](./specs).
 
 ## Alcance implementado
@@ -97,9 +105,9 @@ Google Sign-In se administra como configuración versionada y se despliega únic
 npm run deploy:staging:auth
 ```
 
-Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 3 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
+Los secretos de Calendar y SMTP nunca pertenecen a los environments Angular. `GOOGLE_CALENDAR_CONFIG` versión 3 apunta al calendario institucional compartido y `SMTP_CONFIG` versión 4 conserva la lista fija aprobada; los contactos institucionales de Coordinaciones pueden recibir notificaciones únicamente cuando su procedencia canónica queda fotografiada por backend.
 
-La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. Permanecen como seguimiento las cuotas, la observación prolongada de workers/limpieza/TTL y las vulnerabilidades moderadas reportadas por `npm audit`; ninguna autoriza producción.
+La aceptación de staging confirmó creación, actualización y cancelación sobre una sola entrada del calendario institucional, entrega SMTP a contactos canónicos de Coordinaciones, negativas controladas, roles, reservaciones concurrentes, logística y revisión accesible y responsive. La estabilización del 27 de octubre dejó el build limpio, `npm audit --omit=dev` en cero y la auditoría completa sin altas/críticas; los cinco avisos moderados exclusivos de Firebase CLI están aceptados y mitigados en ADR-011. Ese mismo día se publicaron únicamente Hosting y `bootstrapAuthorization` en staging, se verificaron contra el build y los contratos locales y el responsable aceptó los recorridos administrativos exhaustivos de Usuarios, Coordinaciones, Campus y Equipos. El cierre de staging no autoriza producción.
 
 ## Calidad
 

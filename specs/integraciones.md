@@ -1,5 +1,25 @@
 # Integraciones
 
+## Incidencia SMTP de staging — 27 de octubre de 2026
+
+La consulta de solo lectura de `VALIDACIÓN 02` confirmó Calendar sincronizado y siete trabajos fallidos en el primer intento: cuatro de creación (creador y tres contactos de Coordinación) y tres logísticos. El código conservado es `smtp-permanent`; no es `recipient-not-allowed`. Una verificación SMTP sin enviar mensajes confirmó `EAUTH`, respuesta `535 / 5.7.8` en autenticación, usando `SMTP_CONFIG` versión 3 enlazada a `createEvent`. El creador sí pertenece a la lista permitida. No se conoce si la contraseña fue revocada o sustituida; no atribuirlo a permisos de Coordinación.
+
+Recuperación operativa:
+
+1. El responsable genera una contraseña de aplicación válida de `eventos@tecplayacar.edu.mx`; nunca se copia al chat ni a archivos versionados.
+2. Ejecuta `scripts/rotate-staging-smtp.ps1` en una terminal local. La entrada es oculta y se transmite al proceso Node por stdin, sin argumento de línea de comandos ni archivo temporal. El auxiliar `.cjs` usa la sesión existente de Firebase CLI, limita el destino a staging, conserva el JSON actualmente enlazado y reemplaza solo `password`. Silencia logs de Firebase y comprueba la autenticación de Gmail antes de crear la versión. No envía mensajes ni despliega servicios.
+3. Verificar la versión creada y enlazarla mediante despliegue selectivo de las ocho Functions consumidoras SMTP, con autorización de staging; comprobar su estado y bindings.
+4. Las entregas terminales no se reabren automáticamente al rotar el secreto ni mediante reconciliación. Recuperar los trabajos de esta incidencia requiere una operación separada, acotada a los fallidos por autenticación, autorizada y documentada; conservar IDs e historial, no repetir trabajos enviados ni aumentar la revisión del evento artificialmente.
+5. Verificar entrega real al creador y coordinación y el resumen de la revisión vigente antes de cerrar la incidencia. La aceptación de octubre anterior no prueba la vigencia actual de la credencial.
+
+El responsable ejecutó el auxiliar y confirmó autenticación Gmail correcta y creación de `SMTP_CONFIG` versión 4. La continuación de la reparación se limita a las ocho Functions consumidoras SMTP de staging; el diagnóstico previo no modificó servicios ni datos.
+
+Recuperación excepcional acotada de `VALIDACIÓN 02`: después de verificar la versión nueva, seleccionar exactamente los siete trabajos identificados por el diagnóstico, del mismo evento y revisión/causa logística registrada. Exigir en una transacción que continúen `fallido`, con `ultimoErrorCodigo: smtp-permanent`, un intento, `fechaEnvio: null`, `proximoIntento: null` y sin lease. Conservar IDs, destinatarios, fotografía, revisión e intentos; reabrir con `estado: pendiente`, próximo intento actual y limpiar finalización/expiración terminales. Cambiar el resumen funcional a pendiente solo si la revisión canónica sigue siendo 1 y el evento no está cancelado. Si alguna precondición difiere, detener sin escrituras. El worker existente realizará el siguiente intento; no ejecutar un envío paralelo ni reabrir otros fallos. Registrar esta excepción y sus resultados aquí, sin agregar campos ni colecciones. La rotación ordinaria sigue sin reabrir trabajos automáticamente.
+
+Resultado verificado: las ocho Functions quedaron `ACTIVE` y enlazadas a `SMTP_CONFIG` versión 4. La transacción de recuperación confirmó las precondiciones y reabrió exactamente siete trabajos a las 16:23:51 de Cancún (21:23:51 UTC), conservando IDs e intento anterior. El worker programado respondió 200, procesó siete trabajos y registró los siete como `enviado` en el segundo intento entre 16:28:02 y 16:28:10 de Cancún; `ultimoErrorCodigo` quedó en null y `VALIDACIÓN 02` revisión 1 quedó `notificacionesEstado: completas`. Esto confirma aceptación por SMTP; no se inspeccionaron buzones ni se afirma lectura del destinatario. No se crearon trabajos duplicados ni se reabrieron fallos ajenos.
+
+Se publicó por separado Hosting con EVT-120 después de aprobar 96 pruebas Angular, lint y build; los 20 archivos remotos coinciden con el build local. No se modificaron Calendar, Rules, índices, datos de otros eventos ni producción. La aceptación funcional general de los doce casos anteriores sigue pendiente.
+
 ## Firebase Authentication
 
 - Proveedor exclusivo: Google.
@@ -229,7 +249,7 @@ Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill e
 ## Configuración operativa resuelta en staging
 
 - `configuracion/logisticaEquipos` guarda el ID canónico `GoPowUg4NO8bbW5658Jx` de la Coordinación de Sistemas y los valores de ADR-010.
-- `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 3 están enlazados a las Functions consumidoras correspondientes. Calendar usa el calendario institucional compartido y OAuth `calendar.events`; la comprobación de lectura aprobó sin exponer credenciales.
+- `GOOGLE_CALENDAR_CONFIG` versión 3 y `SMTP_CONFIG` versión 4 están enlazados a las Functions consumidoras correspondientes. Calendar usa el calendario institucional compartido y OAuth `calendar.events`; la comprobación de lectura aprobó sin exponer credenciales.
 - La lista fija conserva Omar, Eventos, Víctor Yama y Lizett Méndez. Los contactos institucionales fotografiados como `coordinacion` o `sistemas` se autorizan dinámicamente sin rotar `SMTP_CONFIG`; cualquier otra dirección continúa bloqueada.
 - El 2 de octubre de 2026 la plantilla institucional HTML y su alternativa de texto quedaron desplegadas en las ocho Functions consumidoras de SMTP de staging. El contenido usa únicamente datos fotografiados de la revisión, estilos inline, escape de valores y recursos locales al propio mensaje; Firebase confirmó las ocho actualizaciones sin modificar secretos, Hosting, Rules, índices, datos o producción.
 - El 3 de octubre de 2026 se implementó y validó la autorización dinámica de contactos de Coordinaciones definida por RN-082. Con autorización separada se actualizaron únicamente las ocho Functions consumidoras de SMTP en staging y Firebase confirmó las ocho operaciones. `SMTP_CONFIG` versión 3 se conservó sin rotación; la prueba real positiva fuera de la lista fija y las negativas controladas quedaron aceptadas ese mismo día. No se modificaron Hosting, Rules, índices, datos o producción.
@@ -241,3 +261,30 @@ Los contratos de Eventos, Calendar, SMTP, logística, mantenimiento y backfill e
 - Resolver mediante actualización compatible las vulnerabilidades moderadas de ejecución; no usar `npm audit fix --force`.
 
 La aceptación manual del 3 de octubre siguió el orden aprobado: configuración canónica, Rules, Functions enlazadas, creación, actualización, cancelación, entrega dinámica, negativas, deduplicación y revisión visual. Un fallo futuro detiene la secuencia y no se compensa borrando el evento canónico de Firestore.
+
+## Corrección de reintentos y revisión vigente — 27 de octubre de 2026
+
+- Calendar asigna al crear un ID determinista hexadecimal derivado del ID canónico del evento. Reintentos, respuestas perdidas y llamadas concurrentes usan el mismo ID; no crean IDs aleatorios. Conserva IDs ya enlazados. Ante 409, recupera y valida eventosTupId antes de actualizar el recurso existente; nunca sobreescribe un recurso ajeno.
+- Si un ID enlazado desaparece (404/410), su sustituto se deriva del evento y del ID anterior, por lo que los reintentos de la sustitución también convergen. Un recurso cancelado conserva una identidad retirada; se deriva un sucesor determinista con un máximo de tres intentos por llamada. Errores de permisos, transporte o límites permanecen recuperables sin crear identidades alternativas al azar. No se migran entradas existentes ni se eliminan duplicados históricos automáticamente.
+- Fundamento: [IDs de Calendar](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert) y [tratamiento de 409](https://developers.google.com/workspace/calendar/api/guides/errors).
+- El resumen notificacionesEstado se recalcula en una transacción que lee la revisión canónica y los trabajos funcionales de esa misma revisión. Un trabajo antiguo puede completar su historial, pero nunca cambia el resumen de una revisión posterior. Cambios concurrentes de evento o de trabajos obligan a reintentar la lectura.
+- Reducción de inventario crea avisos logísticos en la propia transacción de Equipos, con la misma clave evento/equipo/motivo/versión/destinatario que la reconciliación. El worker existente los procesa sin requerir otra edición o sincronización del evento.
+- Correcciones desplegadas con autorización expresa únicamente a staging el 27 de octubre de 2026. La regresión local utilizó Calendar/SMTP simulados; durante la verificación del despliegue no se ejecutó un ciclo real ni se enviaron correos de prueba. Su aceptación funcional autenticada queda pendiente.
+
+## Orden de Calendar y transición de coordinaciones — publicado en staging
+
+- Adquirir un lease protegido por evento antes de leer la versión a enviar a Calendar. Una llamada concurrente devuelve pendiente, sin iniciar otra escritura externa.
+- Calendar y OAuth tienen timeout HTTP de 15 segundos por solicitud. No se hacen peticiones externas dentro de transacciones Firestore.
+- Tras cada operación externa, releer evento y lease en una transacción. Comparar la fotografía de todos los campos enviados y la revisión/cancelación: una respuesta antigua no puede declarar sincronizada la versión nueva. Conservar el ID obtenido para poder retirar una creación que coincidió con cancelación.
+- Si cambió el evento, mantener pendiente y procesar su versión más reciente bajo el mismo lease, hasta cinco vueltas. Si continúa cambiando, liberar dejando pendiente para una reconciliación posterior. Publicar éxito y liberar se hacen atómicamente; errores nunca sobreescriben el estado publicado por otro propietario del lease.
+- Una cancelación sin ID guardado también intenta retirar la identidad determinista inicial, para recuperar una creación cuya respuesta se perdió. Los timeouts externos no garantizan una transacción distribuida; se conserva reconciliación e idempotencia, sin prometer exactly-once del proveedor.
+- Un proceso terminado abruptamente deja el lease hasta su vencimiento (máximo diez minutos). El próximo intento reanuda desde Firestore. No se elimina un lease ajeno ni se atribuye éxito a una operación incompleta.
+- Los retiros se calculan desde coordinacionIdsRetiradas de la revisión vigente. Se deduplican por evento/revisión/tipo/correo y no se repiten al editar posteriormente nombre, fecha u horario sin retirar esa coordinación otra vez. Reagregar y volver a retirar genera una nueva transición legítima.
+- Solo se aprovechan contactos históricos de la revisión inmediatamente anterior para esos IDs retirados; se agregan sus contactos canónicos sin avisar dos veces a quien ya recibe la actualización actual. La falta de historial no inventa retiros; la transición canónica funciona aunque los correos anteriores hayan expirado por TTL.
+- Antes de crear cada trabajo se revalida la revisión canónica: una preparación obsoleta no crea trabajos nuevos de una edición superada. Los trabajos ya confirmados conservan su política histórica de reintentos.
+
+- Antes de iniciar una operación Calendar se exigen al menos tres minutos restantes de lease para cubrir sus solicitudes HTTP acotadas. Si no queda ese margen, se libera el control y se devuelve pendiente; no se inicia trabajo remoto al borde del vencimiento.
+
+## Sincronización con revisión esperada — EVT-116 en staging
+
+syncUpdatedEventIntegrations conserva eventId y revisionEsperada. El caso de uso comprueba identidad, claims y perfil canónico antes de leer el evento, valida el ID y autoriza propietario o admin antes de leer/comparar la revisión. Revisión distinta devuelve failed-precondition sin reconciliar; no se devuelve ese dato a usuarios sin permiso. El sincronizador de Calendar sigue reconciliando la versión canónica vigente conforme a RN-083; la comprobación de revisionEsperada no es una transacción distribuida. Esta corrección fue validada localmente y desplegada únicamente a staging el 27 de octubre de 2026; la callable quedó ACTIVE y rechazó solicitudes anónimas con UNAUTHENTICATED. No se ejecutaron operaciones Calendar/SMTP reales durante la comprobación del despliegue.

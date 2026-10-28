@@ -74,7 +74,7 @@ confirmada
 ## Disponibilidad
 
 ```text
-disponible = cantidadOperativa - suma(cantidades reservadas en intervalos coincidentes)
+disponible = max(0, cantidadOperativa - picoDeOcupacionSimultanea(intervaloLogistico))
 ```
 
 - No existe campo persistido `cantidadDisponible`.
@@ -194,7 +194,7 @@ Solo backend y operaciones administrativas expresamente especificadas pueden mod
 
 - `confirmReservationCoverage(eventId, equipmentId)` retira únicamente `cobertura_sistemas`; la reserva se confirma solo cuando no queda otro motivo.
 - `confirmEquipmentReception(eventId, equipmentId)` usa hora de servidor, registra recepción, cambia a `finalizada`, acorta `bloqueoFin` y aumenta el control.
-- `reportEquipmentDelay(eventId, equipmentId, nuevaLiberacion)` exige una nueva liberación futura posterior al regreso previsto, extiende `bloqueoFin`, conserva consumo de capacidad y aumenta el control.
+- `reportEquipmentDelay(eventId, equipmentId, nuevaLiberacion)` exige una nueva liberación futura posterior al regreso previsto, al bloqueo y a la liberación vigentes; admite el reintento idéntico sin escrituras y extiende `bloqueoFin`, conserva consumo de capacidad y aumenta el control.
 - Solo `admin` ejecuta estas acciones. Se revalidan evento, reserva, rol y estado objetivo dentro de la transacción.
 - La UI se ubica en el detalle de Eventos, sección “Logística de equipos”; no se crea un módulo o ruta adicional.
 - Las causas independientes viven en `motivosRevision`, por lo que confirmar cobertura no borra una revisión por inventario o coordinación.
@@ -205,3 +205,20 @@ Solo backend y operaciones administrativas expresamente especificadas pueden mod
 - Eventos multidiarios, anticipación, traslados, demoras, recepción, cobertura y edición concurrente quedaron aceptados mediante evidencia automatizada y manual el 3 de octubre de 2026.
 - Observar workers, avisos logísticos, limpieza y TTL con carga representativa antes de producción.
 - Enviar alertas logísticas mediante la bandeja protegida cuando exista `cobertura_sistemas`, `inventario_reducido`, cambio incompatible posterior al traslado, demora o cancelación posterior a la salida. `versionesAvisoLogistico` conserva por causa la versión del control que la originó y la deduplicación usa evento, equipo, motivo, esa versión y destinatario de la coordinación canónica de Sistemas.
+
+## Corrección de consistencia autorizada — 27 de octubre de 2026
+
+- Disponibilidad: usar pico simultáneo sobre bloqueoInicio/bloqueoFin, incluidos montaje, desmontaje y traslados. Con dos unidades y dos reservas sucesivas de una unidad, una solicitud que atraviesa ambas conserva una disponible. La edición excluye solo sus propias reservas y la confirmación mantiene todo o nada.
+- Reducción: leer en la misma transacción inventario, control y hasta 400 reservas activas con bloqueoFin futuro. Marcar todas las reservas cuyo tramo futuro participa en una sobreocupación con requiere_revision e inventario_reducido, conservando otros motivos y cantidades. No priorizar ni cancelar reservas automáticamente.
+- En esa transacción incrementar el control, fotografiar Sistemas por ID canónico y crear los trabajos logísticos idempotentes en notificacionesEventos. El worker existente los envía en su siguiente ejecución; updateEquipment no llama SMTP ni Calendar. Repetir la misma cantidad no genera otra versión ni avisos. Aumentarla no resuelve automáticamente revisiones existentes.
+- La reducción se rechaza íntegramente con reservation-review-required si faltan los datos canónicos necesarios, se superan 400 reservas activas o 450 escrituras totales (incluidos avisos y campus); no guardar un inventario parcial ni omitir avisos. Lectura limitada a 401 para detectar exceso. Usa el índice existente equipoId/estado/bloqueoFin/bloqueoInicio.
+- Una nueva demora debe ser futura y estrictamente posterior tanto a bloqueoFin como a liberacionProgramada actuales. Repetir una demora ya registrada es idempotente, incluso después de alcanzar su fecha; un valor menor se rechaza sin escrituras. Recepción anticipada es la única acción que acorta el bloqueo.
+- Las pruebas locales usaron demo-eventos-tup. El conjunto fue desplegado con autorización expresa únicamente a staging el 27 de octubre de 2026; la aceptación funcional de esta versión sigue pendiente.
+
+## Ventana válida de recepción — segundo incremento publicado
+
+- Solo admin confirma recepción de reservas activas. Una reserva finalizada por recepción admite el reintento idéntico sin escrituras; canceladas u otras finalizadas se rechazan.
+- Equipo local: desde finAt del evento. La confirmación acredita que el desmontaje terminó antes del margen automático; nunca libera mientras el evento sigue en curso ni antes de su inicio.
+- Equipo trasladado: desde regresoProgramado, sin esperar la hora de margen completa. También exige que el evento haya terminado, salvo cancelación posterior a la salida, que conserva su regreso programado. No adelanta automáticamente el regreso por una cancelación.
+- Exigir además que bloqueoInicio ya haya ocurrido. Si faltan instantes canónicos, fallar de forma segura sin modificar reserva ni control. Fronteras inclusivas; se usa hora del servidor.
+- La interfaz deshabilita Confirmar recepción cuando canConfirmReception sea falso o no esté disponible; indica que debe actualizarse el detalle al llegar a la ventana. Backend devuelve reception-not-available ante un intento prematuro y siempre vuelve a validar la etapa.

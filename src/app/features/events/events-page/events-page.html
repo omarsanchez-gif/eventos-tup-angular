@@ -187,6 +187,8 @@
                           >Editar evento</span
                         >
                       </span>
+                    }
+                    @if (canCancelFromList(record)) {
                       <span class="tooltip-host">
                         <button
                           class="icon-button icon-button--danger"
@@ -239,6 +241,8 @@
                 >
                   Editar
                 </button>
+              }
+              @if (canCancelFromList(record)) {
                 <button
                   class="button button--danger"
                   type="button"
@@ -467,8 +471,10 @@
                           }
                         } @else if (events.availabilityLoading()) {
                           Verificando…
+                        } @else if (events.availabilityError()) {
+                          No se pudo verificar
                         } @else {
-                          Pendiente de verificar
+                          {{ availabilityPendingMessage() }}
                         }
                       </div>
                       <button
@@ -508,6 +514,17 @@
                 <p class="availability-summary availability-summary--error" role="alert">
                   {{ notice }}
                 </p>
+              }
+              @if (events.availabilityError(); as error) {
+                <p class="form-error" role="alert">{{ error }}</p>
+                <button
+                  class="button button--secondary"
+                  type="button"
+                  (click)="formContextChanged()"
+                  [disabled]="events.availabilityLoading() || events.mutating()"
+                >
+                  Reintentar disponibilidad
+                </button>
               }
             }
           </fieldset>
@@ -656,6 +673,12 @@
                           <button
                             class="button button--secondary"
                             type="button"
+                            [disabled]="!reservation.canConfirmReception"
+                            [title]="
+                              reservation.canConfirmReception
+                                ? 'Confirmar que el equipo ya está disponible'
+                                : 'Disponible después del fin del evento o desde el regreso. Actualice el detalle al llegar a esa hora.'
+                            "
                             (click)="requestLogisticsAction('reception', reservation.equipmentId)"
                           >
                             Confirmar recepción
@@ -727,7 +750,10 @@
             </div>
           </section>
         }
-        @if (confirmingCancellation()) {
+        @if (confirmingCancellation() && !event.canCancel) {
+          <p class="form-error" role="status">El evento ya no admite cancelación.</p>
+        }
+        @if (confirmingCancellation() && event.canCancel) {
           <section
             class="confirmation-panel"
             role="alertdialog"
@@ -810,6 +836,9 @@
         </button>
       </header>
       <div class="confirmation-dialog">
+        @if (!canConfirmListCancellation()) {
+          <p class="form-error" role="status">El evento ya no admite cancelación.</p>
+        }
         <p id="list-cancel-event-description">
           “{{ event.name }}” quedará como historial de solo lectura. No se eliminará el registro y
           se resolverán Calendar, correo, protocolo y reservaciones.
@@ -823,14 +852,16 @@
           >
             Volver
           </button>
-          <button
-            class="button button--danger"
-            type="button"
-            [disabled]="events.mutating()"
-            (click)="confirmListCancellation(event.eventId)"
-          >
-            {{ events.mutating() ? 'Cancelando…' : 'Confirmar cancelación' }}
-          </button>
+          @if (canConfirmListCancellation()) {
+            <button
+              class="button button--danger"
+              type="button"
+              [disabled]="events.mutating()"
+              (click)="confirmListCancellation(event.eventId)"
+            >
+              {{ events.mutating() ? 'Cancelando…' : 'Confirmar cancelación' }}
+            </button>
+          }
         </div>
       </div>
     </section>

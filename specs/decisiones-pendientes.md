@@ -1,5 +1,13 @@
 # Decisiones y pendientes
 
+**Publicación de EVT-121 — 28 de octubre de 2026:** corrección de cancelación de eventos finalizados desplegada con autorización expresa únicamente a staging: Hosting y cuatro Functions (`cancelEvent`, `getEventDetail`, `listEvents`, `listCalendarEvents`). Las cuatro están `ACTIVE`; los 20 archivos remotos coinciden con el build validado y las cuatro callables rechazan solicitudes anónimas. Se conserva la aceptación de las doce validaciones anteriores. Pendiente únicamente la aceptación funcional específica de EVT-121 con sesión iniciada; evidencia en la matriz de trazabilidad. Producción intacta.
+
+**Seguimiento del 27 de octubre:** reparación SMTP completada: versión 4, ocho Functions ACTIVE, siete trabajos recuperados enviados y resumen `completas` en `VALIDACIÓN 02`. EVT-120 publicado en Hosting con regresión técnica aprobada; los doce escenarios anteriores fueron aceptados por el responsable el 28 de octubre; la aceptación visual específica de EVT-120 se conserva por separado. Detalles en `integraciones.md` y `matriz-trazabilidad.md`.
+
+**Publicación previa en staging — 27 de octubre de 2026:** EVT-116 a EVT-119 (acceso previo, respuestas vigentes, cierre del detalle y reutilización de catálogos) desplegado con autorización expresa mediante syncUpdatedEventIntegrations y Hosting. Verificación técnica remota aprobada; 240 pruebas locales previas (92 Angular, 108 Functions y 40 Eventos con Firestore Emulator). Aceptación funcional de estas cuatro correcciones confirmada por el responsable el 28 de octubre de 2026. Producción no fue modificada.
+
+**Estado al 27 de octubre de 2026:** las ocho correcciones de consistencia están implementadas, probadas localmente y desplegadas con autorización expresa únicamente en staging: Firestore Rules, 12 Functions y Hosting. La verificación técnica remota aprobó; la aceptación funcional de este incremento fue confirmada por el responsable el 28 de octubre de 2026. La aceptación administrativa anterior corresponde a la versión publicada previa. Evidencia y alcance en [matriz de trazabilidad](matriz-trazabilidad.md).
+
 ## Decisiones resueltas
 
 | Tema                      | Decisión                                                                          | Referencia                                                    |
@@ -43,36 +51,23 @@
 | Autorización de Eventos   | Eventos y reservaciones autorizados el 29 de septiembre de 2026                   | `AGENTS.md`, ADR-009                                          |
 | Cierre operativo Eventos  | Búsqueda, mutaciones, logística, workers, limpieza e históricos                   | `decisiones/ADR-010-cierre-operativo-eventos.md`              |
 
-## Pendientes transversales de aceptación
+## Cierre de aceptación administrativa — 27 de octubre de 2026
 
-- Confirmar límites y cuotas aplicables del proyecto Firebase y conservar activo el presupuesto de `100 MXN` con sus alertas.
-- Mantener la auditoría de dependencias sin vulnerabilidades altas o críticas; no usar `npm audit fix --force` ni aceptar cambios mayores automáticos.
-- Dar seguimiento a las tres vulnerabilidades moderadas de ejecución reportadas por `npm audit --omit=dev` y resolverlas mediante una actualización compatible y nueva regresión.
-- Producción permanece fuera de alcance hasta definir su configuración, migración, reversión y autorización expresa, aunque staging ya cuente con aceptación integral.
+El responsable confirmó satisfactoriamente en staging todos los recorridos administrativos acordados:
 
-## Pendientes para aceptar Autenticación y Usuarios
+- Usuarios: volumen actual y esperado por debajo de 500; alta, edición, activación, suspensión y eliminación, conservando la continuidad administrativa.
+- Coordinaciones: alta, edición, suspensión, activación y eliminación permitida o bloqueada por uso.
+- Campus: alta, edición, horarios, suspensión, activación y eliminación condicionada.
+- Equipos: alta fija y transferible, edición, destinos, cantidad, suspensión, activación y eliminación condicionada.
 
-- Confirmar que el volumen esperado de `usuarios` permanece por debajo de 500; si lo supera, actualizar la estrategia de búsqueda antes de producción.
-- Conservar al menos dos administradores activos antes de probar operaciones que reduzcan privilegios.
-- Completar, si aún no existe evidencia separada, el recorrido administrativo completo de alta, edición, activación, suspensión y eliminación de Usuarios.
-- Seleccionar los archivos finales de logotipo e iconografía y confirmar la familia tipográfica institucional licenciada.
+Este cierre corresponde a la aceptación administrativa del 27 de octubre y a los doce escenarios confirmados el 28 de octubre. EVT-121 ya está publicado y verificado técnicamente en staging; queda pendiente su aceptación funcional con sesión iniciada. La aceptación visual específica de EVT-120 se conserva por separado. El backfill histórico, cualquier migración y producción siguen fuera de alcance y solo se ejecutan con autorización separada.
 
-## Pendientes para aceptar Coordinaciones
+## Controles operativos continuos — no son pendientes de aceptación
 
-- Completar la prueba de carrera entre el primer uso de una coordinación y un intento concurrente de eliminación.
-- Ejecutar el recorrido funcional autenticado de alta, edición, suspensión, activación y eliminación condicionada.
-
-## Pendientes para aceptar Campus y Equipos
-
-- Agregar o confirmar las direcciones oficiales de TUP y FCS y validar la búsqueda por ubicación.
-- Confirmar que el inventario de staging continúa representando únicamente unidades utilizables.
-- Ejecutar los recorridos administrativos de alta, edición, suspensión, activación y eliminación condicionada para Campus y Equipos.
-
-## Seguimiento de Eventos e integraciones
-
-- Verificar manualmente eventos históricos incompletos y conservar el backfill como comando explícito; no ejecutarlo sin autorización separada.
-- Observar worker SMTP, limpieza de protocolos y TTL sin bucles, duplicados o crecimiento inesperado.
-- Confirmar cuotas reales de Gmail SMTP, Calendar API y Functions con una carga representativa.
+- Mantener activo el presupuesto informativo de `100 MXN` y observar cuotas, workers, limpieza y TTL mediante las métricas ya definidas.
+- Ejecutar `npm audit --omit=dev` antes de publicar; no usar `npm audit fix --force` ni aceptar cambios mayores automáticos.
+- Las cinco alertas moderadas residuales pertenecen exclusivamente al árbol de `firebase-tools`; no forman parte del runtime desplegado y se revisan cuando Firebase publique una ruta compatible.
+- Producción permanece fuera de alcance hasta definir configuración, migración, reversión y autorización expresa.
 
 ## Dashboard aceptado en staging
 
@@ -95,6 +90,24 @@
 - El 3 de octubre de 2026 se aceptaron el ciclo integral de Eventos, reservaciones concurrentes, logística, Calendar institucional, SMTP HTML, autorización dinámica de contactos, negativas, roles, propiedad y revocación.
 - La aceptación visual, accesible y responsive quedó confirmada en 320 px, tableta y escritorio para Login, shell, Dashboard, catálogos, listado y calendario.
 - Dashboard tiene índice `READY`, callable Gen 2 activa en `us-central1`, Hosting verificado con HTTP 200 y aceptación autenticada con ambos roles.
-- La regresión automatizada vigente aprobó 212 pruebas, además de compilación de Functions, lint Angular/Functions/visual, formato y build de staging.
-- La línea base funcional aceptada quedó versionada y publicada en `desarrollo` mediante `0ad7bae`; esta reconciliación documental posterior deberá incluirse en el siguiente commit sin reabrir la aceptación funcional.
+- La estabilización del 27 de octubre de 2026 agregó pruebas técnicas de bootstrap, carrera de Coordinaciones y flujos de Usuarios. La regresión completa vigente aprobó 215 pruebas y quedó desglosada en `matriz-trazabilidad.md`.
+- Build de producción y staging aplican el mismo presupuesto, las primitivas compartidas están centralizadas y `npm audit --omit=dev` reporta cero vulnerabilidades.
+- La evidencia de cada estabilización queda registrada en el historial Git de `desarrollo`; no se usan identificadores anticipados de commits.
 - Producción no fue utilizada ni modificada.
+
+## Seguimiento del incremento de consistencia desplegado
+
+- Las cinco correcciones autorizadas están implementadas y probadas; no quedan decisiones funcionales necesarias para este incremento.
+- Despliegue autorizado y completado únicamente en staging el 27 de octubre de 2026. Pendiente la comprobación funcional autenticada de inventario/avisos, disponibilidad, demora, Calendar y estado de correo sobre esta versión.
+- La lectura de 400 reservas activas y el presupuesto de 450 escrituras son límites técnicos defensivos para reducción de inventario. Un exceso falla completo y requiere revisión administrativa; nunca aplica resultados parciales.
+- Las evidencias administrativas ya aceptadas se conservan como históricas. No se ejecuta migración ni reparación automática de reservas o duplicados Calendar anteriores.
+
+## Cierre técnico del segundo incremento
+
+Los tres hallazgos adicionales están corregidos y documentados junto con los cinco anteriores. La regresión del alcance afectado aprobó 222 pruebas. Las reglas temporales de recepción, la transición canónica de coordinaciones y el lease de Calendar quedan definidos en sus specs.
+
+El conjunto de ocho correcciones ya está publicado y verificado técnicamente en staging. El responsable confirmó su aceptación funcional el 28 de octubre de 2026, incluidos recepción por etapa y avisos de retiro por transición. Un proceso Calendar interrumpido puede dejar el evento pendiente hasta vencer su lease y ejecutar una nueva reconciliación; no se anuncia éxito ni se ejecuta una reparación masiva de datos anteriores.
+
+## Seguimiento de EVT-116 a EVT-119
+
+Las cuatro correcciones ya están publicadas y verificadas técnicamente en staging. No queda pendiente autorización ni despliegue de este incremento. El responsable confirmó la aceptación funcional de estas cuatro correcciones el 28 de octubre de 2026; la evidencia es su validación humana, no el rechazo anónimo ni las pruebas locales. Producción requiere autorización independiente.

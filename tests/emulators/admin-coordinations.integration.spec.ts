@@ -254,6 +254,43 @@ describe('Coordinaciones con Firestore Emulator', () => {
     expect((await firestore.doc('coordinaciones/usada').get()).exists).toBe(true);
   });
 
+  it('serializa el primer uso concurrente con la eliminación', async () => {
+    await seedCoordination({ documentId: 'carrera', nombre: 'Carrera' });
+    const reference = firestore.doc('coordinaciones/carrera');
+
+    const firstUse = firestore.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(reference);
+      if (!snapshot.exists) {
+        throw new Error('coordination-not-found');
+      }
+      transaction.update(reference, {
+        utilizada: true,
+        fechaActualizacion: Timestamp.now(),
+      });
+    });
+    const deletion = deleteCoordinationRecord(
+      adminIdentity,
+      { documentId: 'carrera' },
+      dependencies,
+    );
+
+    const results = await Promise.allSettled([firstUse, deletion]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+
+    const finalSnapshot = await reference.get();
+    if (results[0]?.status === 'fulfilled') {
+      expect(finalSnapshot.exists).toBe(true);
+      expect(finalSnapshot.data()?.['utilizada']).toBe(true);
+      expect(results[1]).toMatchObject({
+        status: 'rejected',
+        reason: { functionalCode: 'coordination-in-use' },
+      });
+    } else {
+      expect(results[1]?.status).toBe('fulfilled');
+      expect(finalSnapshot.exists).toBe(false);
+    }
+  });
+
   it('revalida que el perfil canónico del solicitante siga siendo admin', async () => {
     await firestore.doc('usuarios/admin').update({ rol: 'usuario' });
     await expectCode(listCoordinationRecords(adminIdentity, dependencies), 'permission-denied');

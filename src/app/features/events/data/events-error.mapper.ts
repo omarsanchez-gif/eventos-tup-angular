@@ -1,4 +1,5 @@
 const messages: Readonly<Record<string, string>> = {
+  'availability-timeout': 'La consulta de disponibilidad tardó demasiado. Intente nuevamente.',
   unauthenticated: 'La sesión terminó. Inicie sesión nuevamente.',
   'permission-denied': 'No tiene permisos para realizar esta operación.',
   'invalid-argument': 'Revise los datos capturados.',
@@ -20,9 +21,12 @@ const messages: Readonly<Record<string, string>> = {
   'invalid-pdf': 'El protocolo debe ser un PDF válido menor a 10 MiB.',
   'event-not-found': 'El evento ya no existe.',
   'event-cancelled': 'El evento cancelado es de solo lectura.',
+  'event-finished': 'El evento ya finalizó y no se puede cancelar.',
   'event-update-restricted':
     'El cambio solicitado no está permitido dentro del límite de anticipación.',
   'reservation-not-found': 'La reservación de equipo ya no existe.',
+  'reception-not-available':
+    'Aún no puede confirmar la recepción. Espere al fin del evento o al inicio del regreso y actualice el detalle.',
   'reservation-state-invalid': 'La reservación ya no admite esta acción.',
   'service-unavailable': 'El servicio de eventos no está disponible. Intente nuevamente.',
 };

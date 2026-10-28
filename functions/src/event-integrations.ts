@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { createCalendarSynchronizer } from './event-calendar-sync.js';
 
 import {
   FieldValue,
@@ -73,7 +74,7 @@ export interface EventIntegrationsService {
   processDue(limit?: number): Promise<{ readonly processed: number }>;
 }
 
-interface CanonicalEvent {
+export interface CanonicalEvent {
   readonly reference: DocumentReference<DocumentData>;
   readonly eventId: string;
   readonly name: string;
@@ -87,6 +88,7 @@ interface CanonicalEvent {
   readonly campusName: string;
   readonly campusAddress: string | null;
   readonly coordinationIds: readonly string[];
+  readonly removedCoordinationIds: readonly string[] | null;
   readonly coordinationNames: readonly string[];
   readonly equipment: readonly NotificationEquipment[];
   readonly revision: number;
@@ -104,7 +106,7 @@ const retryDelays = [5 * 60_000, 30 * 60_000, 2 * 60 * 60_000] as const;
 const leaseMilliseconds = 10 * 60_000;
 const retentionMilliseconds = 90 * 24 * 60 * 60_000;
 
-function eventFromData(
+export function eventFromData(
   reference: DocumentReference<DocumentData>,
   data: DocumentData,
 ): CanonicalEvent | null {
@@ -142,6 +144,11 @@ function eventFromData(
           (value: unknown): value is string => typeof value === 'string',
         )
       : [],
+    removedCoordinationIds: Array.isArray(data['coordinacionIdsRetiradas'])
+      ? data['coordinacionIdsRetiradas'].filter(
+          (value: unknown): value is string => typeof value === 'string',
+        )
+      : null,
     coordinationNames: Array.isArray(data['coordinacionesInvolucradas'])
       ? data['coordinacionesInvolucradas'].flatMap((value: unknown) => {
           if (!value || typeof value !== 'object') return [];
@@ -183,7 +190,7 @@ function notificationId(
   return createHash('sha256').update(`${eventId}|${revision}|${type}|${recipient}`).digest('hex');
 }
 
-function logisticsNotificationId(
+export function logisticsNotificationId(
   eventId: string,
   equipmentId: string,
   reason: LogisticsReason,
@@ -200,7 +207,7 @@ function notificationType(event: CanonicalEvent): 'creacion' | 'actualizacion' |
   return event.revision <= 1 ? 'creacion' : 'actualizacion';
 }
 
-function eventNotificationSnapshot(
+export function eventNotificationSnapshot(
   event: CanonicalEvent,
   equipmentName: string | null = null,
   changes: readonly string[] = [],
@@ -277,6 +284,13 @@ export function createEventIntegrationsService(input: {
 }): EventIntegrationsService {
   const { firestore, calendar, mailer, logger } = input;
   const clock = input.clock ?? { now: () => new Date() };
+  const synchronizeCalendar = createCalendarSynchronizer({
+    firestore,
+    calendar,
+    logger,
+    clock,
+    parse: eventFromData,
+  });
   const events = firestore.collection('eventos');
   const coordinations = firestore.collection('coordinaciones');
   const notifications = firestore.collection('notificacionesEventos');
@@ -363,14 +377,26 @@ export function createEventIntegrationsService(input: {
 
     const removed = new Map<string, Recipient>();
     if (!event.cancelled && event.revision > 1) {
-      const removedCoordinationIds = new Set<string>();
-      prior.docs.forEach((snapshot) => {
+      const previousDocuments = prior.docs.filter((snapshot) => {
         const data = snapshot.data();
-        if (data['tipo'] === 'logistica') return;
+        return (
+          data['revision'] === event.revision - 1 &&
+          (data['tipo'] === 'creacion' || data['tipo'] === 'actualizacion')
+        );
+      });
+      const removedCoordinationIds = new Set(
+        event.removedCoordinationIds ??
+          previousDocuments
+            .map((snapshot) => snapshot.data()['coordinacionId'])
+            .filter(
+              (id): id is string => typeof id === 'string' && !event.coordinationIds.includes(id),
+            ),
+      );
+      previousDocuments.forEach((snapshot) => {
+        const data = snapshot.data();
         const email = data['destinatarioCorreo'];
         const coordinationId = data['coordinacionId'];
-        if (typeof coordinationId === 'string' && !event.coordinationIds.includes(coordinationId)) {
-          removedCoordinationIds.add(coordinationId);
+        if (typeof coordinationId === 'string' && removedCoordinationIds.has(coordinationId)) {
           if (typeof email === 'string' && !currentEmails.has(email)) {
             removed.set(email, { email, type: 'coordinacion', coordinationId });
           }
@@ -410,7 +436,14 @@ export function createEventIntegrationsService(input: {
       const id = notificationId(event.eventId, event.revision, job.type, job.recipient.email);
       const reference = notifications.doc(id);
       await firestore.runTransaction(async (transaction) => {
-        if ((await transaction.get(reference)).exists) return;
+        const [current, existing] = await transaction.getAll(event.reference, reference);
+        if (
+          !current?.exists ||
+          current.data()?.['revisionNotificacion'] !== event.revision ||
+          (current.data()?.['estatus'] === 'cancelado') !== event.cancelled ||
+          existing?.exists
+        )
+          return;
         transaction.create(reference, {
           eventoId: event.eventId,
           revision: event.revision,
@@ -569,27 +602,31 @@ export function createEventIntegrationsService(input: {
   }
 
   async function refreshNotificationState(eventId: string, revision: number): Promise<void> {
-    const snapshot = await notifications
-      .where('eventoId', '==', eventId)
-      .where('revision', '==', revision)
-      .get();
-    const functionalDocuments = snapshot.docs.filter(
-      (document) => document.data()['tipo'] !== 'logistica',
-    );
-    let state: EventIntegrationResult['notificationStatus'] = 'no_aplica';
-    if (functionalDocuments.length > 0) {
-      const hasPermanentFailure = functionalDocuments.some((document) => {
-        const data = document.data();
-        return data['estado'] === 'fallido' && data['proximoIntento'] === null;
-      });
-      const allSent = functionalDocuments.every(
-        (document) => document.data()['estado'] === 'enviado',
+    await firestore.runTransaction(async (transaction) => {
+      const reference = events.doc(eventId);
+      const event = await transaction.get(reference);
+      if (!event.exists || event.data()?.['revisionNotificacion'] !== revision) return;
+      const snapshot = await transaction.get(
+        notifications.where('eventoId', '==', eventId).where('revision', '==', revision),
       );
-      state = hasPermanentFailure ? 'parciales' : allSent ? 'completas' : 'pendiente';
-    }
-    await events.doc(eventId).update({
-      notificacionesEstado: state,
-      fechaActualizacion: FieldValue.serverTimestamp(),
+      const functionalDocuments = snapshot.docs.filter(
+        (document) => document.data()['tipo'] !== 'logistica',
+      );
+      let state: EventIntegrationResult['notificationStatus'] = 'no_aplica';
+      if (functionalDocuments.length > 0) {
+        const hasPermanentFailure = functionalDocuments.some((document) => {
+          const data = document.data();
+          return data['estado'] === 'fallido' && data['proximoIntento'] === null;
+        });
+        const allSent = functionalDocuments.every(
+          (document) => document.data()['estado'] === 'enviado',
+        );
+        state = hasPermanentFailure ? 'parciales' : allSent ? 'completas' : 'pendiente';
+      }
+      transaction.update(reference, {
+        notificacionesEstado: state,
+        fechaActualizacion: FieldValue.serverTimestamp(),
+      });
     });
   }
 
@@ -723,52 +760,8 @@ export function createEventIntegrationsService(input: {
 
   return {
     async reconcile(eventId) {
+      const calendarStatus = await synchronizeCalendar(eventId);
       const event = await canonicalEvent(eventId);
-      let calendarStatus: EventIntegrationResult['calendarStatus'];
-      try {
-        if (event.cancelled) {
-          if (event.calendarEventId) await calendar.remove(event.calendarEventId);
-          calendarStatus = 'retirado';
-          await event.reference.update({
-            calendarEventId: null,
-            calendarEstado: calendarStatus,
-            fechaActualizacion: FieldValue.serverTimestamp(),
-          });
-        } else {
-          const calendarEventId = await calendar.upsert(
-            {
-              eventId: event.eventId,
-              name: event.name,
-              dateStart: event.dateStart,
-              timeStart: event.timeStart,
-              dateEnd: event.dateEnd,
-              timeEnd: event.timeEnd,
-              responsible: event.responsible,
-              campusName: event.campusName,
-              campusAddress: event.campusAddress,
-              observations: event.observations,
-            },
-            event.calendarEventId,
-          );
-          calendarStatus = 'sincronizado';
-          await event.reference.update({
-            calendarEventId,
-            calendarEstado: calendarStatus,
-            fechaActualizacion: FieldValue.serverTimestamp(),
-          });
-        }
-      } catch (error) {
-        calendarStatus = 'error';
-        logger.warn('Fallo sanitizado al reconciliar Calendar.', {
-          eventId,
-          cause: error instanceof Error ? error.name : 'unknown',
-        });
-        await event.reference.update({
-          calendarEstado: calendarStatus,
-          fechaActualizacion: FieldValue.serverTimestamp(),
-        });
-      }
-
       await prepareNotifications(event);
       await prepareLogisticsNotifications(event);
       await processReferences(await dueReferences(50));

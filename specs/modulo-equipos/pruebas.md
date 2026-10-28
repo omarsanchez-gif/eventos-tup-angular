@@ -94,3 +94,16 @@
 - Revisión accesible y responsive autenticada.
 - Lint, formato, build y suite completa aprobados.
 - Guardia automática de normalización visual.
+
+## Regresión de consistencia local
+
+- RES-025: reservas sucesivas, coincidentes, anidadas y adyacentes calculan pico simultáneo; límites exclusivos no suman ocupación al terminar.
+- RES-026: reducir stock marca todos los compromisos afectados, conserva otros motivos y encola avisos de Sistemas; repetir no duplica, reservas pasadas/canceladas no participan y falta de configuración revierte toda escritura.
+- RES-027: reducción concurrente con reserva no deja sobreocupación sin revisión; exceso de capacidad técnica falla íntegramente.
+- RES-028: demora menor o igual al bloqueo actual falla sin efectos; una ampliación e idéntico reintento conservan versión y no duplican avisos.
+
+Resultado local del 27 de octubre: RES-025 a RES-028 cubiertos por reservation-capacity.spec.ts y events-reservations.integration.spec.ts; el catálogo conserva sus 7 pruebas de Emulator aprobadas. Publicado en staging el 27 de octubre de 2026; pendiente la aceptación funcional autenticada de este incremento.
+
+- RES-029: rechazar recepción antes/durante evento, antes del regreso y con fechas incompletas; aceptar fronteras local/remota, cancelación posterior al traslado e idempotencia sin incrementar control dos veces.
+
+Resultado local de RES-029: fronteras de recepción, cancelación remota, datos incompletos e idempotencia aprobados en Firestore Emulator; habilitación visual cubierta en EventsPage. El despliegue a staging se completó el 27 de octubre de 2026; la validación funcional autenticada de RES-029 sigue pendiente.

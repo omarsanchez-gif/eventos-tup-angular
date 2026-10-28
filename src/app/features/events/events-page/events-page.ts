@@ -44,6 +44,11 @@ export class EventsPage implements OnInit, OnDestroy {
   protected readonly editingEventId = signal<string | null>(null);
   protected readonly listEditingEventId = signal<string | null>(null);
   protected readonly listCancellationTarget = signal<EventSummary | null>(null);
+  protected readonly canConfirmListCancellation = computed(() => {
+    const target = this.listCancellationTarget();
+    const current = this.events.records().find((event) => event.eventId === target?.eventId);
+    return current !== undefined && this.canCancelFromList(current);
+  });
   protected readonly confirmingCancellation = signal(false);
   protected readonly logisticsConfirmation = signal<{
     readonly action: 'coverage' | 'reception' | 'delay';
@@ -107,6 +112,7 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected openCreate(): void {
+    void this.events.loadCatalogs(true);
     this.listCancellationTarget.set(null);
     this.eventForm.reset({
       nombreEvento: '',
@@ -141,6 +147,10 @@ export class EventsPage implements OnInit, OnDestroy {
     return event.ownedByRequester && event.status !== 'cancelado';
   }
 
+  protected canCancelFromList(event: EventSummary): boolean {
+    return this.canManageFromList(event) && event.status !== 'finalizado' && event.end !== null;
+  }
+
   protected async openEditFromList(event: EventSummary): Promise<void> {
     if (!this.canManageFromList(event) || this.listEditingEventId()) return;
     this.listEditingEventId.set(event.eventId);
@@ -157,7 +167,7 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected requestListCancellation(event: EventSummary): void {
-    if (!this.canManageFromList(event)) return;
+    if (!this.canCancelFromList(event)) return;
     this.listCancellationTarget.set(event);
   }
 
@@ -167,6 +177,8 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected confirmListCancellation(eventId: string): void {
+    if (!this.canConfirmListCancellation() || this.listCancellationTarget()?.eventId !== eventId)
+      return;
     void this.events.cancel(eventId).then((cancelled) => {
       if (cancelled) this.listCancellationTarget.set(null);
     });
@@ -174,6 +186,7 @@ export class EventsPage implements OnInit, OnDestroy {
 
   protected openEdit(detail: EventDetail): void {
     if (!detail.canEdit) return;
+    void this.events.loadCatalogs(true);
     this.eventForm.reset({
       nombreEvento: detail.name,
       campusId: detail.campusId ?? '',
@@ -206,6 +219,7 @@ export class EventsPage implements OnInit, OnDestroy {
     if (this.availabilityTimer) clearTimeout(this.availabilityTimer);
     this.availabilityTimer = null;
     this.stopAvailabilityMonitoring();
+    this.events.invalidateAvailability();
     this.dialogMode.set(null);
     this.selectedEvent.set(null);
     this.events.clearDetail();
@@ -215,6 +229,8 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.events.clearDetail();
+    this.events.invalidateAvailability();
     if (this.availabilityTimer) clearTimeout(this.availabilityTimer);
     this.stopAvailabilityMonitoring();
   }
@@ -305,6 +321,12 @@ export class EventsPage implements OnInit, OnDestroy {
     return this.events.availability()?.items.find((item) => item.equipmentId === id) ?? null;
   }
 
+  protected availabilityPendingMessage(): string {
+    return this.availabilityInput()
+      ? 'Consulta de disponibilidad pendiente…'
+      : 'Complete campus, fechas, horarios y cantidades válidas para verificar.';
+  }
+
   protected fileChanged(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0] ?? null;
     this.formError.set(null);
@@ -371,6 +393,7 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected requestCancellation(): void {
+    if (!this.events.detail()?.canCancel) return;
     this.confirmingCancellation.set(true);
   }
 
@@ -379,6 +402,8 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   protected confirmCancellation(eventId: string): void {
+    const detail = this.events.detail();
+    if (!detail?.canCancel || detail.eventId !== eventId) return;
     void this.events.cancel(eventId).then((cancelled) => {
       if (cancelled) this.confirmingCancellation.set(false);
     });

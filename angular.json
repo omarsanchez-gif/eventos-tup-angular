@@ -36,22 +36,22 @@
               "@fullcalendar/angular/themes/classic/theme.css",
               "@fullcalendar/angular/themes/classic/palette.css",
               "src/styles.scss"
+            ],
+            "budgets": [
+              {
+                "type": "initial",
+                "maximumWarning": "750kB",
+                "maximumError": "1MB"
+              },
+              {
+                "type": "anyComponentStyle",
+                "maximumWarning": "6kB",
+                "maximumError": "8kB"
+              }
             ]
           },
           "configurations": {
             "production": {
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
-                }
-              ],
               "outputHashing": "all"
             },
             "development": {

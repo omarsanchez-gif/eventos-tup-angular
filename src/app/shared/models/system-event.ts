@@ -79,6 +79,7 @@ export interface EventReservationDetail {
   readonly scheduledRelease: string;
   readonly receptionConfirmed: string | null;
   readonly delayReported: boolean;
+  readonly canConfirmReception: boolean;
 }
 
 export interface EventDetail extends EventSummary {

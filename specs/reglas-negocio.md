@@ -39,7 +39,7 @@
 - RN-020: Responsable y correo del creador proceden de la sesión autorizada.
 - RN-021: Los eventos nuevos usan `programado` como valor persistido inicial; su estado temporal visible se deriva de los instantes canónicos de inicio y fin.
 - RN-022: `registrado` es un valor histórico equivalente visualmente a `programado`; `en_proceso` y `finalizado` históricos no obligan a realizar escrituras programadas y se recalculan cuando existan fechas válidas.
-- RN-023: Solo el creador puede editar o cancelar un evento.
+- RN-023: Solo el creador puede editar o cancelar un evento. Cancelar exige que todavía no haya finalizado: desde `ahoraServidor >= finAt` se rechaza, incluso con una pantalla antigua. Esta restricción no modifica los permisos de edición.
 - RN-024: Un evento se guarda en Firestore antes de ejecutar Calendar y correo.
 - RN-025: La creación debe procesar Calendar y correo mediante operaciones backend independientes e idempotentes.
 - RN-026: La edición debe sincronizar Google Calendar y generar correo cuando cambien nombre, fecha, horario o coordinaciones.
@@ -123,18 +123,18 @@
 ## Reservaciones y logística de Equipos — implementación autorizada
 
 - RN-RES-001: Una solicitud confirma todos los equipos y cantidades o ninguno; no existen asignaciones parciales.
-- RN-RES-002: La disponibilidad resta las cantidades de reservas coincidentes en estado `confirmada` o `requiere_revision`.
+- RN-RES-002: La disponibilidad resta el máximo de cantidades ocupadas simultáneamente dentro del intervalo logístico solicitado, considerando reservas `confirmada` o `requiere_revision` y límites [inicio, fin). No suma reservas sucesivas como si coincidieran entre sí.
 - RN-RES-003: Equipo local se bloquea 60 minutos antes y se libera 30 minutos después del evento.
 - RN-RES-004: Equipo transferido se bloquea desde la salida del campus base hasta su liberación de regreso.
 - RN-RES-005: La salida regular ocurre a las 17:00 del día operativo anterior que permita completar recepción; después del corte no se confirma equipo remoto.
 - RN-RES-006: TUP–FCS usa 30 minutos. Un tercer campus requiere política aprobada antes de aceptar destinos.
 - RN-RES-007: El regreso comienza al cierre operativo del destino o en la siguiente ventana válida y se libera 60 minutos después, salvo recepción anticipada o demora administrativa.
-- RN-RES-008: Una demora exige nueva fecha y hora estimada y sustituye la liberación automática previa.
+- RN-RES-008: Una demora exige nueva fecha y hora futura estrictamente posterior al bloqueo y liberación vigentes; sustituye la liberación automática previa ampliándola. Repetir la misma demora es idempotente y no acorta el bloqueo.
 - RN-RES-009: El equipo que espera regreso no puede reutilizarse en el campus destino.
 - RN-RES-010: Cancelar después de la salida conserva la ventana de regreso.
 - RN-RES-011: Cobertura de Sistemas usa `no_requerida`, `pendiente` o `confirmada`; quedar pendiente no bloquea inventario y solo `admin` confirma.
 - RN-RES-012: La coordinación de Sistemas se referencia por ID canónico desde Coordinaciones; no se localiza por texto ni recibe correos desde el cliente.
-- RN-RES-013: Reducir inventario por debajo de compromisos marca reservas afectadas `requiere_revision`, notifica a Sistemas y no cancela ni reasigna silenciosamente.
+- RN-RES-013: Reducir inventario por debajo de compromisos marca reservas afectadas `requiere_revision`, incrementa el control y encola avisos de Sistemas atómicamente; no cancela ni reasigna silenciosamente. Repetir la misma cantidad no duplica avisos. Se aplican los límites seguros definidos en reservaciones.md.
 - RN-RES-014: Cambiar fecha, horario, campus, equipos o cantidades recalcula la solicitud completa; si el nuevo estado falla, se conserva el anterior.
 - RN-RES-015: No se aceptan eventos que inicien, terminen o transcurran en domingo.
 - RN-RES-016: Un evento admite como máximo 20 tipos distintos de equipo; cada ID es único y cada cantidad es un entero positivo.
@@ -168,3 +168,9 @@
 - RN-032: No se cambiará el modelo de datos durante la migración inicial.
 - RN-033: No se crearán funcionalidades ausentes sin una spec aprobada.
 - RN-034: Las correcciones de seguridad pueden cambiar el mecanismo técnico, pero no los permisos funcionales aprobados.
+
+## Reglas complementarias de consistencia local
+
+- RN-RES-025: recepción local desde el fin del evento; remota desde el inicio de regreso, conservando la ventana si el evento fue cancelado después de salir. Ninguna recepción precede al bloqueo; datos incompletos cierran la operación. Confirmación administrativa no permite liberar un evento futuro.
+- RN-083: Calendar serializa operaciones por evento y publica sincronizado/retirado únicamente si la fotografía enviada continúa vigente. Una cancelación concurrente se procesa después de la operación en curso y retira su entrada.
+- RN-084: avisar retiro de coordinación únicamente por la transición de IDs de la revisión vigente; no repetirlo por aparecer en el historial.

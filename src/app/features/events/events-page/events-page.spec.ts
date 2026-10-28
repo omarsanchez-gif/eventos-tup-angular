@@ -13,6 +13,7 @@ import {
 import { EQUIPMENT_GATEWAY, type EquipmentGateway } from '../../equipment/data/equipment.gateway';
 import { EVENTS_GATEWAY, type EventsGateway } from '../data/events.gateway';
 import { EventsPage } from './events-page';
+import { EventsFacade } from '../state/events.facade';
 
 const user = signal<AuthorizedUser | null>({
   uid: 'user-uid',
@@ -186,6 +187,37 @@ describe('EventsPage', () => {
     expect(element.querySelector('button[aria-label="Cancelar evento EVENTO AJENO"]')).toBeNull();
   });
 
+  it('muestra el error dentro del formulario y permite recuperar la disponibilidad sin perder cantidades', async () => {
+    vi.mocked(eventsGateway.checkAvailability).mockRejectedValueOnce({
+      details: { functionalCode: 'invalid-date-range' },
+    });
+    const element = fixture.nativeElement as HTMLElement;
+    element
+      .querySelector<HTMLButtonElement>('button[aria-label="Editar evento PRUEBA 1"]')
+      ?.click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      const dialog = element.querySelector('[role="dialog"]');
+      expect(dialog?.textContent).toContain('Revise las fechas y horarios del evento.');
+      expect(dialog?.textContent).toContain('No se pudo verificar');
+      expect(dialog?.textContent).not.toContain('Verificando…');
+    });
+    const retry = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
+    ).find((button) => button.textContent?.trim() === 'Reintentar disponibilidad');
+    expect(retry).toBeDefined();
+    retry?.click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      const dialog = element.querySelector('[role="dialog"]');
+      expect(dialog?.textContent).toContain('Disponibles: 1');
+      expect(dialog?.textContent).not.toContain('Revise las fechas y horarios del evento.');
+      expect(dialog?.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe('1');
+    });
+    expect(eventsGateway.create).not.toHaveBeenCalled();
+    expect(eventsGateway.update).not.toHaveBeenCalled();
+  });
+
   it('muestra la columna Integración solamente al administrador', () => {
     user.update((current) => (current ? { ...current, rol: 'admin' } : current));
     fixture.detectChanges();
@@ -235,6 +267,74 @@ describe('EventsPage', () => {
       expect(element.querySelector('#list-cancel-event-title')).toBeNull();
     });
   });
+
+  it.each(['usuario', 'admin'] as const)(
+    'oculta cancelar en escritorio, móvil y detalle finalizado para %s',
+    async (role) => {
+      user.update((current) => (current ? { ...current, rol: role } : current));
+      const facade = fixture.debugElement.injector.get(EventsFacade);
+      vi.mocked(eventsGateway.list).mockResolvedValue({
+        items: [summary],
+        nextCursor: null,
+        serverNow: summary.end,
+      });
+      await facade.loadRecords();
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+      expect(element.querySelector('button[aria-label="Cancelar evento PRUEBA 1"]')).toBeNull();
+      expect(element.querySelector('.mobile-list')?.textContent).not.toContain('Cancelar');
+      expect(element.querySelector('button[aria-label="Editar evento PRUEBA 1"]')).not.toBeNull();
+      element
+        .querySelector<HTMLButtonElement>('button[aria-label="Ver detalle de PRUEBA 1"]')
+        ?.click();
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(element.querySelector('[role="dialog"]')?.textContent).toContain('Finalizado');
+      });
+      expect(element.querySelector('[role="dialog"]')?.textContent).not.toContain(
+        'Cancelar evento',
+      );
+    },
+  );
+
+  it.each(['listado', 'detalle'])(
+    'retira la confirmación abierta al llegar al fin desde %s',
+    async (scope) => {
+      vi.useFakeTimers();
+      try {
+        const facade = fixture.debugElement.injector.get(EventsFacade);
+        vi.mocked(eventsGateway.list).mockResolvedValue({
+          items: [summary],
+          nextCursor: null,
+          serverNow: '2026-10-06T14:59:59.000Z',
+        });
+        await facade.loadRecords();
+        const page = fixture.componentInstance;
+        if (scope === 'listado') page['requestListCancellation'](summary);
+        else {
+          page['openDetail'](summary);
+          await Promise.resolve();
+          await Promise.resolve();
+          page['requestCancellation']();
+        }
+        fixture.detectChanges();
+        const element = fixture.nativeElement as HTMLElement;
+        expect(element.querySelector('[role="alertdialog"]')?.textContent).toContain(
+          'Confirmar cancelación',
+        );
+        await vi.advanceTimersByTimeAsync(1001);
+        fixture.detectChanges();
+        expect(element.textContent).not.toContain('Confirmar cancelación');
+        expect(element.textContent).toContain('El evento ya no admite cancelación.');
+        if (scope === 'listado') page['confirmListCancellation'](summary.eventId);
+        else page['confirmCancellation'](summary.eventId);
+        expect(eventsGateway.cancel).not.toHaveBeenCalled();
+      } finally {
+        fixture.destroy();
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it('incluye el eventId al previsualizar los equipos existentes de una edición', async () => {
     const element = fixture.nativeElement as HTMLElement;
@@ -310,5 +410,63 @@ describe('EventsPage', () => {
       expect(element.textContent).toContain('La disponibilidad cambió por otra reservación.');
     });
     expect(element.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe('1');
+  });
+  it.each([false, true])(
+    'habilita recepción solo según la ventana validada por backend (%s)',
+    async (allowed) => {
+      user.update((value) => (value ? { ...value, rol: 'admin' } : value));
+      vi.mocked(eventsGateway.detail).mockResolvedValueOnce({
+        ...detail,
+        reservations: [
+          {
+            equipmentId: 'speaker',
+            equipmentName: 'Bocina',
+            quantity: 1,
+            state: 'confirmada',
+            reviewReasons: [],
+            requiresTransfer: false,
+            blockStart: summary.start,
+            blockEnd: summary.end,
+            scheduledRelease: summary.end,
+            receptionConfirmed: null,
+            delayReported: false,
+            canConfirmReception: allowed,
+          },
+        ],
+      });
+      const element = fixture.nativeElement as HTMLElement;
+      element
+        .querySelector<HTMLButtonElement>('button[aria-label="Ver detalle de PRUEBA 1"]')
+        ?.click();
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        const button = Array.from(element.querySelectorAll('button')).find(
+          (item) => item.textContent?.trim() === 'Confirmar recepción',
+        );
+        expect(button).toBeDefined();
+        expect(button?.disabled).toBe(!allowed);
+        expect(button?.title).toContain(allowed ? 'ya está disponible' : 'Actualice el detalle');
+      });
+    },
+  );
+
+  it('actualiza catálogos al abrir creación y edición sin perder la selección', async () => {
+    const campuses = TestBed.inject(CAMPUSES_GATEWAY);
+    const coordinations = TestBed.inject(COORDINATIONS_GATEWAY);
+    const equipment = TestBed.inject(EQUIPMENT_GATEWAY);
+    expect(campuses.listSelectable).toHaveBeenCalledTimes(1);
+    fixture.componentInstance['openCreate']();
+    await vi.waitFor(() => expect(campuses.listSelectable).toHaveBeenCalledTimes(2));
+    await fixture.componentInstance['events'].loadCatalogs();
+    fixture.componentInstance['closeDialog']();
+    fixture.componentInstance['openEdit'](detail);
+    await fixture.componentInstance['events'].loadCatalogs();
+    for (const gateway of [campuses, coordinations, equipment])
+      expect(gateway.listSelectable).toHaveBeenCalledTimes(3);
+    expect(fixture.componentInstance['requestedEquipment']()).toEqual([
+      { equipoId: 'speaker', cantidad: 1 },
+    ]);
+    expect(fixture.componentInstance['eventForm'].controls.nombreEvento.value).toBe(detail.name);
+    fixture.componentInstance['closeDialog']();
   });
 });

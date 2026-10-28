@@ -1,11 +1,6 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import {
-  FieldValue,
-  getFirestore,
-  type DocumentData,
-  type DocumentReference,
-} from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
@@ -15,10 +10,6 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import {
   AuthorizationError,
   bootstrapAuthorization as authorize,
-  type AuthorizationRepository,
-  type AuthorizedUserRecord,
-  type CanonicalUserRecord,
-  type UserRole,
 } from './bootstrap-authorization.js';
 import {
   AdminCampusesError,
@@ -79,6 +70,7 @@ import {
   listCalendarEventRecords,
   listEventRecords,
   reconcileEventIntegrationsRecord,
+  syncUpdatedEventIntegrationsRecord,
   reportEquipmentDelayRecord,
   updateEventRecord,
   type EventRequestIdentity,
@@ -94,6 +86,7 @@ import { createFirestoreAdminCampusesRepository } from './firestore-admin-campus
 import { createFirestoreAdminCoordinationsRepository } from './firestore-admin-coordinations.repository.js';
 import { createFirestoreAdminEquipmentRepository } from './firestore-admin-equipment.repository.js';
 import { createFirestoreAdminUsersRepository } from './firestore-admin-users.repository.js';
+import { createFirestoreAuthorizationRepository } from './firestore-authorization.repository.js';
 import { createFirestoreDashboardRepository } from './firestore-dashboard.repository.js';
 import { createFirestoreEventsRepository } from './firestore-events.repository.js';
 import { createProtocolValidator } from './protocol-validator.js';
@@ -111,6 +104,7 @@ const adminCampusesRepository = createFirestoreAdminCampusesRepository(firestore
 const adminCoordinationsRepository = createFirestoreAdminCoordinationsRepository(firestore);
 const adminEquipmentRepository = createFirestoreAdminEquipmentRepository(firestore);
 const adminUsersRepository = createFirestoreAdminUsersRepository(firestore);
+const repository = createFirestoreAuthorizationRepository(firestore);
 const dashboardRepository = createFirestoreDashboardRepository(firestore);
 const eventsRepository = createFirestoreEventsRepository(firestore);
 const protocolValidator = createProtocolValidator(getStorage().bucket());
@@ -123,80 +117,6 @@ const eventIntegrations = createEventIntegrationsService({
   ),
   logger,
 });
-
-function dataToUserRecord(
-  reference: DocumentReference<DocumentData>,
-  data: DocumentData,
-): AuthorizedUserRecord {
-  return {
-    id: reference.id,
-    uid: typeof data['uid'] === 'string' ? data['uid'] : null,
-    nombre: typeof data['nombre'] === 'string' ? data['nombre'] : '',
-    correo: typeof data['correo'] === 'string' ? data['correo'].trim().toLowerCase() : '',
-    rol: data['rol'],
-    activo: data['activo'] === true,
-  };
-}
-
-function isRole(value: unknown): value is UserRole {
-  return value === 'admin' || value === 'usuario';
-}
-
-const repository: AuthorizationRepository = {
-  async findByEmail(email) {
-    const snapshot = await firestore
-      .collection('usuarios')
-      .where('correo', '==', email)
-      .limit(2)
-      .get();
-    return snapshot.docs.map((document) => dataToUserRecord(document.ref, document.data()));
-  },
-
-  async recordSuccessfulAccess(record, authenticatedUid) {
-    const reference = firestore.collection('usuarios').doc(record.id);
-    return firestore.runTransaction(async (transaction): Promise<CanonicalUserRecord> => {
-      const snapshot = await transaction.get(reference);
-      const current = snapshot.exists ? dataToUserRecord(reference, snapshot.data() ?? {}) : null;
-
-      if (!current) {
-        throw new AuthorizationError(
-          'user-not-authorized',
-          'permission-denied',
-          'El usuario ya no existe.',
-        );
-      }
-      if (!current.activo) {
-        throw new AuthorizationError(
-          'user-inactive',
-          'permission-denied',
-          'El usuario está inactivo.',
-        );
-      }
-      if (!isRole(current.rol)) {
-        throw new AuthorizationError('invalid-role', 'permission-denied', 'El rol no es válido.');
-      }
-      if (current.uid !== null && current.uid !== authenticatedUid) {
-        throw new AuthorizationError(
-          'uid-conflict',
-          'permission-denied',
-          'El UID no corresponde al usuario autorizado.',
-        );
-      }
-
-      transaction.update(reference, {
-        ...(current.uid === null ? { uid: authenticatedUid } : {}),
-        ultimoAcceso: FieldValue.serverTimestamp(),
-      });
-
-      return {
-        ...current,
-        uid: authenticatedUid,
-        rol: current.rol,
-        activo: true,
-      };
-    });
-  },
-};
 
 export const bootstrapAuthorization = onCall(
   { invoker: 'public', region: 'us-central1' },
@@ -762,35 +682,13 @@ export const processEventIntegrations = onCall(eventIntegrationCallableOptions, 
 export const syncUpdatedEventIntegrations = onCall(
   eventIntegrationCallableOptions,
   async (request) =>
-    executeEventOperation(async () => {
-      const data =
-        request.data && typeof request.data === 'object' && !Array.isArray(request.data)
-          ? (request.data as Record<string, unknown>)
-          : {};
-      if (
-        Object.keys(data).some((key) => !['eventId', 'revisionEsperada'].includes(key)) ||
-        typeof data['eventId'] !== 'string' ||
-        !Number.isInteger(data['revisionEsperada'])
-      ) {
-        throw new EventsError('invalid-argument', 'invalid-argument', 'La solicitud no es válida.');
-      }
-      const eventSnapshot = await firestore.doc(`eventos/${data['eventId']}`).get();
-      if (!eventSnapshot.exists) {
-        throw new EventsError('event-not-found', 'not-found', 'El evento no existe.');
-      }
-      if (eventSnapshot.data()?.['revisionNotificacion'] !== data['revisionEsperada']) {
-        throw new EventsError(
-          'invalid-argument',
-          'failed-precondition',
-          'La revisión del evento cambió.',
-        );
-      }
-      return reconcileEventIntegrationsRecord(
+    executeEventOperation(() =>
+      syncUpdatedEventIntegrationsRecord(
         toEventIdentity(request.auth),
-        { eventId: data['eventId'] },
+        request.data,
         eventsDependencies(),
-      );
-    }),
+      ),
+    ),
 );
 
 export const processEventNotifications = onSchedule(

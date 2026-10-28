@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { calendarEventIdentity } from './calendar-identity.js';
 
 import {
   MailDeliveryError,
@@ -98,6 +99,7 @@ function hasCanonicalCoordinationOrigin(message: EventMailMessage, domain: strin
 
 async function accessToken(configuration: CalendarConfiguration): Promise<string> {
   const response = await fetch('https://oauth2.googleapis.com/token', {
+    signal: AbortSignal.timeout(15_000),
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -139,6 +141,7 @@ async function calendarRequest(
 ): Promise<Record<string, unknown>> {
   const response = await fetch(url, {
     ...init,
+    signal: AbortSignal.timeout(15_000),
     headers: {
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
@@ -173,12 +176,31 @@ export function createGoogleCalendarClient(readSecret: () => string): EventCalen
           }
         }
       }
-      const created = await calendarRequest(baseUrl, token, {
-        method: 'POST',
-        body,
-      });
-      if (typeof created['id'] !== 'string' || !created['id']) throw new CalendarApiError(502);
-      return created['id'];
+      let previousId = existingId ?? '';
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const id = calendarEventIdentity(event.eventId, previousId);
+        try {
+          const created = await calendarRequest(baseUrl, token, {
+            method: 'POST',
+            body: JSON.stringify({ ...calendarBody(event), id }),
+          });
+          if (created['id'] !== id) throw new CalendarApiError(502);
+          return id;
+        } catch (error) {
+          if (!(error instanceof CalendarApiError) || error.status !== 409) throw error;
+          const existing = await calendarRequest(baseUrl + '/' + id, token, { method: 'GET' });
+          if (existing['status'] === 'cancelled') {
+            previousId = id;
+            continue;
+          }
+          const properties = record(existing['extendedProperties']);
+          if (record(properties['private'])['eventosTupId'] !== event.eventId)
+            throw new CalendarApiError(409);
+          await calendarRequest(baseUrl + '/' + id, token, { method: 'PUT', body });
+          return id;
+        }
+      }
+      throw new CalendarApiError(409);
     },
 
     async remove(existingId) {

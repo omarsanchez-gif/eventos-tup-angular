@@ -226,6 +226,7 @@ describe('Firestore authorization rules', () => {
     const paths = [
       'reservasEquipo/reservation-1',
       'controlReservasEquipo/speaker',
+      'controlIntegracionesEvento/event-1',
       'notificacionesEventos/notification-1',
       'configuracion/logisticaEquipos',
     ];

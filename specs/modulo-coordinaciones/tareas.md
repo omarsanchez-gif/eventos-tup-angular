@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 2026. Las seis callables y Firestore Rules están desplegadas; Hosting y producción permanecen fuera de alcance.
+Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 2026. Las seis callables y Firestore Rules están desplegadas y el Hosting vigente incluye el módulo. La aceptación visual quedó confirmada el 3 de octubre y el recorrido administrativo completo el 27 de octubre de 2026; producción permanece fuera de alcance.
 
 ## Decisiones previas
 
@@ -21,7 +21,7 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T09 Redefinir Eventos y ADR-006 sin implementar código.
 - [x] COO-T10 Revisar y aceptar documentalmente los contratos backend.
 
-## Backend futuro
+## Backend
 
 - [x] COO-T11 Implementar modelo y validadores estrictos.
 - [x] COO-T12 Implementar unicidad concurrente de nombre normalizado.
@@ -39,9 +39,9 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T21 Actualizar Firestore Rules sin exponer correos.
 - [x] COO-T22 Revalidar claims y perfil canónico admin en mutaciones.
 - [x] COO-T23 Probar lectura completa, catálogo sanitizado y escrituras directas.
-- [ ] COO-T24 Probar carrera entre uso y eliminación.
+- [x] COO-T24 Probar con Firestore Emulator la carrera entre primer uso y eliminación, conservando solo uno de los dos resultados válidos.
 
-## Angular futuro
+## Angular
 
 - [x] COO-T25 Crear modelos, gateway y facade desacoplados.
 - [x] COO-T26 Crear ruta lazy `/coordinaciones` con guards.
@@ -53,18 +53,18 @@ Implementación y despliegue exclusivo a staging autorizados el 19 de agosto de 
 - [x] COO-T32 Implementar explicación de eliminación bloqueada.
 - [x] COO-T33 Completar responsive y accesibilidad en código y aceptar la revisión manual el 3 de octubre de 2026.
 
-## Pruebas futuras
+## Pruebas
 
-- [ ] COO-T34 Ejecutar COO-001 a COO-034.
+- [x] COO-T34 Ejecutar COO-001 a COO-034; recorrido aceptado por el responsable en staging el 27 de octubre de 2026.
 - [x] COO-T35 Ejecutar unitarias Angular y Functions.
 - [x] COO-T36 Ejecutar integración Firestore Emulator con perfiles canónicos sintéticos.
-- [ ] COO-T37 Ejecutar Rules y pruebas de concurrencia.
+- [x] COO-T37 Ejecutar Rules y pruebas de concurrencia; la suite de Coordinaciones aprobó 9 casos con Firestore Emulator el 27 de octubre de 2026.
 - [x] COO-T38 Ejecutar lint, formato y build de staging dentro del presupuesto.
-- [ ] COO-T39 Validar manualmente en staging con datos sintéticos.
+- [x] COO-T39 Validar manualmente en staging con datos sintéticos; confirmado por el responsable el 27 de octubre de 2026.
 
-## Cierre futuro
+## Cierre
 
-- [ ] COO-T40 Completar la aceptación funcional del recorrido administrativo; la aceptación visual quedó aprobada el 3 de octubre de 2026.
+- [x] COO-T40 Completar la aceptación funcional del recorrido administrativo; aceptación funcional confirmada el 27 de octubre de 2026 y aceptación visual aprobada el 3 de octubre de 2026.
 - [x] COO-T41 Autorizar explícitamente el inicio de Eventos el 29 de septiembre de 2026.
 - [x] COO-T42 Confirmar que producción no fue utilizada ni modificada.
 - [x] COO-T44 Desplegar las seis callables de Coordinaciones únicamente a staging con alcance explícito.

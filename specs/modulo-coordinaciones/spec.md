@@ -2,7 +2,7 @@
 
 ## Estado
 
-Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging y el Hosting vigente incluye `/coordinaciones`. La revisión visual, accesible y responsive y la recepción real de notificaciones por contactos canónicos quedaron aceptadas el 3 de octubre. El recorrido administrativo completo y la carrera uso/eliminación conservan seguimiento separado; producción no está autorizada.
+Especificación funcional e implementación aprobadas el 19 de agosto de 2026. Pruebas automatizadas, lint y build están en verde. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging y el Hosting vigente incluye `/coordinaciones`. La revisión visual, accesible y responsive y la recepción real de notificaciones por contactos canónicos quedaron aceptadas el 3 de octubre. El 27 de octubre de 2026 el responsable aceptó el recorrido administrativo completo, incluida la eliminación permitida o bloqueada por uso; la carrera transaccional quedó cubierta por Emulator Suite. Producción no está autorizada.
 
 ## Objetivo
 
@@ -287,6 +287,6 @@ Columnas:
 - COO-D07: Eventos no impone un límite funcional de coordinaciones seleccionadas.
 - COO-D08: El catálogo administrativo admite como máximo 500 coordinaciones; superar el límite produce `coordination-capacity-exceeded` sin datos parciales.
 
-## Decisiones pendientes
+## Cierre de decisiones
 
-No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima. Publicaciones posteriores incorporaron `/coordinaciones` y la aceptación visual autenticada quedó confirmada el 3 de octubre. El recorrido administrativo completo y la carrera uso/eliminación conservan seguimiento; producción no fue modificada.
+No existen decisiones funcionales pendientes para implementar Coordinaciones. Las seis callables y Firestore Rules fueron desplegadas únicamente a staging el 19 de agosto de 2026 después de aprobar la evidencia automatizada y recibir autorización expresa. La verificación remota confirmó las Functions y el rechazo correcto de una llamada anónima. Publicaciones posteriores incorporaron `/coordinaciones`, la aceptación visual autenticada quedó confirmada el 3 de octubre y el recorrido administrativo completo fue aceptado el 27 de octubre de 2026. La carrera uso/eliminación está cubierta por pruebas transaccionales; producción no fue modificada.

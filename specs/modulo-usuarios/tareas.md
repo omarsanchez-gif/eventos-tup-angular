@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementación autorizada, validada en Emulator Suite y desplegada únicamente a staging el 18 de agosto de 2026. El 3 de octubre se aceptaron roles, revocación, negativas y la presentación visual/accesible/responsive; el recorrido administrativo completo conserva seguimiento separado.
+Implementación autorizada, validada en Emulator Suite y desplegada únicamente a staging el 18 de agosto de 2026. El 3 de octubre se aceptaron roles, revocación, negativas y la presentación visual/accesible/responsive. El 27 de octubre de 2026 el responsable confirmó satisfactoriamente el recorrido administrativo completo y el volumen esperado inferior a 500 usuarios.
 
 ## Documentación base
 
@@ -25,8 +25,8 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 - [x] USR-T11 Verificar que Java 21 y Emulator Suite estén disponibles antes de desarrollar Rules y callables.
 - [x] USR-T12 Crear cuentas y documentos sintéticos definidos en `pruebas.md`.
 - [x] USR-T13 Confirmar el dominio institucional de prueba por configuración backend.
-- [ ] USR-T14 Confirmar que el volumen actual y esperado de `usuarios` permanece por debajo del límite aprobado de 500.
-- [ ] USR-T15 Inventariar índices Firestore necesarios sin desplegarlos todavía.
+- [x] USR-T14 Confirmar que el volumen actual y esperado de `usuarios` permanece por debajo del límite aprobado de 500; confirmado por el responsable el 27 de octubre de 2026.
+- [x] USR-T15 Confirmar que Usuarios no requiere índices compuestos adicionales para su listado acotado y búsqueda local aprobada.
 - [x] USR-T16 Confirmar que las decisiones aprobadas no requieren campos, colecciones o dependencias nuevas.
 
 ## Modelos y contratos Angular
@@ -159,11 +159,11 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 
 - [x] USR-T101 Crear pruebas unitarias de normalización y validación.
 - [x] USR-T102 Crear pruebas unitarias de facade, estados y errores.
-- [ ] USR-T103 Crear pruebas de componentes, formulario, tabla, diálogos y navegación.
+- [x] USR-T103 Crear pruebas de componente para tabla, alta, validación, búsqueda, iconografía, edición, cambio de estado, eliminación y confirmaciones; guard y shell cubren navegación.
 - [x] USR-T104 Crear pruebas de las cinco callables con Auth y Firestore Emulator.
 - [x] USR-T105 Crear y aceptar pruebas de claims, revocación, ventana del ID token, fallo cerrado, reconciliación e idempotencia.
 - [x] USR-T106 Crear pruebas de concurrencia para correo único.
-- [ ] USR-T107 Ejecutar USR-001 a USR-069 y registrar evidencia de cada resultado.
+- [x] USR-T107 Ejecutar USR-001 a USR-069 y registrar evidencia de cada resultado; recorrido aceptado por el responsable en staging el 27 de octubre de 2026.
 
 ## Verificación y cierre
 
@@ -174,7 +174,7 @@ Implementación autorizada, validada en Emulator Suite y desplegada únicamente 
 - [x] USR-T112 Validar primero con Emulator Suite y después con cuentas institucionales aprobadas de staging.
 - [x] USR-T113 Confirmar que producción no fue utilizada ni modificada.
 - [x] USR-T114 Actualizar trazabilidad, decisiones pendientes y README solo después de autorizar implementación.
-- [ ] USR-T115 Completar la aceptación funcional del recorrido administrativo en staging antes de considerar producción; la aceptación visual/accesible quedó aprobada el 3 de octubre de 2026.
+- [x] USR-T115 Completar la aceptación funcional del recorrido administrativo en staging; aceptación funcional confirmada el 27 de octubre de 2026 y aceptación visual/accesible aprobada el 3 de octubre de 2026.
 
 ## Seguimiento de búsqueda e iconografía
 

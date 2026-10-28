@@ -2,9 +2,33 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const applicationRoot = join(process.cwd(), 'src', 'app');
-const forbiddenSelector =
-  /^\s*\.(?:button(?:--[a-z-]+)?|icon-button(?:--[a-z-]+)?)(?=[\s:{,.>]|$)/u;
+const sharedPrimitive = [
+  'button',
+  'icon-button',
+  'panel',
+  'page-header',
+  'eyebrow',
+  'badge',
+  'status-badge',
+  'event-status',
+  'integration-status',
+  'alert',
+  'tooltip',
+  'action-tooltip',
+  'dialog-backdrop',
+  'dialog-actions',
+  'form-field',
+  'spinner',
+  'loading-state',
+  'empty-state',
+  'sr-only',
+].join('|');
+const forbiddenSelector = new RegExp(
+  `^\\s*\\.(?:${sharedPrimitive})(?:--[a-z0-9_-]+)?\\s*(?:,|\\{)`,
+  'u',
+);
 const legacyColors = /#(?:3c108e|2e0a70|321070)\b/iu;
+const duplicatedSemanticColors = /#(?:eeeef9|fff5f4|f4b4ae|f2fcf7|a6e5c7|eaf8f1|eef0f3)\b/iu;
 const findings = [];
 
 function scssFiles(directory) {
@@ -26,6 +50,11 @@ for (const file of scssFiles(applicationRoot)) {
     if (legacyColors.test(line)) {
       findings.push(
         `${relative(process.cwd(), file)}:${index + 1} utiliza un color institucional obsoleto`,
+      );
+    }
+    if (duplicatedSemanticColors.test(line)) {
+      findings.push(
+        `${relative(process.cwd(), file)}:${index + 1} duplica un color semántico que debe usar tokens globales`,
       );
     }
   });

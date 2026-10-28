@@ -75,6 +75,10 @@ Firestore conserva el perfil canónico. Claims `authorized` y `role` permiten qu
 
 Signals representan estado y valores derivados. RxJS representa observadores y composición asíncrona. Consultar `ADR-003`.
 
+EVT-121: el refresco temporal de Eventos incluye el detalle abierto y su permiso de cancelación, aunque no esté en el listado actual. La cancelación recibe un reloj inyectado que el repositorio consulta dentro de cada intento transaccional tras las lecturas; valida el fin antes de cualquier escritura. Históricos válidos se interpretan en memoria, sin persistir migraciones. El rechazo termina antes de las integraciones externas. Publicado únicamente en staging el 28 de octubre de 2026 mediante Hosting y `cancelEvent`, `getEventDetail`, `listEvents` y `listCalendarEvents`; verificación técnica remota aprobada, aceptación funcional autenticada de EVT-121 pendiente.
+
+EVT-120: la facade de Eventos mantiene error y carga propios de disponibilidad, limita su espera a 20 segundos e invalida resultados anteriores al reintentar, cambiar el contexto o cerrar. El formulario presenta ese error recuperable dentro del modal. El plazo abandona la previsualización, no altera la transacción ni confirma reservas. Publicado en Hosting de staging el 27 de octubre; aceptación visual autenticada pendiente.
+
 ## UI
 
 Angular Material/CDK aporta comportamiento y accesibilidad. El tema institucional y los wrappers propios evitan una apariencia Material genérica. Consultar `ADR-004`.
@@ -192,7 +196,7 @@ Google Calendar [integración backend de salida]
 - Las respuestas de consulta incluyen `serverNow`. La facade conserva esa referencia, avanza el reloj únicamente para presentación y actualiza el estado al cargar, navegar y llegar a la siguiente frontera temporal. Toda decisión backend vuelve a usar hora de servidor.
 - Un evento multidiario es un único intervalo continuo, máximo seis fechas operativas, en un solo campus y sin domingo. Equipos permanecen montados y bloqueados durante las noches.
 - La ruta `/eventos` conserva listado y paginación; `/eventos/calendario` usa la misma facade y permisos, consulta solo el rango visible y permite alternar entre lista y calendario sin duplicar datos.
-- FullCalendar Standard `7.1.0` se carga únicamente con la ruta lazy de Eventos. Mes, semana, día y lista están implementados; Premium/Scheduler, edición por arrastre y creación por selección quedan fuera de alcance.
+- FullCalendar Standard `7.1.x` se carga únicamente con la ruta lazy de Eventos. Mes, semana, día y lista están implementados; Premium/Scheduler, edición por arrastre y creación por selección quedan fuera de alcance.
 - La consulta calendario incluye eventos superpuestos, incluidos los iniciados antes del rango. Los índices y la consulta aprobados están en ADR-009 y se validan en Emulator Suite antes de desplegar.
 - La dependencia y sus consecuencias se registran en `decisiones/ADR-008-ciclo-temporal-calendario-eventos.md`.
 
@@ -226,7 +230,7 @@ Operaciones de Eventos
 ```
 
 - La búsqueda global usa `terminosBusqueda` generados por backend y un índice `array-contains` más creación descendente; conserva páginas de 25 y no incorpora un motor externo.
-- El detalle es el único punto de entrada de edición, cancelación y logística. Las acciones de propiedad y rol se repiten en backend.
+- El detalle concentra la consulta completa y todas las acciones logísticas. El listado también expone edición y cancelación directa al creador conforme a EVT-103; propiedad y rol se revalidan siempre en backend.
 - La previsualización de disponibilidad usa `eventId` únicamente en edición. La callable valida el evento y su propietario antes de excluir sus reservas; creación no envía el campo y toda mutación vuelve a validar disponibilidad dentro de la transacción autoritativa.
 - `EventsPage` vuelve a consultar esa callable al recuperar foco o visibilidad y cada 30 segundos mientras el formulario sea visible y tenga intervalo válido. La facade conserva el resultado anterior durante la actualización, evita solicitudes solapadas y el componente detiene el monitor al cerrar o destruirse. Si la respuesta cambia, Angular anuncia el conflicto sin reducir cantidades ni convertir la previsualización en autorización.
 - `calendarEstado` y `notificacionesEstado` son resúmenes seguros para la UI; errores técnicos, contactos, leases y claves idempotentes permanecen protegidos.
@@ -311,3 +315,15 @@ Cloud Storage de staging utiliza el bucket predeterminado `eventos-tup-angular-s
 - `npm run lint:visual` bloquea redefiniciones encapsuladas de botones/icon-buttons y colores institucionales obsoletos.
 - Presupuestos definidos en `criterios-no-funcionales.md`.
 - Definición de terminado transversal.
+
+## Consistencia de inventario e integraciones — corrección local
+
+La reducción administrativa de inventario y Eventos comparten cálculo de ocupación por intervalos y documento de control. Equipos encola avisos logísticos dentro de su transacción; el worker SMTP existente conserva envío, lease, reintentos y retención. Calendar usa identidad determinista para reintentar creación sin duplicar. El resumen de correo se calcula transaccionalmente sobre la revisión vigente. No hay cambios de rutas, dependencias externas, permisos ni primitivas visuales. Publicado únicamente en staging el 27 de octubre de 2026 como parte del conjunto de ocho correcciones.
+
+## Serialización de integración y recepción válida
+
+event-calendar-sync.ts coordina Calendar con lease Firestore por evento y publicación condicional de resultados; usa la identidad determinista compartida. La reserva expone un permiso temporal de recepción calculado por backend, validado de nuevo al ejecutar. La transición de coordinaciones se fotografía en la transacción del evento y el generador de avisos ignora preparaciones obsoletas. No se crean Functions, índices, dependencias ni tareas programadas nuevas. El conjunto fue desplegado con autorización expresa únicamente a staging el 27 de octubre de 2026: Rules, 12 Functions y Hosting. La colección protegida se crea al reconciliar cada evento; no se ejecutó una migración masiva.
+
+## Consultas de Eventos — incremento publicado en staging
+
+EVT-116 a EVT-119: mover validación de sincronización al caso de uso; el repositorio ofrece lectura interna de revisión sin exponerla en el read model público. EventsFacade separa carga del listado y catálogos con caché exclusivamente en memoria por vista, solicitud compartida y refresco al abrir formulario. Contadores independientes invalidan consultas de listado, calendario y detalle; ninguna respuesta obsoleta puede cambiar datos, error o loading de su ámbito. El calendario invalida también la selección pendiente al cerrar o destruir. No se agregan dependencias, rutas ni almacenamiento persistente. Este incremento fue publicado con autorización expresa únicamente en staging el 27 de octubre de 2026, mediante syncUpdatedEventIntegrations y Hosting.

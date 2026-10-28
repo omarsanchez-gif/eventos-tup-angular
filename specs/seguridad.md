@@ -55,7 +55,7 @@ La sincronización se realizará exclusivamente mediante Admin SDK conforme a `d
 - SEC-EVT-001: Solo usuarios autorizados pueden leer y crear eventos.
 - SEC-EVT-002: Solo el creador puede editar o cancelar su evento.
 - SEC-EVT-003: La cancelación y toda escritura directa desde cliente permanecen bloqueadas; el documento cancelado se conserva como histórico de solo lectura.
-- SEC-EVT-004: Functions de integración, reservación y cancelación validan claim autorizado, perfil canónico y propiedad.
+- SEC-EVT-004: Functions de integración, reservación y cancelación validan claim autorizado, perfil canónico y propiedad. EVT-121 exige además validar el fin del evento y el reloj de servidor dentro de la transacción de cancelación; ocultar la acción en Angular no sustituye esta validación.
 - SEC-EVT-005: El cliente solo puede proponer IDs de coordinación; el backend lee nombres, estado y correos canónicos.
 - SEC-EVT-006: Crear exige que cada coordinación seleccionada exista y esté activa. Editar permite conservar referencias históricas suspendidas, pero no agregarlas de nuevo.
 - SEC-EVT-007: Los documentos de evento no exponen correos de coordinaciones ni estados internos de entrega.
@@ -159,6 +159,18 @@ La evidencia del 30 de septiembre cubre creación, disponibilidad, edición, can
 
 Evidencia del 30 de septiembre de 2026: Angular quedó en `22.2.x`, Firebase Web en `12.19.0`, Firebase Admin en `14.5.0`, Firebase Functions en `7.4.0` y el override acotado de ADR-011 resolvió gRPC. La auditoría completa y `npm audit --omit=dev` reportaron cero vulnerabilidades altas o críticas; permanecen 15 moderadas totales y 3 moderadas de ejecución para seguimiento. Las 183 pruebas, lint, formato y ambos builds aprobaron antes del despliegue, sin `--force`.
 
+Evidencia vigente del 27 de octubre de 2026: la actualización compatible y los overrides acotados de ADR-011 dejaron `npm audit --omit=dev` en cero vulnerabilidades de cualquier severidad. La auditoría completa quedó sin altas o críticas; sus cinco avisos moderados pertenecen exclusivamente a `firebase-tools` y cuentan con aceptación acotada de herramienta, mitigación, vigencia y responsable. Los builds, lint, formato y regresión aprobaron sin `--force`. Después se desplegaron únicamente `bootstrapAuthorization` y Hosting a staging; la callable permaneció protegida y rechazó una solicitud anónima con `401`. No se desplegaron Rules, índices, secretos u otras Functions, no se modificaron datos y producción permaneció intacta.
+
 ## Criterio de aceptación
 
 Una sesión Firebase sin claim autorizado no obtiene acceso a Firestore o Storage protegidos. Un usuario autorizado solo puede ejecutar las operaciones correspondientes a su rol y propiedad.
+
+## Control de integración de Calendar
+
+controlIntegracionesEvento es inaccesible en lectura y escritura para todo cliente, incluidos administradores. Solo Admin SDK gestiona el lease. coordinacionIdsRetiradas contiene únicamente IDs ya permitidos en Eventos, es inmutable desde el cliente y se calcula en las transacciones backend. Reception-not-available usa un mensaje funcional sin datos técnicos; ninguna habilitación de botón concede autorización.
+
+Publicación del 27 de octubre de 2026: la protección de controlIntegracionesEvento fue desplegada únicamente a staging y se verificó coincidencia entre Rules locales y remotas. Cuatro callables afectadas rechazaron solicitudes anónimas con 401; las pruebas locales de Rules aprobaron 15 casos. Evidencia exacta en [matriz de trazabilidad](matriz-trazabilidad.md); la comprobación remota anónima no sustituye la regresión autenticada.
+
+## Revalidación previa de sincronización — publicada en staging
+
+SEC-EVT-018 / EVT-116: syncUpdatedEventIntegrations revalida identidad, claims y perfil activo antes de leer el evento; después verifica propiedad o rol admin y finalmente la revisión esperada. El handler delega en un caso de uso probado y no consulta Firestore directamente antes de autorizar. ID documental malformado falla antes de la lectura del evento. No cambia el contrato público ni agrega permisos. Implementado y validado localmente con negativas de identidad, perfil, propiedad y revisión, además de una prueba con Firestore Emulator. Desplegado únicamente a staging el 27 de octubre de 2026: la callable está ACTIVE y rechazó las comprobaciones anónimas con 401 / UNAUTHENTICATED. Esta comprobación remota no sustituye las pruebas autenticadas de roles.
